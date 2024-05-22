@@ -62,27 +62,6 @@ forval year = 2009/2020 { // Loop through all years
 		rename (nro_serviciosHospitalizacion nro_serviciosurgencias nro_serviciosprocedimientos nro_serviciosconsultas) (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
 		
 		egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
-		
-		gen poblacion_M50 = 1 if sexomode == 1 & inrange(fechantomode, -4383, -2557)
-		gen poblacion_M54 = 1 if sexomode == 1 & inrange(fechantomode, -2922, -1096)
-		gen poblacion_F55 = 1 if sexomode == 0 & inrange(fechantomode, -2556, -731)
-		gen poblacion_F59 = 1 if sexomode == 0 & inrange(fechantomode, -1095, 730)
-
-		foreach var of varlist poblacion* {
-			replace `var' = 0 if mi(`var')
-		}
-
-		* Generate cutoff points for each cohort
-		gen 	corte = -3441 if poblacion_M50 == 1
-		replace corte = -1827 if poblacion_M54 == 1
-		replace corte = -1615 if poblacion_F55 == 1
-		replace corte = -1 	  if poblacion_F59 == 1
-
-		gen fechaweek  = wofd(fechantomode)
-		format %td corte
-		gen corte_week = wofd(corte)
-
-		gen std_weeks  = fechaweek - corte_week // Running variable
 
 		keep $outcomes poblacion* year_RIPS std_weeks // For efficiency
 	}
