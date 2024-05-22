@@ -113,7 +113,7 @@ foreach d in diag_prin diag_r1 diag_r2 diag_r3 {
 
 }
 
-foreach var in sepsis respiratory trauma stroke cardiovascular infarct diag_laboral diag_mental estres estres_laboral covid covid_related{
+foreach var in sepsis respiratory trauma stroke cardiovascular infarct diag_laboral diag_mental estres estres_laboral covid covid_related diag_mental{
 	
 	egen `var' = rowmax(`var'_1 `var'_2 `var'_3 `var'_4)
 	
