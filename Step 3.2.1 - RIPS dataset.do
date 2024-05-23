@@ -31,8 +31,12 @@ use if inrange(std_weeks, -22, 22) using "$data\Merge_individual_RIPS.dta", clea
 drop diag_prin_ingre fecha_ingreso cod_diag_prin fecha_consul
 
 gen age = age(fechantomode,date)
-keep if inrange(age, 59, 71)
 
+keep if (inrange(age, 59, 71) & poblacion_M50 == 1) | 			///
+		(inrange(age, 54, 66) & poblacion_F55 == 1) | 			///
+		(inrange(age, 55, 67) & poblacion_M54 == 1) | 			///
+		(inrange(age, 50, 62) & poblacion_F59 == 1)
+		
 drop date
 
 *** Create variables by looping over diagnosis codes
@@ -151,7 +155,7 @@ foreach variable in $t_sensitive $work{
 	bys personabasicaid age: ereplace `variable' = max(`variable')
 }
 
-keep personabasicaid age service nro_servicios $t_sensitive $work
+keep personabasicaid age service nro_servicios $t_sensitive $work poblacion*
 
 compress
 
@@ -159,7 +163,7 @@ gduplicates drop personabasicaid age service, force
 
 greshape wide nro_servicios, i(personabasicaid age) j(service) string
 
-* Balance
+
 fillin personabasicaid age
 
 foreach var of varlist nro_serviciosHospitalizacion-cons_mental {
@@ -217,7 +221,11 @@ drop merge_*
    variable */
    
 gen age = age(fechantomode,date)
-keep if inrange(age, 59, 71)
+keep if (inrange(age, 59, 71) & poblacion_M50 == 1) | 			///
+		(inrange(age, 54, 66) & poblacion_F55 == 1) | 			///
+		(inrange(age, 55, 67) & poblacion_M54 == 1) | 			///
+		(inrange(age, 50, 62) & poblacion_F59 == 1)
+
 sort personabasicaid age
 
 * Keep only people with chronic diagnosis
@@ -314,6 +322,11 @@ replace ab75_chronic = 0 if mi(ab75_chronic) & mi(pre_MWI) == 0
 replace be25_chronic = 0 if mi(be25_chronic) & mi(pre_MWI) == 0
 
 drop cohort median_MWI abso_mwi
+
+keep if (inrange(age, 59, 71) & poblacion_M50 == 1) | 			///
+		(inrange(age, 54, 66) & poblacion_F55 == 1) | 			///
+		(inrange(age, 55, 67) & poblacion_M54 == 1) | 			///
+		(inrange(age, 50, 62) & poblacion_F59 == 1)
 
 compress
 
