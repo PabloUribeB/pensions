@@ -90,8 +90,7 @@ foreach cohort in $cohorts{
 			
 			foreach bw in 11 22{ // Arbitrary bandwidth choices
 				
-				qui sum `outcome' if poblacion_`cohort' == 1 & age == `age' & ///
-				inrange(std_weeks, -`bw', -1)
+				qui sum `outcome' if age == `age' & inrange(std_weeks, -`bw', -1)
 				local control_mean = r(mean)
 				
 				dis as err "Regression for `outcome' with BW `bw' in cohort `cohort' for age `age'"
@@ -192,6 +191,9 @@ foreach cohort in $cohorts{
 		
 		foreach bw in 11 22{ // Arbitrary bandwidth choices
 			
+			qui sum `outcome' if inrange(std_weeks, -`bw', -1)
+			local control_mean: dis %010.`dec'fc r(mean)
+			
 			dis as err "Regression for `outcome' with BW `bw' in cohort `cohort'"
 			
 			qui rdrobust `outcome' std_weeks, 				///
@@ -215,17 +217,17 @@ foreach cohort in $cohorts{
 				local B = "`B'*"
 			}
 			
-			rdplot `outcome' std_weeks if poblacion_`cohort' == 1 & 			///
-			inrange(std_weeks,-`bw',`bw'), vce(cluster std_weeks) p(1) 			///
-			kernel(triangular) h(`bw' `bw') binselect(esmv) ci(95) shade		///
-			graph_options(title(`vallab', size(medium)) 						///
+			rdplot `outcome' std_weeks if inrange(std_weeks,-`bw',`bw'), 		///
+			vce(cluster std_weeks) p(1) kernel(triangular) h(`bw' `bw') 		///
+			binselect(esmv) ci(95) shade										///
+			graph_options(title(`varlab', size(medium)) 						///
 			subtitle(Cohort: `cohort'; Weeks around cutoff: `bw', size(small)) 	///
 			xtitle(Distance to week of birth's cutoff) ytitle(`title') 			///
 			legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc)) 	///
-			note("Rdrobust coefficient: `B'. Effective number of observations: `N'."))
+			note("Rdrobust coefficient: `B'. Control's mean: `control_mean'; Effective number of observations: `N'."))
 			
 			
-			graph export "${graphs}\\`outcome'_`cohort'_`bw'.png", replace
+			graph export "${graphs}\\`outcome'_`cohort'_`bw'.png", replace width(1920) height(1080)
 			
 			local replace append
 		}
