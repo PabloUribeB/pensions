@@ -155,7 +155,7 @@ foreach variable in $t_sensitive $work{
 	bys personabasicaid age: ereplace `variable' = max(`variable')
 }
 
-keep personabasicaid age service nro_servicios $t_sensitive $work poblacion*
+keep personabasicaid age service nro_servicios $t_sensitive $work poblacion* std_weeks
 
 compress
 
