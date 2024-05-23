@@ -96,17 +96,20 @@ foreach cohort in $cohorts{
 				
 				dis as err "Regression for `outcome' with BW `bw' in cohort `cohort' for age `age'"
 				
-				rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & 	///
-				age == `age', vce(cluster std_weeks) h(-`bw' `bw') b(-`bw' `bw')
+				rdrobust `outcome' std_weeks if	age == `age', 		///
+				vce(cluster std_weeks) h(`bw') b(`bw')
 
 				mat beta = e(tau_bc)			// Store robust beta
 				mat vari = e(se_tau_rb) ^ 2		// Store robust SE
 
+				local N_left = e(N_b_l)
+				local N_right = e(N_b_r)
+				
 				* Save estimation results in dataset
 				regsave using "${tables}/RIPS_results.dta", `replace' 			///
 				coefmat(beta) varmat(vari) ci level(95) 						///
 				addlabel(outcome, `outcome', cohort, `cohort', age, `age', 		///
-				bw, `bw', control, `control_mean')
+				bw, `bw', control, `control_mean', N_right, `N_right', N_left, `N_left')
 				
 				local replace append
 			}
@@ -191,8 +194,8 @@ foreach cohort in $cohorts{
 			
 			dis as err "Regression for `outcome' with BW `bw' in cohort `cohort'"
 			
-			rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & 	///
-			age == `age', vce(cluster std_weeks) h(-`bw' `bw') b(-`bw' `bw')
+			rdrobust `outcome' std_weeks if age == `age', 		///
+			vce(cluster std_weeks) h(`bw') b(`bw')
 			
 			local B: 	dis %010.`dec'fc e(tau_bc)
 			local B: 	dis strtrim("`B'")
