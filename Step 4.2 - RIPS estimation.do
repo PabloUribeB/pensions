@@ -28,19 +28,30 @@ else {
 	global pc "\\sm093119"
 }
 
+cap which ereplace
+if _rc ssc install ereplace
+
+cap which labvars
+if _rc ssc install labvars
+
 global data 		"${pc}\Proyectos\Banrep research\Pensions\Data"
 global tables 		"${pc}\Proyectos\Banrep research\Pensions\Tables"
 global graphs 		"${pc}\Proyectos\Banrep research\Pensions\Graphs"
 global data_master 	"${pc}\Proyectos\PILA master"
 global logs 		"${pc}\Proyectos\Banrep research\Pensions\Logs"
 
-global first_cohorts M50 F55
-global second_cohorts M54 F59
+global cohorts M50 F55 M54 F59
 
-global outcomes service consul proce urg hosp nro_servicios nro_consultas 	///
-nro_procedimientos nro_urgencias nro_Hospitalizacion cons_psico estres 		///
-cardiovascular infarct pre_MWI chronic
+global extensive service consul proce urg hosp cons_psico estres 		///
+cardiovascular infarct chronic diag_mental
 
+global intensive  nro_servicios nro_consultas nro_procedimientos 		///
+nro_urgencias nro_Hospitalizacion
+
+global outcomes ${extensive} pre_MWI ${intensive}
+
+set scheme white_tableau
+set graphics off
 
 capture log close
 
@@ -48,34 +59,41 @@ log	using "$logs\RIPS estimations.smcl", replace
 
 
 ****************************************************************************
-**# 		Estimations
+**# 		Estimations for each age
 ****************************************************************************
 
 local replace replace
-forval year = 2009/2020 { // Loop through all years
+foreach cohort in $cohorts{
 	
-	use if year_RIPS == `year' using "$data\RIPS_balanced_annual.dta", clear // Only use that year (faster)
+	use if (poblacion_`cohort' == 1) using "$data\RIPS_balanced_annual.dta", clear // Only use that cohort (faster)
 	
 	* Process raw data to create relevant variables
 	quietly{
 		
-		rename (nro_serviciosHospitalizacion nro_serviciosurgencias nro_serviciosprocedimientos nro_serviciosconsultas) (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
+		rename (nro_serviciosHospitalizacion nro_serviciosurgencias 			///
+		nro_serviciosprocedimientos nro_serviciosconsultas) 					///
+		(nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
 		
-		egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
+		egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias 		///
+		nro_procedimientos nro_consultas)
 
-		keep $outcomes poblacion* year_RIPS std_weeks // For efficiency
+		keep $outcomes poblacion* age std_weeks // For efficiency
 	}
 	
+	qui sum age if poblacion_`cohort' == 1
+	local min = r(min)
+	local max = r(max)
 	
-	* First cohorts (M50 & F55) retire in 2010, so only one year before and after
-	if inrange(`year', 2009, 2011){
-		
-		foreach cohort in $first_cohorts{
-		
-			foreach outcome in $outcomes{
-					
+	forval age = `min'/`max'{
+	
+		foreach outcome in $outcomes{
+			
+			foreach bw in 11 22{ // Arbitrary bandwidth choices
+				
+				dis as err "Regression for `outcome' with BW `bw' in cohort `cohort' for age `age'"
+				
 				rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & 	///
-				year_RIPS == `year', vce(cluster std_weeks)
+				age == `age', vce(cluster std_weeks) h(-`bw' `bw') b(-`bw' `bw')
 
 				mat beta = e(tau_bc)			// Store robust beta
 				mat vari = e(se_tau_rb) ^ 2		// Store robust SE
@@ -83,29 +101,120 @@ forval year = 2009/2020 { // Loop through all years
 				* Save estimation results in dataset
 				regsave using "${tables}/RIPS_results.dta", `replace' 			///
 				coefmat(beta) varmat(vari) ci level(95) 						///
-				addlabel(outcome, `outcome', cohort, `cohort', year, `year')
+				addlabel(outcome, `outcome', cohort, `cohort', age, `age', bw, `bw')
 				
 				local replace append
 			}
 		}
 	}
+}
+
+
+****************************************************************************
+**# 		Estimations with cumulative outcomes after retirement age
+****************************************************************************
+
+local replace replace
+foreach cohort in $cohorts{
 	
-	* Second cohorts (M54 & F59) retire in Dec. 2014, so 6 years pre and 6 post.
-	* This loop happens for all years in the loop (2009/2020)
-	foreach cohort in $second_cohorts{
+	if inlist("`cohort'", "M50", "M54"){
+		local retire = 60
+	}
+	else{
+		local retire = 55
+	}
+	
+	use if (poblacion_`cohort' == 1) using "$data\RIPS_balanced_annual.dta", clear // Only use that cohort (faster)
+
+	keep if age >= `retire'
+
+	* Process raw data to create relevant variables
+	quietly{
 		
-		foreach outcome in $outcomes{
-				
-			rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & 		///
-			year_RIPS == `year', vce(cluster std_weeks)
+		rename (nro_serviciosHospitalizacion nro_serviciosurgencias 			///
+		nro_serviciosprocedimientos nro_serviciosconsultas) 					///
+		(nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
+		
+		labvars cardiovascular chronic cons_psico consul estres hosp infarct 	///
+		nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios 		///
+		nro_urgencias pre_MWI proce service urg "Cardiovascular" 				///
+		"Chronic disease" "Consultation with psychologist" 						///
+		"Probability of consultation" "Stress" "Probability of hospitalization" ///
+		"Infarct" "Number of hospitalizations" "Number of consultations" 		///
+		"Number of procedures" "Number of services" "Number of ER visits" 		///
+		"Multi-morbidity index" "Probability of procedures" 					///
+		"Probability of health service" "Probability of ER visit"
+		
+		egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias 	///
+		nro_procedimientos nro_consultas)
 
-			mat beta = e(tau_bc)				// Store robust beta
-			mat vari = e(se_tau_rb) ^ 2			// Store robust SE
+		keep $outcomes poblacion* age std_weeks // For efficiency
+		
+		foreach var in ${extensive}{
+			bys personabasicaid: ereplace `var' = max(`var')
+		}
+		
+		foreach var in ${intensive}{
+			bys personabasicaid: ereplace `var' = sum(`var')
+		}
+		
+		bys personabasicaid: ereplace pre_MWI = min(pre_MWI)
+		
+		gduplicates drop personabasicaid, force
+	}
 
-			* Save estimation results in dataset
-			regsave using "${tables}/RIPS_results.dta", append coefmat(beta) 	///
-			varmat(vari) ci level(95) addlabel(outcome, `outcome', cohort, 		///
-			`cohort', year, `year')
+	
+	foreach outcome in $outcomes{
+		
+		if inlist("`outcome'", "nro_servicios", "nro_consultas", 		///
+		"nro_procedimientos", "nro_urgencias", "nro_Hospitalizacion"){
+			local dec = 2
+			local title "Number"
+		}
+		else if "`outcome'" == "pre_MWI"{
+			local dec = 2
+			local title "Index"
+		}
+		else{
+			local dec = 3
+			local title "Percentage"
+		}
+		
+		local varlab: variable label `outcome'
+		
+		foreach bw in 11 22{ // Arbitrary bandwidth choices
+			
+			dis as err "Regression for `outcome' with BW `bw' in cohort `cohort'"
+			
+			rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & 	///
+			age == `age', vce(cluster std_weeks) h(-`bw' `bw') b(-`bw' `bw')
+			
+			local B: 	dis %010.`dec'fc e(tau_bc)
+			local B: 	dis strtrim("`B'")
+
+			if abs(`t') >= 1.645 {
+				local B = "`B'*"
+			}
+			if abs(`t') >= 1.96 {
+				local B = "`B'*"
+			}	
+			if abs(`t') >= 2.576 {
+				local B = "`B'*"
+			}
+			
+			rdplot `outcome' std_weeks if poblacion_`cohort' == 1 & 			///
+			inrange(std_weeks,-`bw',`bw'), vce(cluster std_weeks) p(1) 			///
+			kernel(triangular) h(`bw' `bw') binselect(esmv) ci(95) shade		///
+			graph_options(title(`vallab', size(medium)) 						///
+			subtitle(Cohort: `cohort'; Weeks around cutoff: `bw', size(small)) 	///
+			xtitle(Distance to week of birth's cutoff) ytitle(`title') 			///
+			legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc)) 	///
+			note("Rdrobust coefficient: `B'"))
+			
+			
+			graph export "${graphs}\\`outcome'_`cohort'_`bw'.png", replace
+			
+			local replace append
 		}
 	}
 }
