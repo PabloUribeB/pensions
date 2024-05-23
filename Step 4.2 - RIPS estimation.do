@@ -28,17 +28,17 @@ else {
 	global pc "\\sm093119"
 }
 
-cap which ereplace
-if _rc ssc install ereplace
-
-cap which labvars
-if _rc ssc install labvars
-
 global data 		"${pc}\Proyectos\Banrep research\Pensions\Data"
 global tables 		"${pc}\Proyectos\Banrep research\Pensions\Tables"
 global graphs 		"${pc}\Proyectos\Banrep research\Pensions\Graphs"
 global data_master 	"${pc}\Proyectos\PILA master"
 global logs 		"${pc}\Proyectos\Banrep research\Pensions\Logs"
+
+cap which ereplace
+if _rc ssc install ereplace
+
+cap which labvars
+if _rc ssc install labvars
 
 global cohorts M50 F55 M54 F59
 
@@ -65,7 +65,7 @@ log	using "$logs\RIPS estimations.smcl", replace
 local replace replace
 foreach cohort in $cohorts{
 	
-	use if (poblacion_`cohort' == 1) using "$data\RIPS_balanced_annual.dta", clear // Only use that cohort (faster)
+	use if (poblacion_`cohort' == 1) using "$data\Estimation_sample_RIPS.dta", clear // Only use that cohort (faster)
 	
 	* Process raw data to create relevant variables
 	quietly{
@@ -90,6 +90,10 @@ foreach cohort in $cohorts{
 			
 			foreach bw in 11 22{ // Arbitrary bandwidth choices
 				
+				qui sum `outcome' if poblacion_`cohort' == 1 & age == `age' & ///
+				inrange(std_weeks, -`bw', -1)
+				local control_mean = r(mean)
+				
 				dis as err "Regression for `outcome' with BW `bw' in cohort `cohort' for age `age'"
 				
 				rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & 	///
@@ -101,7 +105,8 @@ foreach cohort in $cohorts{
 				* Save estimation results in dataset
 				regsave using "${tables}/RIPS_results.dta", `replace' 			///
 				coefmat(beta) varmat(vari) ci level(95) 						///
-				addlabel(outcome, `outcome', cohort, `cohort', age, `age', bw, `bw')
+				addlabel(outcome, `outcome', cohort, `cohort', age, `age', 		///
+				bw, `bw', control, `control_mean')
 				
 				local replace append
 			}
@@ -124,7 +129,7 @@ foreach cohort in $cohorts{
 		local retire = 55
 	}
 	
-	use if (poblacion_`cohort' == 1) using "$data\RIPS_balanced_annual.dta", clear // Only use that cohort (faster)
+	use if (poblacion_`cohort' == 1) using "$data\Estimation_sample_RIPS.dta", clear // Only use that cohort (faster)
 
 	keep if age >= `retire'
 
