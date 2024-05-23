@@ -45,7 +45,7 @@ global cohorts M50 F55 M54 F59
 global extensive service consul proce urg hosp cons_psico estres 		///
 cardiovascular infarct chronic diag_mental
 
-global intensive  nro_servicios nro_consultas nro_procedimientos 		///
+global intensive nro_servicios nro_consultas nro_procedimientos 		///
 nro_urgencias nro_Hospitalizacion
 
 global outcomes ${extensive} pre_MWI ${intensive}
@@ -143,6 +143,9 @@ foreach cohort in $cohorts{
 		nro_serviciosprocedimientos nro_serviciosconsultas) 					///
 		(nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
 		
+		egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias 	///
+		nro_procedimientos nro_consultas)
+		
 		labvars cardiovascular chronic cons_psico consul estres hosp infarct 	///
 		nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios 		///
 		nro_urgencias pre_MWI proce service urg "Cardiovascular" 				///
@@ -152,11 +155,8 @@ foreach cohort in $cohorts{
 		"Number of procedures" "Number of services" "Number of ER visits" 		///
 		"Multi-morbidity index" "Probability of procedures" 					///
 		"Probability of health service" "Probability of ER visit"
-		
-		egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias 	///
-		nro_procedimientos nro_consultas)
 
-		keep $outcomes poblacion* age std_weeks // For efficiency
+		keep $outcomes poblacion* age std_weeks personabasicaid // For efficiency
 		
 		foreach var in ${extensive}{
 			bys personabasicaid: ereplace `var' = max(`var')
@@ -194,12 +194,17 @@ foreach cohort in $cohorts{
 			
 			dis as err "Regression for `outcome' with BW `bw' in cohort `cohort'"
 			
-			rdrobust `outcome' std_weeks if age == `age', 		///
+			qui rdrobust `outcome' std_weeks, 				///
 			vce(cluster std_weeks) h(`bw') b(`bw')
 			
 			local B: 	dis %010.`dec'fc e(tau_bc)
 			local B: 	dis strtrim("`B'")
 
+			local t = e(tau_bc) / e(se_tau_rb)
+			
+			local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
+			local N: 	dis strtrim("`N'")
+			
 			if abs(`t') >= 1.645 {
 				local B = "`B'*"
 			}
@@ -217,7 +222,7 @@ foreach cohort in $cohorts{
 			subtitle(Cohort: `cohort'; Weeks around cutoff: `bw', size(small)) 	///
 			xtitle(Distance to week of birth's cutoff) ytitle(`title') 			///
 			legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc)) 	///
-			note("Rdrobust coefficient: `B'"))
+			note("Rdrobust coefficient: `B'. Effective number of observations: `N'."))
 			
 			
 			graph export "${graphs}\\`outcome'_`cohort'_`bw'.png", replace
