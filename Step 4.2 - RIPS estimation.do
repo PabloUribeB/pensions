@@ -147,13 +147,13 @@ foreach cohort in $cohorts{
 		
 		labvars cardiovascular chronic cons_psico consul estres hosp infarct 	///
 		nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios 		///
-		nro_urgencias pre_MWI proce service urg "Cardiovascular" 				///
-		"Chronic disease" "Consultation with psychologist" 						///
+		nro_urgencias pre_MWI proce service urg diag_mental 					///
+		"Cardiovascular" "Chronic disease" "Consultation with psychologist" 	///
 		"Probability of consultation" "Stress" "Probability of hospitalization" ///
 		"Infarct" "Number of hospitalizations" "Number of consultations" 		///
 		"Number of procedures" "Number of services" "Number of ER visits" 		///
 		"Multi-morbidity index" "Probability of procedures" 					///
-		"Probability of health service" "Probability of ER visit"
+		"Probability of health service" "Probability of ER visit" "Mental diagnosis"
 
 		keep $outcomes poblacion* age std_weeks personabasicaid // For efficiency
 		
