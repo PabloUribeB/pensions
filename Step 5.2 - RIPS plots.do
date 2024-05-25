@@ -55,7 +55,7 @@ foreach variable in `outcomes'{
 			title(`vallab', size(medium)) 										///
 			subtitle(Cohort: `cohort'; Bandwidth: `bw' weeks, size(medsmall))
 			
-			graph export "${figures}\age\\`variable'_`cohort'_`bw'.png", replace
+			graph export "${figures}\age\\`variable'_`cohort'_`bw'_age.png", replace
 		}
 	}
 	
