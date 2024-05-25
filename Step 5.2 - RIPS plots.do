@@ -10,7 +10,13 @@ set graphics off
 use "${tables}\RIPS_results.dta", clear
 
 encode outcome, gen(en_outcome)
-label def labout 1 "Cardiovascular" 2 "Chronic disease" 3 "Consultation with psychologist" 4 "Probability of consultation" 5 "Mental diagnosis" 6 "Stress" 7 "Probability of hospitalization" 8 "Infarct" 9 "Number of hospitalizations" 10 "Number of consultations" 11 "Number of procedures" 12 "Number of services" 13 "Number of ER visits" 14 "Multi-morbidity index" 15 "Probability of procedures" 16 "Probability of health service" 17 "Probability of ER visit"
+label def labout 1 "Cardiovascular" 2 "Chronic disease" 					///
+3 "Consultation with psychologist" 4 "Probability of consultation" 			///
+5 "Mental diagnosis" 6 "Stress" 7 "Probability of hospitalization" 			///
+8 "Infarct" 9 "Number of hospitalizations" 	10 "Number of consultations" 	///
+11 "Number of procedures" 12 "Number of services" 13 "Number of ER visits" 	///
+14 "Multi-morbidity index" 15 "Probability of procedures" 					///
+16 "Probability of health service" 17 "Probability of ER visit"
 label val en_outcome labout
 
 gen coef_plus = coef + control
@@ -39,7 +45,7 @@ foreach variable in `outcomes'{
 			local max = r(max)
 			
 			tw (connected control age, color(gray) lpattern(dash)) 				///
-			(rspike li_plus hi_plus age, lcolor(ebblue) lp(solid)) 				///
+			(rcap li_plus hi_plus age, lcolor(ebblue) lp(solid)) 				///
 			(connected coef_plus age, color(ebblue)) 							///
 			if (cohort == "`cohort'" & outcome == "`variable'" & bw == `bw'),	///
 			legend(position(bottom) rows(1) order(3 "Mean + Point estimate" 	///
