@@ -1,5 +1,5 @@
 
-global main "C:\Users\Pablo Uribe\Desktop\BanRep\Pensions"
+global main "C:\Users\Pablo Uribe\Documents\GitHub\pensions"
 global figures "${main}\Graphs"
 global tables "${main}\Tables"
 
