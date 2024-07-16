@@ -1,7 +1,7 @@
 
-global main "C:\Users\Pablo Uribe\Desktop\BanRep\Pensions"
+global main "C:\Users\Pablo Uribe\Documents\GitHub\pensions"
 global figures "${main}\Graphs"
-global tables "${main}\Tables"
+global tables "${main}\Results"
 
 global cohorts M50 M54 F55 F59
 
