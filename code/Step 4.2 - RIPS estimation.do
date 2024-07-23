@@ -1,6 +1,6 @@
 /*************************************************************************
  *************************************************************************			       	
-				RIPS estimation
+				PILA estimation
 			 
 1) Created by: Pablo Uribe
 			   DIME - World Bank
@@ -8,37 +8,32 @@
 				
 2) Date: May 21, 2024
 
-3) Objective: Perform annual estimations for health outcomes across
-			  cohorts
+3) Objective: Perform estimations for the health outcomes
 
 4) Output:	- RIPS_results.dta
+            - `outcome'_`cohort'_`bw'.png
 *************************************************************************
 *************************************************************************/	
-
+clear all
 
 ****************************************************************************
 *		Global directory, parameters and assumptions:
 ****************************************************************************
 
-if "`c(hostname)'" == "SM201439"{
-	global pc "C:"
-}
+if "`c(hostname)'" == "SM201439" global pc "C:\Proyectos"
+else global pc "\\sm093119\Proyectos"
 
+if inlist("`c(username)'", "Pablo Uribe", "pu42") {
+    global root	"~\Documents\GitHub\pensions"
+}
 else {
-	global pc "\\sm093119"
+    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
 }
 
-global data 		"${pc}\Proyectos\Banrep research\Pensions\Data"
-global tables 		"${pc}\Proyectos\Banrep research\Pensions\Tables"
-global graphs 		"${pc}\Proyectos\Banrep research\Pensions\Graphs"
-global data_master 	"${pc}\Proyectos\PILA master"
-global logs 		"${pc}\Proyectos\Banrep research\Pensions\Logs"
-
-cap which ereplace
-if _rc ssc install ereplace
-
-cap which labvars
-if _rc ssc install labvars
+global data   "${pc}\Proyectos\Banrep research\Pensions\Data"
+global logs   "${logs}\Logs"
+global tables "${root}\Output"
+global graphs "${root}\Graphs"
 
 global cohorts M50 F55 M54 F59
 
@@ -48,24 +43,24 @@ cardiovascular infarct chronic diag_mental
 global intensive nro_servicios nro_consultas nro_procedimientos 		///
 nro_urgencias nro_Hospitalizacion
 
-global outcomes ${extensive} pre_MWI ${intensive}
+global outcomes $extensive pre_MWI $intensive
 
 set scheme white_tableau
 set graphics off
 
 capture log close
 
-log	using "$logs\RIPS estimations.smcl", replace
+log	using "${logs}\RIPS estimations.smcl", replace
 
 
 ****************************************************************************
-**# 		Estimations for each age
+**#                 1. Estimations for each age
 ****************************************************************************
 
 local replace replace
 foreach cohort in $cohorts{
 	
-	use if (poblacion_`cohort' == 1) using "$data\Estimation_sample_RIPS.dta", clear // Only use that cohort (faster)
+	use if (poblacion_`cohort' == 1) using "${data}\Estimation_sample_RIPS.dta", clear // Only use that cohort (faster)
 	
 	* Process raw data to create relevant variables
 	quietly{
@@ -118,7 +113,7 @@ foreach cohort in $cohorts{
 
 
 ****************************************************************************
-**# 		Estimations with cumulative outcomes after retirement age
+**#       2. Estimations with cumulative outcomes after retirement age
 ****************************************************************************
 
 local replace replace
@@ -131,7 +126,7 @@ foreach cohort in $cohorts{
 		local retire = 55
 	}
 	
-	use if (poblacion_`cohort' == 1) using "$data\Estimation_sample_RIPS.dta", clear // Only use that cohort (faster)
+	use if (poblacion_`cohort' == 1) using "${data}\Estimation_sample_RIPS.dta", clear // Only use that cohort (faster)
 
 	keep if age >= `retire'
 

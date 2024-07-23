@@ -1,35 +1,39 @@
-		   ********************************************************
-    	  /*             Master PILA - Pensions                 */
-		 /*             Creation date: 17/05/2023         	   */
-	    /*		 			 Author: Pablo Uribe			  */
-	   ********************************************************	
+/*************************************************************************
+ *************************************************************************			       	
+	        PILA consolidation
+			 
+1) Created by: Pablo Uribe
+			   Yale University
+			   p.uribe@yale.edu
+				
+2) Date: April 2023
 
-	  
+3) Objective: Get labor market data
+           
+4) Output:    - mensual_PILA.dta
+
+*************************************************************************
+*************************************************************************/	
 clear all
 
-* Computador Banco 
+****************************************************************************
+* Globals
+****************************************************************************
 
-if "`c(hostname)'" == "SM201439"{
-	global pc "C:"
-}
+if "`c(hostname)'" == "SM201439" global pc "C:"
+else global pc "\\sm093119"
 
-else {
-	global pc "\\sm093119"
-}
+global logs	"Z:\Christian Posso\_banrep_research\proyectos\pensions\Logs"
+global data "${pc}\Proyectos\Banrep research\Pensions\Data"
 
-global cddata  	"${pc}\Proyectos\PILA master"
-global cdlog	"${pc}\Proyectos\Banrep research\Pensions\Logs"
-global cdout 	"${pc}\Proyectos\Banrep research\f_ReturnsToEducation\Tables"
-global data 	"${pc}\Proyectos\Banrep research\Pensions\Data"
-global date: di %tdDNCY daily("$S_DATE", "DMY")
 
-cap mkdir "${cdout}\Outcomes_$date"
-*cap mkdir "${cdout2}/Outcomes_20220621"	
-	
-cd      "${cdlog}"
 capture log close
-log	using "$date - PILA mensual.smcl", replace
+log	using "${logs}\PILA mensual.smcl", replace
 
+
+****************************************************************************
+**#         1. Loop through PILA months
+****************************************************************************
 
 gen delete = 0
 save "$data\mensual_PILA", replace
@@ -115,18 +119,18 @@ forval y = 2009/2020 {
 		replace mw_1 = 908526  if (year == 2022)
 		replace mw_1 = 1000000 if (year == 2023)
 		
-		egen	rowmax 		= rowmax(ibc*)
-		replace rowmax 		= mw if (rowmax >= mw_1 * 0.8 & rowmax < mw)		
-		replace rowmax 		= rowmax / 0.4 if (pila_independientes == 1 & rowmax > mw)
+		egen    rowmax 	= rowmax(ibc*)
+		replace rowmax 	= mw if (rowmax >= mw_1 * 0.8 & rowmax < mw)		
+		replace rowmax 	= rowmax / 0.4 if (pila_independientes == 1 & rowmax > mw)
 		
 		replace salario_bas = mw if (rowmax >= mw_1 * 0.8 & rowmax < mw)
 		
-		egen	pila_salario = rowmax(rowmax salario_bas)
+		egen    pila_salario = rowmax(rowmax salario_bas)
 		replace pila_salario = .  if (pila_posgrad_salud == 1)
-		lab var pila_salario 	"Salario nominal"
+		lab var pila_salario "Salario nominal"
 		drop 	rowmax
 		
-		gen		pila_salario_max = pila_salario
+		gen     pila_salario_max = pila_salario
 		
 		*Get the CPI
 		merge m:1 year month using "\\sm037577\D\Proyectos\Banrep research\c_2018_SSO Servicio Social Obligatorio\Project SSO Training\Data\IPC mensual", keep(1 3) nogen
@@ -156,9 +160,9 @@ forval y = 2009/2020 {
 		* Since people may have more than one contribution each month, sum the wages of each contribution and keep the max of worked days.
 		foreach var of varlist pila_salario_r {
 			
-			bys personabasicaid: ereplace 	`var' 				 = total(`var')
-			bys personabasicaid: egen 		`var'_dependientes 	 = total(`var') if (pila_dependientes == 1)
-			bys personabasicaid: egen 		`var'_independientes = total(`var') if (pila_independientes == 1)
+			bys personabasicaid: ereplace 	`var'                = total(`var')
+			bys personabasicaid: egen       `var'_dependientes   = total(`var') if (pila_dependientes == 1)
+			bys personabasicaid: egen       `var'_independientes = total(`var') if (pila_independientes == 1)
 			
 		}
 		
@@ -168,7 +172,7 @@ forval y = 2009/2020 {
 		  
 		}
 		
-		replace sal_dias_cot 	= 30 if sal_dias_cot  > 30 & !mi(sal_dias_cot)
+		replace sal_dias_cot    = 30 if sal_dias_cot  > 30 & !mi(sal_dias_cot)
 		replace pens_dias_cot 	= 30 if pens_dias_cot > 30 & !mi(pens_dias_cot)
 		
 		gsort personabasicaid -afp_cod
@@ -194,7 +198,7 @@ forval y = 2009/2020 {
 		
 		compress
 		
-		merge 1:1 personabasicaid using "$data\Master_sample.dta", keep(2 3) ///
+		merge 1:1 personabasicaid using "${data}\Master_sample.dta", keep(2 3) ///
 		keepusing(personabasicaid sexomode fechantomode)
 		
 		replace year  		= `y' 			if _merge == 2
@@ -207,8 +211,8 @@ forval y = 2009/2020 {
 		save `temp_pila_`y'', replace		
 	}
 	
-	append using "$data\mensual_PILA"
-	save "$data\mensual_PILA", replace
+	append using "${data}\mensual_PILA"
+	save "${data}\mensual_PILA", replace
 }
 
 *drop if inrange(month,9,12) & year == 2022
@@ -217,6 +221,6 @@ drop delete
 
 compress
 
-save "$data\mensual_PILA", replace
+save "${data}\mensual_PILA", replace
 
 log close

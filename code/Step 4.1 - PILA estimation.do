@@ -14,25 +14,26 @@
 4) Output:	- PILA_results.dta
 *************************************************************************
 *************************************************************************/	
-
+clear all
 
 ****************************************************************************
 *		Global directory, parameters and assumptions:
 ****************************************************************************
 
-if "`c(hostname)'" == "SM201439"{
-	global pc "C:"
-}
+if "`c(hostname)'" == "SM201439" global pc "C:\Proyectos"
+else global pc "\\sm093119\Proyectos"
 
+if inlist("`c(username)'", "Pablo Uribe", "pu42") {
+    global root	"~\Documents\GitHub\pensions"
+}
 else {
-	global pc "\\sm093119"
+    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
 }
 
-global data 		"${pc}\Proyectos\Banrep research\Pensions\Data"
-global tables 		"${pc}\Proyectos\Banrep research\Pensions\Tables"
-global graphs 		"${pc}\Proyectos\Banrep research\Pensions\Graphs"
-global data_master 	"${pc}\Proyectos\PILA master"
-global logs 		"${pc}\Proyectos\Banrep research\Pensions\Logs"
+global data   "${pc}\Proyectos\Banrep research\Pensions\Data"
+global logs   "${logs}\Logs"
+global tables "${root}\Output"
+global graphs "${root}\Graphs"
 
 global first_cohorts M50 F55
 global second_cohorts M54 F59
@@ -41,11 +42,11 @@ global outcomes codigo_pension colpensiones pila_salario_r pila_salario_r_0
 
 capture log close
 
-log	using "$logs\PILA estimations.smcl", replace
+log	using "${logs}\PILA estimations.smcl", replace
 
 
 ****************************************************************************
-**# 		Estimations
+**# 		1. Estimations
 ****************************************************************************
 
 local replace replace
@@ -111,8 +112,8 @@ forval year = 2009/2020 { // Loop through all years
 					rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & 	///
 					fecha_pila == ym(`year',`month'), vce(cluster std_weeks)
 
-				mat beta = e(tau_bc)			// Store robust beta
-				mat vari = e(se_tau_rb) ^ 2		// Store robust SE
+                    mat beta = e(tau_bc)			// Store robust beta
+                    mat vari = e(se_tau_rb) ^ 2		// Store robust SE
 
 				* Save estimation results in dataset
 				regsave using "${tables}/PILA_results.dta", `replace' 			///
@@ -136,8 +137,8 @@ forval year = 2009/2020 { // Loop through all years
 				rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & 		///
 				fecha_pila == ym(`year',`month'), vce(cluster std_weeks)
 
-			mat beta = e(tau_bc)				// Store robust beta
-			mat vari = e(se_tau_rb) ^ 2			// Store robust SE
+                mat beta = e(tau_bc)				// Store robust beta
+                mat vari = e(se_tau_rb) ^ 2			// Store robust SE
 
 			* Save estimation results in dataset
 			regsave using "${tables}/PILA_results.dta", append coefmat(beta) 	///
@@ -147,147 +148,5 @@ forval year = 2009/2020 { // Loop through all years
 		}
 	}
 }
-
-log close
-
-/* Risk dummies. There are 5 categories of risk with the following percentages:
-
-		1. 0.522%
-		2. 1.044%
-		3. 2.436%
-		4. 4.350%
-		5. 6.960%
-	
-	Since rates are not precise in PILA, dummies are created to allow little
-	deviations from these percentages, in order to capture the relevant risk
-	category.
-
-
-gen riesgo_na = (mi(tasa_riesgop))
-gen riesgo_1 = (inrange(tasa_riesgop,0.002,0.007))
-gen riesgo_2 = (inrange(tasa_riesgop,0.008,0.015))
-gen riesgo_3 = (inrange(tasa_riesgop,0.020,0.030))
-gen riesgo_4 = (inrange(tasa_riesgop,0.039,0.048))
-gen riesgo_5 = (inrange(tasa_riesgop,0.064,0.075))
-
-* Diagnostic
-count if tasa_riesgop > 0.071
-
-
-gen pension_tiempo = (pension == 1 & ((inrange(age,60,61) & sexomode == 1) | (inrange(age,55,56) & sexomode == 0)))
-
-compress
-
-******************
-** Sample creation
-
-** Sample: Individuals 1 year after retirement (whole year they have retirement age)
-preserve
-
-keep if (age == 60 & sexomode == 1) | (age == 55 & sexomode == 0)
-
-
-* Formality dummies
-
-tempvar cotiza
-gen `cotiza' = (pila_dependientes == 1 | pila_independientes == 1)
-
-tempvar nro_meses
-gegen `nro_meses' = sum(`cotiza'), by(personabasicaid)
-
-gen formalidad_3mes = (`nro_meses' >= 3)
-gen formalidad_6mes = (`nro_meses' >= 6)
-
-
-collapse (firstnm) sexomode fechantomode age poblacion* corte fechaweek corte_week std_weeks (sum) sal_dias_cot (max) riesgo* pension* pila_dependientes pila_independientes formalidad_* (mean) pila_salario_mes_r, by(personabasicaid)
-
-tempfile oneyear
-save `oneyear', replace
-
-restore
-
-
-** Sample: Individuals 2 years after retirement
-preserve
-
-keep if (inrange(age,60,61) & sexomode == 1) | (inrange(age,55,56) & sexomode == 0)
-
-
-* Formality dummies
-
-tempvar cotiza
-gen `cotiza' = (pila_dependientes == 1 | pila_independientes == 1)
-
-tempvar nro_meses
-gegen `nro_meses' = sum(`cotiza'), by(personabasicaid)
-
-gen formalidad_3mes = (`nro_meses' >= 3)
-gen formalidad_6mes = (`nro_meses' >= 6)
-
-
-collapse (firstnm) sexomode fechantomode age poblacion* corte fechaweek corte_week std_weeks (sum) sal_dias_cot (max) riesgo* pension* pila_dependientes pila_independientes formalidad_* (mean) pila_salario_mes_r, by(personabasicaid)
-
-tempfile twoyears
-save `twoyears', replace
-
-restore
-
-
-** Sample: Individuals 3 years after retirement
-preserve
-
-keep if (inrange(age,60,62) & sexomode == 1) | (inrange(age,55,57) & sexomode == 0)
-
-
-* Formality dummies
-
-tempvar cotiza
-gen `cotiza' = (pila_dependientes == 1 | pila_independientes == 1)
-
-tempvar nro_meses
-gegen `nro_meses' = sum(`cotiza'), by(personabasicaid)
-
-gen formalidad_3mes = (`nro_meses' >= 3)
-gen formalidad_6mes = (`nro_meses' >= 6)
-
-
-collapse (firstnm) sexomode fechantomode age poblacion* corte fechaweek corte_week std_weeks (sum) sal_dias_cot (max) riesgo* pension* pila_dependientes pila_independientes formalidad_* (mean) pila_salario_mes_r, by(personabasicaid)
-
-tempfile threeyears
-save `threeyears', replace
-
-restore
-
-
-** Sample: Individuals 5 years after retirement
-
-keep if (inrange(age,60,64) & sexomode == 1) | (inrange(age,55,59) & sexomode == 0)
-
-
-* Formality dummies
-
-tempvar cotiza
-gen `cotiza' = (pila_dependientes == 1 | pila_independientes == 1)
-
-tempvar nro_meses
-gegen `nro_meses' = sum(`cotiza'), by(personabasicaid)
-
-gen formalidad_3mes = (`nro_meses' >= 3)
-gen formalidad_6mes = (`nro_meses' >= 6)
-
-
-collapse (firstnm) sexomode fechantomode age poblacion* corte fechaweek corte_week std_weeks (sum) sal_dias_cot (max) riesgo* pension* pila_dependientes pila_independientes formalidad_* (mean) pila_salario_mes_r, by(personabasicaid)
-
-append using `threeyears' `twoyears' `oneyear', gen(samples_PILA)
-
-label drop _append
-
-label define _append 0 "Five years" 1 "Three years" 2 "Two years" 3 "One year", replace
-label val samples_PILA _append
-
-compress
-
-save "$data\Estimation_samples_PILA.dta", replace
-
 
 log close

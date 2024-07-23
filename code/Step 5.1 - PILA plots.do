@@ -1,9 +1,41 @@
+/*************************************************************************
+ *************************************************************************			       	
+				PILA results plots
+			 
+1) Created by: Pablo Uribe
+			   DIME - World Bank
+			   puribebotero@worldbank.org
+				
+2) Date: May 21, 2024
 
-global main "C:\Users\Pablo Uribe\Documents\GitHub\pensions"
-global figures "${main}\Graphs"
-global tables "${main}\Results"
+3) Objective: Plot the labor market results
+
+4) Output:	- `variable'_`cohort'.png
+*************************************************************************
+*************************************************************************/	
+clear all
+
+****************************************************************************
+*		Global directory, parameters and assumptions:
+****************************************************************************
+
+if inlist("`c(username)'", "Pablo Uribe", "pu42") {
+    global root	"~\Documents\GitHub\pensions"
+}
+else {
+    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
+}
+
+global logs    "${root}\Logs"
+global tables  "${root}\Output"
+global figures "${root}\Graphs"
 
 set graphics off
+
+
+****************************************************************************
+**#                 1. Plot results
+****************************************************************************
 
 use "${tables}\PILA_results.dta", clear
 
@@ -11,7 +43,10 @@ gen date = ym(year, month)
 format date %tm
 
 encode outcome, gen(en_outcome)
-label def labout 1 "Contributes to a pension fund" 2 "Contributes to Colpensiones" 3 "Real monthly wage (missings)" 4 "Real monthly wage (zeros)"
+label def labout 1 "Contributes to a pension fund"                  ///
+2 "Contributes to Colpensiones" 3 "Real monthly wage (missings)"    ///
+4 "Real monthly wage (zeros)"
+
 label val en_outcome labout
 
 levelsof outcome, local(outcomes)

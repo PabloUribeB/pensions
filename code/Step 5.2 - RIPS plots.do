@@ -1,11 +1,43 @@
+/*************************************************************************
+ *************************************************************************			       	
+				RIPS results plots
+			 
+1) Created by: Pablo Uribe
+			   DIME - World Bank
+			   puribebotero@worldbank.org
+				
+2) Date: May 21, 2024
 
-global main "C:\Users\Pablo Uribe\Documents\GitHub\pensions"
-global figures "${main}\Graphs"
-global tables "${main}\Results"
+3) Objective: Plot the health results
+
+4) Output:	- `variable'_`cohort'_`bw'_age.png
+*************************************************************************
+*************************************************************************/	
+clear all
+
+****************************************************************************
+*		Global directory, parameters and assumptions:
+****************************************************************************
+
+if inlist("`c(username)'", "Pablo Uribe", "pu42") {
+    global root	"~\Documents\GitHub\pensions"
+}
+else {
+    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
+}
+
+global logs    "${root}\Logs"
+global tables  "${root}\Output"
+global figures "${root}\Graphs"
 
 global cohorts M50 M54 F55 F59
 
 set graphics off
+
+
+****************************************************************************
+**#                 1. Plot results
+****************************************************************************
 
 use "${tables}\RIPS_results.dta", clear
 
@@ -17,6 +49,7 @@ label def labout 1 "Cardiovascular" 2 "Chronic disease" 					///
 11 "Number of procedures" 12 "Number of services" 13 "Number of ER visits" 	///
 14 "Multi-morbidity index" 15 "Probability of procedures" 					///
 16 "Probability of health service" 17 "Probability of ER visit"
+
 label val en_outcome labout
 
 gen coef_plus = coef + control
