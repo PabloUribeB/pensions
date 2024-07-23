@@ -1,0 +1,468 @@
+* 00000009
+*! version 1.0.0
+* Do not erase or edit this file
+* It is used by Stata to track the ado and help
+* files you have installed.
+
+S http://fmwww.bc.edu/repec/bocode/l
+N labvars.pkg
+D 23 Jul 2024
+U 1
+d 'LABVARS': module to attach a list of labels to varlist
+d 
+d    labvars attaches a list of labels to varlist. If no labels are
+d specified, existing variable labels are removed. If fewer labels
+d than variables are specified, the last label will be used as
+d variable label for each additional variable.
+d 
+d KW: data management
+d KW: variables
+d KW: labels
+d 
+d Requires: Stata version 9.2
+d 
+d Distribution-Date: 20110608
+d 
+d Author: Daniel Klein, University of Bamberg
+d Support: email daniel1.klein@@stud.uni-bamberg.de
+d 
+f l\labvars.ado
+f l\labvars.hlp
+e
+S http://fmwww.bc.edu/repec/bocode/m
+N matsave.pkg
+D 23 Jul 2024
+U 2
+d 'MATSAVE': module to save and load matrices
+d 
+d matsave saves a matrix from memory to disk as a Stata dataset
+d (matrix.dta). matload loads a matrix that has been saved with
+d matsave. matsave and matload are based on Stata commands svmat
+d and mkmat.
+d 
+d KW: matrices
+d KW: save
+d KW: load
+d 
+d Requires: Stata version 7.0
+d 
+d 
+d Author: Marc-Andreas Muendler,  University of California, San Diego
+d Support: email  muendler@@ucsd.edu
+d 
+d Distribution-Date: 20050322
+f m\matload.ado
+f m\matload.hlp
+f m\matsave.ado
+f m\matsave.hlp
+e
+S http://fmwww.bc.edu/repec/bocode/c
+N coefplot.pkg
+D 23 Jul 2024
+U 3
+d 'COEFPLOT': module to plot regression coefficients and other results
+d 
+d   coefplot plots results from estimation commands or Stata
+d matrices. Results from multiple models or matrices can be
+d combined in a single graph. The default behavior of coefplot is
+d to draw markers for coefficients and horizontal spikes for
+d confidence intervals. However, coefplot can also produce various
+d other types of graphs.
+d 
+d KW: graphics
+d KW: coefficients
+d KW: estimation
+d 
+d Requires: Stata version 11
+d 
+d Distribution-Date: 20230225
+d 
+d Author: Ben Jann, University of Bern
+d Support: email jann@@soz.unibe.ch
+d 
+f c\coefplot.ado
+f c\coefplot.sthlp
+e
+S http://fmwww.bc.edu/repec/bocode/r
+N rdrobust.pkg
+D 23 Jul 2024
+U 4
+d 'RDROBUST': module to provide robust data-driven inference in the regression-discontinuity design
+d 
+d   rdrobust implements local polynomial Regression Discontinuity
+d (RD) point estimators with     robust bias-corrected
+d confidence intervals and inference procedures developed in
+d Calonico,    Cattaneo and Titiunik (Econometrica, 2014),
+d Calonico, Cattaneo and Farrell (Stata Journal, 2017), and
+d Calonico,    Cattaneo, Farrell and Titiunik (JASA, 2018).  It
+d also computes alternative estimation and   inference
+d procedures available in the literature.  Companion commands
+d are: rdbwselect for data-driven bandwidth selection, and rdplot
+d for      data-driven RD plots (see Calonico, Cattaneo and
+d Titiunik (JASA, 2015) for details).
+d 
+d KW: regression discontinuity
+d KW: robust inference
+d 
+d Requires: Stata version 13.1
+d 
+d Distribution-Date: 20220930
+d 
+d Author: Sebastian Calonico, Department of Economics, University of Miami
+d Support: email scalonico@@bus.miami.edu
+d 
+d Author: Matias D. Cattaneo, Department of Operations Research and Financial Engineering, Princeton University
+d Support: email cattaneo@@princeton.edu
+d 
+d Author:  Max H. Farrell, Booth School of Business, University of Chicago
+d Support: email max.farrell@@chicagobooth.edu
+d 
+d Author: Rocio Titiunik, Department of Political Science, University of Michigan
+d Support: email  titiunik@@umich.edu
+d 
+f r\rdrobust.ado
+f r\rdrobust.sthlp
+f r\rdbwselect.ado
+f r\rdbwselect.sthlp
+f r\rdplot.ado
+f r\rdplot.sthlp
+f r\rdbwselect_2014.ado
+f r\rdbwselect_2014.sthlp
+f r\rdbwselect_2014_kconst.ado
+f r\rdrobust_bw.mo
+f r\rdrobust_collapse.mo
+f r\rdrobust_groupid.mo
+f r\rdrobust_kweight.mo
+f r\rdrobust_median.mo
+f r\rdrobust_res.mo
+f r\rdrobust_vce.mo
+e
+S http://fmwww.bc.edu/repec/bocode/r
+N rddensity.pkg
+D 23 Jul 2024
+U 5
+d 'RDDENSITY': module to perform  Manipulation Testing Using Local Polynomial Density Estimation
+d 
+d   rddensity implements manipulation testing procedures using the
+d local polynomial density estimators proposed       in Cattaneo,
+d Jansson and Ma (2020), and implements graphical procedures with
+d valid confidence bands using       the results in Cattaneo,
+d Jansson and Ma (2021).  In addition, the command provides
+d complementary        manipulation testing based on finite sample
+d exact binomial testing following the results in Cattaneo,
+d Frandsen and Titiunik (2015) and Cattaneo, Frandsen and
+d Vazquez-Bare (2017). For an introduction to       manipulation
+d testing see McCrary (2008).
+d 
+d KW: manipulation
+d KW: local polynomial density
+d 
+d Requires: Stata version 14 and lpdensity from SSC (q.v.)
+d 
+d Distribution-Date: 20220708
+d 
+d Author: Matias D. Cattaneo, Department of Operations Research and Financial Engineering, Princeton University
+d Support: email cattaneo@@princeton.edu
+d 
+d Author: Michael Jansson, Department of Economics, UC-Berkeley
+d Support: email mjansson@@econ.berkeley.edu
+d 
+d Author:  Xinwei Ma, Department of Economics, UCSD
+d Support: email x1ma@@ucsd.edu
+d 
+f r\rdbwdensity.ado
+f r\rdbwdensity.sthlp
+f r\rddensity.ado
+f r\rddensity.sthlp
+f r\rddensity_fv.mo
+f r\rddensity_h.mo
+f r\rddensity_quantile.mo
+f r\rddensity_rep.mo
+f r\rddensity_unique.mo
+e
+S http://fmwww.bc.edu/repec/bocode/s
+N schemepack.pkg
+D 23 Jul 2024
+U 6
+d 'SCHEMEPACK': module providing ready-to-use graph schemes
+d 
+d  schemepack releases a suite of graph schemes as part of The
+d Stata Guide (https://medium.com/the-stata-guide) series. See the
+d help file (help schemepack) for details after installation.
+d 
+d KW: Stata
+d KW: scheme
+d KW: graphs
+d 
+d Requires: Stata version 15
+d 
+d Distribution-Date: 20221111
+d 
+d Author: Asjad Naqvi, WU Vienna
+d Support: email asjadnaqvi@@gmail.com
+d 
+f s\schemepack.sthlp
+f s\scheme-black_brbg.scheme
+f s\scheme-black_cividis.scheme
+f s\scheme-black_hue.scheme
+f s\scheme-black_jet.scheme
+f s\scheme-black_piyg.scheme
+f s\scheme-black_ptol.scheme
+f s\scheme-black_set3.scheme
+f s\scheme-black_tableau.scheme
+f s\scheme-black_viridis.scheme
+f s\scheme-black_w3d.scheme
+f s\scheme-cblind1.scheme
+f s\scheme-gg_brbg.scheme
+f s\scheme-gg_cividis.scheme
+f s\scheme-gg_hue.scheme
+f s\scheme-gg_jet.scheme
+f s\scheme-gg_piyg.scheme
+f s\scheme-gg_ptol.scheme
+f s\scheme-gg_set3.scheme
+f s\scheme-gg_tableau.scheme
+f s\scheme-gg_viridis.scheme
+f s\scheme-gg_w3d.scheme
+f s\scheme-neon.scheme
+f s\scheme-rainbow.scheme
+f s\scheme-swift_red.scheme
+f s\scheme-tab1.scheme
+f s\scheme-tab2.scheme
+f s\scheme-tab3.scheme
+f s\scheme-ukraine.scheme
+f s\scheme-white_brbg.scheme
+f s\scheme-white_cividis.scheme
+f s\scheme-white_hue.scheme
+f s\scheme-white_jet.scheme
+f s\scheme-white_piyg.scheme
+f s\scheme-white_ptol.scheme
+f s\scheme-white_set3.scheme
+f s\scheme-white_tableau.scheme
+f s\scheme-white_viridis.scheme
+f s\scheme-white_w3d.scheme
+e
+S http://fmwww.bc.edu/repec/bocode/e
+N ereplace.pkg
+D 23 Jul 2024
+U 7
+d 'EREPLACE': module to extend egen and egenmore to permit replacing
+d 
+d    ereplace extends the popular egen and egenmore (if installed)
+d modules to permit replacing. ereplace replaces varname of the
+d optionally specified storage type [type] equal to
+d fcn(arguments).  Depending on fcn(), arguments refers to an
+d expression, a varlist, a numlist, or an empty    string. The
+d options are similarly function dependent.
+d 
+d KW: data management
+d KW: egen
+d KW: replace
+d 
+d Requires: Stata version 6
+d 
+d Distribution-Date: 20200511
+d 
+d Author: Nicholas J. Cox, Durham University
+d Support: email N.J.Cox@@durham.ac.uk
+d 
+d Author: Chris Larkin, The Behavioural Insights Team
+d Support: email chris.larkin@@bi.team
+d 
+f e\ereplace.ado
+f e\ereplace.sthlp
+e
+S http://fmwww.bc.edu/repec/bocode/e
+N egenmore.pkg
+D 23 Jul 2024
+U 8
+d 'EGENMORE': modules to extend the generate function
+d 
+d  This package includes various -egen- functions. For full
+d details, please read the help file (ssc type egenmore.sthlp).
+d Some of these routines are updates of those published in STB-50.
+d _gfilter, _ggroup2, _gegroup and _gcorr require Stata 7.
+d _gminutes, _grepeat and _gseconds require Stata 8.  _gcorr and
+d _gnoccur were written by Nick Winter
+d (nwinter@policystudies.com). _grsum2 was written by Steven
+d Stillman (s.stillman@verizon.net). _gdhms, _gelap, _gelap2,
+d _ghms, _gtod and _gtruncdig were written by Kit Baum
+d (baum@bc.edu).
+d 
+d KW: egen
+d KW: grouping
+d KW: graphing
+d KW: strings
+d KW: dates
+d KW: first
+d KW: last
+d KW: random
+d KW: row
+d 
+d Requires: Stata version 6.0 (7.0 for _gfilter7, _ggroup2, _gegroup, _gsieve, _gnoccur; 8.2 for _gcorr, _grepeat, _gminutes, _gseconds, _gfilter, _gaxis, _gdensity, _gxtile, _gtotal0, _gmixnorm, _gw
+d 
+d 
+d Author: Nicholas J. Cox, University of Durham
+d Support: email N.J.Cox@@durham.ac.uk
+d 
+d Distribution-Date: 20190124
+d 
+f e\egenmore.sthlp
+f _\_gclsst.ado
+f _\_gnmiss.ado
+f _\_ggmean.ado
+f _\_ghmean.ado
+f _\_grall.ado
+f _\_grany.ado
+f _\_grcount.ado
+f _\_grndsub.ado
+f _\_grndint.ado
+f _\_gfilter.ado
+f _\_gifirst.ado
+f _\_gilast.ado
+f _\_gncyear.ado
+f _\_ghmm.ado
+f _\_ghmmss.ado
+f _\_gincss.ado
+f _\_gfirst.ado
+f _\_glastnm.ado
+f _\_gnss.ado
+f _\_gbom.ado
+f _\_gbomd.ado
+f _\_geom.ado
+f _\_geomd.ado
+f _\_gnwords.ado
+f _\_gwordof.ado
+f _\_gnvals.ado
+f _\_gridit.ado
+f _\_gsemean.ado
+f _\_gmsub.ado
+f _\_gston.ado
+f _\_gntos.ado
+f _\_gewma.ado
+f _\_grecord.ado
+f _\_gbase.ado
+f _\_gdecimal.ado
+f _\_ggroup2.ado
+f _\_gsumoth.ado
+f _\_gegroup.ado
+f _\_gcorr.ado
+f _\_grsum2.ado
+f _\_gsieve.ado
+f _\_gdhms.ado
+f _\_ghms.ado
+f _\_gtod.ado
+f _\_gelap.ado
+f _\_gelap2.ado
+f _\_gnoccur.ado
+f _\_gwtfreq.ado
+f _\_gvar.ado
+f _\_gminutes.ado
+f _\_gseconds.ado
+f _\_grepeat.ado
+f _\_gaxis.ado
+f _\_gdensity.ado
+f _\_gxtile.ado
+f _\_gtotal0.ado
+f _\_gmixnorm.ado
+f _\_gadjl.ado
+f _\_gadju.ado
+f _\_gdayofyear.ado
+f _\_gfoy.ado
+f _\_goutside.ado
+f _\_gmlabvpos.ado
+f _\_giso3166.ado
+f _\_growmedian.ado
+f _\_gwpctile.ado
+f _\_gd2.ado
+f _\_grownvals.ado
+f _\_growsvals.ado
+f _\_gtruncdig.ado
+e
+S http://fmwww.bc.edu/repec/bocode/g
+N gtools.pkg
+D 23 Jul 2024
+U 9
+d 'GTOOLS': module to provide a fast implementation of common group commands
+d 
+d    gtools is a Stata package that provides a fast implementation
+d of common group commands like    collapse, egen, isid, levelsof,
+d contract, distinct, and so on using C plugins for a massive
+d speed improvement.
+d 
+d KW:  data management
+d KW: collapse
+d KW: egen
+d KW: isid
+d KW: levelsof
+d KW: contract
+d KW: distinct
+d KW: plugins
+d KW: hash
+d 
+d Requires: Stata version 13.1
+d 
+d Distribution-Date: 20221205
+d 
+d Author: Mauricio Caceres Bravo
+d Support: email mauricio.caceres.bravo@@gmail.com
+d 
+f g\gcollapse.ado
+f g\gcollapse.sthlp
+f g\gcontract.ado
+f g\gcontract.sthlp
+f g\gdistinct.ado
+f g\gdistinct.sthlp
+f g\gduplicates.ado
+f g\gduplicates.sthlp
+f g\gegen.ado
+f g\gegen.sthlp
+f g\gglm.ado
+f g\gglm.sthlp
+f g\gisid.ado
+f g\gisid.sthlp
+f g\givregress.ado
+f g\givregress.sthlp
+f g\glevelsof.ado
+f g\glevelsof.sthlp
+f g\gpoisson.ado
+f g\gquantiles.ado
+f g\gquantiles.sthlp
+f g\greg.ado
+f g\greg.sthlp
+f g\gregress.ado
+f g\gregress.sthlp
+f g\greshape.ado
+f g\greshape.sthlp
+f g\gstats.ado
+f g\gstats.sthlp
+f g\gstats_hdfe.sthlp
+f g\gstats_moving.sthlp
+f g\gstats_range.sthlp
+f g\gstats_residualize.sthlp
+f g\gstats_sum.sthlp
+f g\gstats_summarize.sthlp
+f g\gstats_tab.sthlp
+f g\gstats_transform.sthlp
+f g\gstats_winsor.sthlp
+f g\gtools.ado
+f g\gtools.sthlp
+f g\gtools_macosx_v2.plugin
+f g\gtools_macosx_v3.plugin
+f g\gtools_unix_v2.plugin
+f g\gtools_unix_v3.plugin
+f g\gtools_windows_v2.plugin
+f g\gtools_windows_v3.plugin
+f g\gtop.ado
+f g\gtop.sthlp
+f g\gtoplevelsof.ado
+f g\gtoplevelsof.sthlp
+f g\gunique.ado
+f g\gunique.sthlp
+f _\_gtools_internal.ado
+f _\_gtools_internal.mata
+f f\fasterxtile.ado
+f f\fasterxtile.sthlp
+f h\hashsort.ado
+f h\hashsort.sthlp
+f l\lgtools.mlib
+e
