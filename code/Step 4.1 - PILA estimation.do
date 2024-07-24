@@ -31,7 +31,7 @@ else {
 }
 
 global data   "${pc}\Proyectos\Banrep research\Pensions\Data"
-global logs   "${logs}\Logs"
+global logs   "${root}\Logs"
 global tables "${root}\Output"
 global graphs "${root}\Graphs"
 
