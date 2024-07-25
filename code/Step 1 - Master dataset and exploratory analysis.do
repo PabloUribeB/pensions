@@ -29,10 +29,17 @@ use "${data_master}\PILA_personabasicaid_fechanto_genero.dta", clear
 * Women born between 1953 y 1957 (-2556 -731) Población 3 Corte en -1615
 * Women born between 1957 y 1961 (-1095 730) Población 4 Corte en -1
 
-gen poblacion_M50 = 1 if sexomode == 1 & inrange(fechantomode, -4383, -2557)
-gen poblacion_M54 = 1 if sexomode == 1 & inrange(fechantomode, -2922, -1096)
-gen poblacion_F55 = 1 if sexomode == 0 & inrange(fechantomode, -2556, -731)
-gen poblacion_F59 = 1 if sexomode == 0 & inrange(fechantomode, -1095, 730)
+gen poblacion_M50 = 1 if sexomode == 1 & inrange(fechantomode,      ///
+                         date("01/01/1948", "MDY"), date("12/31/1952", "MDY"))
+                         
+gen poblacion_M54 = 1 if sexomode == 1 & inrange(fechantomode,      ///
+                         date("01/01/1952", "MDY"), date("12/31/1956", "MDY"))
+                         
+gen poblacion_F55 = 1 if sexomode == 0 & inrange(fechantomode,      ///
+                         date("01/01/1953", "MDY"), date("12/31/1957", "MDY"))
+                         
+gen poblacion_F59 = 1 if sexomode == 0 & inrange(fechantomode,      ///
+                         date("01/01/1957", "MDY"), date("12/31/1961", "MDY"))
 
 keep if !mi(poblacion_M50) | !mi(poblacion_F55)
 
@@ -55,10 +62,10 @@ replace std_days = datediff(-1615,fechantomode,"d") if poblacion == "F55"
 replace std_days = datediff(-275,fechantomode,"d") if poblacion == "F59"
 */
 
-gen     corte = -3441 if poblacion_M50 == 1
-replace corte = -1827 if poblacion_M54 == 1
-replace corte = -1615 if poblacion_F55 == 1
-replace corte = -1    if poblacion_F59 == 1
+gen     corte = date("07/31/1950", "MDY") if poblacion_M50 == 1
+replace corte = date("12/31/1954", "MDY") if poblacion_M54 == 1
+replace corte = date("07/31/1955", "MDY") if poblacion_F55 == 1
+replace corte = date("12/31/1959", "MDY") if poblacion_F59 == 1
 
 gen fechaweek  = wofd(fechantomode)
 format %td corte
