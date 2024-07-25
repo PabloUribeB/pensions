@@ -19,11 +19,6 @@ clear all
 ****************************************************************************
 * Globals
 ****************************************************************************
-global root "C:\Users\\`c(username)'\Documents\GitHub\pensions"
-global data "C:\Users\\`c(username)'\Dropbox\Pensions\Data"
-
-global tables "${root}\Tables"
-global graphs "${root}\Graphs"
 
 global covars sex ill mdcar mdorg mdneu mdtra mdcon mdjoi mddia mdbur mdaid ///
 mdche mdint lit empstat pension atleast_highschool wall garbage elec sewer  ///
@@ -63,7 +58,7 @@ local plot_options = "bylabels(, wrap(15)) "                                  //
 **#         1. Import data, create sample variables
 ****************************************************************************
 
-use "${data}\processed_census.dta" , clear
+use "${ext_data}\processed_census.dta" , clear
 
 gen     corte = -3441 if poblacion_M50 == 1
 *replace corte = -1827 if poblacion_M54 == 1

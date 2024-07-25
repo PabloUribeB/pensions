@@ -20,25 +20,6 @@ clear all
 * Globals
 ****************************************************************************
 
-if "`c(hostname)'" == "SM201439" global pc "C:"
-else global pc "\\sm093119"
-
-global data "${pc}\Proyectos\Banrep research\Pensions\Data"
-
-if inlist("`c(username)'", "Pablo Uribe", "pu42") {
-    
-    global root	"~\Documents\GitHub\pensions"
-    
-}
-else {
-    
-    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
-    
-}
-
-global tables "${root}\Tables"
-global graphs "${root}\Graphs"
-
 set scheme white_tableau
 
 ****************************************************************************

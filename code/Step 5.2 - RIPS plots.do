@@ -19,17 +19,6 @@ clear all
 *		Global directory, parameters and assumptions:
 ****************************************************************************
 
-if inlist("`c(username)'", "Pablo Uribe", "pu42") {
-    global root	"~\Documents\GitHub\pensions"
-}
-else {
-    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
-}
-
-global logs    "${root}\Logs"
-global tables  "${root}\Output"
-global figures "${root}\Graphs"
-
 global cohorts M50 M54 F55 F59
 
 set graphics off
@@ -39,7 +28,7 @@ set graphics off
 **#                 1. Plot results
 ****************************************************************************
 
-use "${tables}\RIPS_results.dta", clear
+use "${output}\RIPS_results.dta", clear
 
 encode outcome, gen(en_outcome)
 label def labout 1 "Cardiovascular" 2 "Chronic disease" 					///
@@ -88,7 +77,7 @@ foreach variable in `outcomes'{
 			title(`vallab', size(medium)) 										///
 			subtitle(Cohort: `cohort'; Bandwidth: `bw' weeks, size(medsmall))
 			
-			graph export "${figures}\age\\`variable'_`cohort'_`bw'_age.png", replace
+			graph export "${graphs}\age\\`variable'_`cohort'_`bw'_age.png", replace
 		}
 	}
 	

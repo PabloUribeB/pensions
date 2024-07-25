@@ -20,21 +20,6 @@ clear all
 *		Global directory, parameters and assumptions:
 ****************************************************************************
 
-if "`c(hostname)'" == "SM201439" global pc "C:\Proyectos"
-else global pc "\\sm093119\Proyectos"
-
-if inlist("`c(username)'", "Pablo Uribe", "pu42") {
-    global root	"~\Documents\GitHub\pensions"
-}
-else {
-    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
-}
-
-global data   "${pc}\Proyectos\Banrep research\Pensions\Data"
-global logs   "${root}\Logs"
-global tables "${root}\Output"
-global graphs "${root}\Graphs"
-
 global cohorts M50 F55 M54 F59
 
 global extensive service consul proce urg hosp cons_psico estres 		///
@@ -100,7 +85,7 @@ foreach cohort in $cohorts{
 				local N_right = e(N_b_r)
 				
 				* Save estimation results in dataset
-				regsave using "${tables}/RIPS_results.dta", `replace' 			///
+				regsave using "${output}/RIPS_results.dta", `replace' 			///
 				coefmat(beta) varmat(vari) ci level(95) 						///
 				addlabel(outcome, `outcome', cohort, `cohort', age, `age', 		///
 				bw, `bw', control, `control_mean', N_right, `N_right', N_left, `N_left')
@@ -222,7 +207,8 @@ foreach cohort in $cohorts{
 			note("Rdrobust coefficient: `B'. Control's mean: `control_mean'; Effective number of observations: `N'."))
 			
 			
-			graph export "${graphs}\\`outcome'_`cohort'_`bw'.png", replace width(1920) height(1080)
+			graph export "${graphs}\\`outcome'_`cohort'_`bw'.png", replace  ///
+                width(1920) height(1080)
 			
 			local replace append
 		}

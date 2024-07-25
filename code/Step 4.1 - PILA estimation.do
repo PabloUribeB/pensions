@@ -20,21 +20,6 @@ clear all
 *		Global directory, parameters and assumptions:
 ****************************************************************************
 
-if "`c(hostname)'" == "SM201439" global pc "C:\Proyectos"
-else global pc "\\sm093119\Proyectos"
-
-if inlist("`c(username)'", "Pablo Uribe", "pu42") {
-    global root	"~\Documents\GitHub\pensions"
-}
-else {
-    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
-}
-
-global data   "${pc}\Proyectos\Banrep research\Pensions\Data"
-global logs   "${root}\Logs"
-global tables "${root}\Output"
-global graphs "${root}\Graphs"
-
 global first_cohorts M50 F55
 global second_cohorts M54 F59
 global outcomes codigo_pension colpensiones pila_salario_r pila_salario_r_0
@@ -52,7 +37,7 @@ log	using "${logs}\PILA estimations.smcl", replace
 local replace replace
 forval year = 2009/2020 { // Loop through all years
 	
-	use if year == `year' using "$data\mensual_PILA", clear // Only use that year (faster)
+	use if year == `year' using "${data}\mensual_PILA", clear // Only use that year (faster)
 
 	/* If age is needed to impose restrictions
 	tempvar dia_pila
@@ -116,9 +101,10 @@ forval year = 2009/2020 { // Loop through all years
                     mat vari = e(se_tau_rb) ^ 2		// Store robust SE
 
 				* Save estimation results in dataset
-				regsave using "${tables}/PILA_results.dta", `replace' 			///
+				regsave using "${output}/PILA_results.dta", `replace' 			///
 				coefmat(beta) varmat(vari) ci level(95) 						///
-				addlabel(outcome, `outcome', cohort, `cohort', year, `year', month, `month')
+				addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
+                month, `month')
 				
 				local replace append
 				}
@@ -141,7 +127,7 @@ forval year = 2009/2020 { // Loop through all years
                 mat vari = e(se_tau_rb) ^ 2			// Store robust SE
 
 			* Save estimation results in dataset
-			regsave using "${tables}/PILA_results.dta", append coefmat(beta) 	///
+			regsave using "${output}/PILA_results.dta", append coefmat(beta) 	///
 			varmat(vari) ci level(95) addlabel(outcome, `outcome', cohort, 		///
 			`cohort', year, `year', month, `month')
 			}

@@ -19,17 +19,6 @@ clear all
 *		Global directory, parameters and assumptions:
 ****************************************************************************
 
-if inlist("`c(username)'", "Pablo Uribe", "pu42") {
-    global root	"~\Documents\GitHub\pensions"
-}
-else {
-    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
-}
-
-global logs    "${root}\Logs"
-global tables  "${root}\Output"
-global figures "${root}\Graphs"
-
 set graphics off
 
 
@@ -37,7 +26,7 @@ set graphics off
 **#                 1. Plot results
 ****************************************************************************
 
-use "${tables}\PILA_results.dta", clear
+use "${output}\PILA_results.dta", clear
 
 gen date = ym(year, month)
 format date %tm
@@ -74,7 +63,7 @@ foreach variable in `outcomes'{
 		xtitle(Date) ylabel(#10, format(%010.`dec'fc) labs(vsmall)) 		///
 		title(`vallab', size(medium)) subtitle(Cohort: `cohort', size(medsmall))
 		
-		graph export "${figures}\\`variable'_`cohort'.png", replace
+		graph export "${graphs}\\`variable'_`cohort'.png", replace
 		
 	}
 	
@@ -90,7 +79,7 @@ foreach variable in `outcomes'{
 		xtitle(Date) ylabel(#10, format(%010.`dec'fc) labs(vsmall))			///
 		title(`vallab', size(medium)) subtitle(Cohort: `cohort', size(medsmall))
 		
-		graph export "${figures}\\`variable'_`cohort'.png", replace
+		graph export "${graphs}\\`variable'_`cohort'.png", replace
 		
 	}
 	

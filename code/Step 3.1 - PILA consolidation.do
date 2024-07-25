@@ -20,13 +20,6 @@ clear all
 * Globals
 ****************************************************************************
 
-if "`c(hostname)'" == "SM201439" global pc "C:"
-else global pc "\\sm093119"
-
-global logs	"Z:\Christian Posso\_banrep_research\proyectos\pensions\Logs"
-global data "${pc}\Proyectos\Banrep research\Pensions\Data"
-
-
 capture log close
 log	using "${logs}\PILA mensual.smcl", replace
 
@@ -36,7 +29,7 @@ log	using "${logs}\PILA mensual.smcl", replace
 ****************************************************************************
 
 gen delete = 0
-save "$data\mensual_PILA", replace
+save "${data}\mensual_PILA", replace
 global loop "01 02 03 04 05 06 07 08 09 10 11 12"
 forval y = 2009/2020 {
 	
@@ -48,7 +41,7 @@ forval y = 2009/2020 {
 	foreach i of global loop {
 
 		di as err "********* `y'm`i' *********"
-		cd "\\sm134796\D\Originales\PILA\1.Pila mensualizada\PILA mes cotizado"
+		cd "${pila_og}"
 		use "`y'm`i'cBR", clear
 		
 		cap drop year month
@@ -70,16 +63,22 @@ forval y = 2009/2020 {
 		gen dias_cot_salud 		= sal_dias_cot
 		gen tipo_cotizante 		= tipo_cotiz
 		
-		gen pila_independientes = inlist(tipo_cotizante, 2, 3, 16, 41, 42, 59, 57, 66)
+		gen pila_independientes = inlist(tipo_cotizante, 2, 3, 16, 41, 42, ///
+                                  59, 57, 66)
 		
 		gen pila_posgrad_salud 	= (tipo_cotizante == 21)	
-		gen pila_dependientes   = (pila_independientes != 1 & pila_posgrad_salud! = 1)
+		gen pila_dependientes   = (pila_independientes != 1 &       ///
+            pila_posgrad_salud! = 1)
 				
 		foreach var of varlist salario_bas ibc_pens ibc_sal ibc_rprof {
 		    
 			rename `var' `var'_orig
-			bys personabasicaid id: egen 	`var' = max(`var'_orig) if (pila_dependientes == 1)
-			bys personabasicaid id: replace `var' = `var'_orig if (pila_independientes == 1)
+            
+			bys personabasicaid id: egen 	`var' = max(`var'_orig) if  ///
+                (pila_dependientes == 1)
+                
+			bys personabasicaid id: replace `var' = `var'_orig      if  ///
+                (pila_independientes == 1)
 			
 		}
 		
@@ -121,7 +120,8 @@ forval y = 2009/2020 {
 		
 		egen    rowmax 	= rowmax(ibc*)
 		replace rowmax 	= mw if (rowmax >= mw_1 * 0.8 & rowmax < mw)		
-		replace rowmax 	= rowmax / 0.4 if (pila_independientes == 1 & rowmax > mw)
+		replace rowmax 	= rowmax / 0.4 if (pila_independientes == 1 &   ///
+                rowmax > mw)
 		
 		replace salario_bas = mw if (rowmax >= mw_1 * 0.8 & rowmax < mw)
 		
@@ -133,7 +133,7 @@ forval y = 2009/2020 {
 		gen     pila_salario_max = pila_salario
 		
 		*Get the CPI
-		merge m:1 year month using "\\sm037577\D\Proyectos\Banrep research\c_2018_SSO Servicio Social Obligatorio\Project SSO Training\Data\IPC mensual", keep(1 3) nogen
+		merge m:1 year month using "${ipc}\IPC mensual", keep(1 3) nogen
 		
 		*Generate real wages (base 2018m12)
 		global vars pila_salario pila_salario_max arp_cot_obl ibc_rprof 
@@ -157,16 +157,22 @@ forval y = 2009/2020 {
 		* Remove duplicates of contributions with same company
 		gduplicates drop personabasicaid id if pila_dependientes == 1, force
 			
-		* Since people may have more than one contribution each month, sum the wages of each contribution and keep the max of worked days.
+		* Since people may have more than one contribution each month, sum the 
+        * wages of each contribution and keep the max of worked days.
 		foreach var of varlist pila_salario_r {
 			
 			bys personabasicaid: ereplace 	`var'                = total(`var')
-			bys personabasicaid: egen       `var'_dependientes   = total(`var') if (pila_dependientes == 1)
-			bys personabasicaid: egen       `var'_independientes = total(`var') if (pila_independientes == 1)
+            
+			bys personabasicaid: egen       `var'_dependientes   = total(`var') ///
+                if (pila_dependientes == 1)
+                
+			bys personabasicaid: egen       `var'_independientes = total(`var') ///
+                if (pila_independientes == 1)
 			
 		}
 		
-		foreach var of varlist sal_dias_cot pila_dependientes pila_independientes pila_posgrad_salud tasa_riesgop pension{
+		foreach var of varlist sal_dias_cot pila_dependientes       ///
+            pila_independientes pila_posgrad_salud tasa_riesgop pension {
 			
 		  bys personabasicaid: ereplace `var' = max(`var')  
 		  
@@ -181,10 +187,14 @@ forval y = 2009/2020 {
 		
 		tostring ciudad_cod depto_cod, replace
 		
-		replace ciudad_cod = "00" + ciudad_cod if length(ciudad_cod) == 1 & ciudad_cod != "."
-		replace ciudad_cod = "0"  + ciudad_cod if length(ciudad_cod) == 2 & ciudad_cod != "."
+		replace ciudad_cod = "00" + ciudad_cod if length(ciudad_cod) == 1 & ///
+                ciudad_cod != "."
+                
+		replace ciudad_cod = "0"  + ciudad_cod if length(ciudad_cod) == 2 & ///
+                ciudad_cod != "."
 		
-		replace depto_cod  = "0"  + depto_cod  if length(depto_cod) == 1  & depto_cod != "."
+		replace depto_cod  = "0"  + depto_cod  if length(depto_cod) == 1  & ///
+                depto_cod != "."
 		
 		gen pila_cod_mun = depto_cod + ciudad_cod
 		

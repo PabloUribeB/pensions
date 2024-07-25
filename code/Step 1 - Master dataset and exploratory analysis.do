@@ -16,16 +16,6 @@
 *************************************************************************/	
 clear all
 
-****************************************************************************
-* Globals
-****************************************************************************
-
-if "`c(hostname)'" == "SM201439" global pc "C:"
-else global pc "\\sm093119"
-
-global data         "${pc}\Proyectos\Banrep research\Pensions\Data"
-global data_master  "${pc}\Proyectos\PILA master"
-
 
 ****************************************************************************
 **#         1. Import data and subsample relevant observations

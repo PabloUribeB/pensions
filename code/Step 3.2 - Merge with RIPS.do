@@ -16,28 +16,6 @@
 *************************************************************************/	
 clear all
 
-****************************************************************************
-* Globals
-****************************************************************************
-
-if "`c(hostname)'" == "SM201439" global pc "C:\Proyectos"
-else global pc "\\sm093119\Proyectos"
-
-if inlist("`c(username)'", "Pablo Uribe", "pu42") {
-    global root	"~\Documents\GitHub\pensions"
-}
-else {
-    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
-}
-
-global tables    "${root}\Tables"
-global graphs    "${root}\Graphs"
-global data      "${pc}\Banrep research\Pensions\Data"
-global urgencias "${pc}\Data"
-	
-global RIPS "\\sm134796\E\RIPS\Stata"
-global RIPS2 "\\wmedesrv\gamma\rips"
-
 
 ****************************************************************************
 **#         1. Loop through RIPS years
@@ -79,7 +57,8 @@ forvalues year = 2009/2021 {
 			
 			if `year' < 2019 {
 			
-				use personabasicaid `diag' `date' `extra_diag' `causa' `consul' using "${RIPS}\\`base'`year'", clear
+				use personabasicaid `diag' `date' `extra_diag' `causa'  ///
+                    `consul' using "${RIPS}\\`base'`year'", clear
 				
 				gen date = date(substr(`date',1,10),"YMD")
 				format date %td
@@ -111,7 +90,10 @@ forvalues year = 2009/2021 {
 				save "${data}/`base'_`year'", replace
 				
 				forvalues i = 1/`max_i' {
-					use personabasicaid `diag' `date' `extra_diag' `causa' `consul' using "${RIPS2}\\`base'`vari_id'`year'_`i'", clear
+                    
+					use personabasicaid `diag' `date' `extra_diag'      ///
+                        `causa' `consul' using                          ///
+                        "${RIPS2}\\`base'`vari_id'`year'_`i'", clear
 										
 					compress
 					
@@ -131,8 +113,12 @@ forvalues year = 2009/2021 {
 		}
 		
 		else {
+            
 			if "`base'" == "urgencias" {
-				use personabasicaid diag_prin diag_r1 diag_r2 diag_r3 fecha_ingreso dead causa_externa using  "${urgencias}\Master_urgencias_2009_2022", clear
+                
+				use personabasicaid diag_prin diag_r1 diag_r2 diag_r3   ///
+                    fecha_ingreso dead causa_externa using              ///
+                    "${urgencias}\Master_urgencias_2009_2022", clear
 				
 				gen date = date(substr(fecha_ingreso,1,10),"YMD")
 				format date %td
@@ -140,9 +126,13 @@ forvalues year = 2009/2021 {
 			}
 			
 			else {
-				use personabasicaid diag_prin_ingre diag_egre1 diag_egre2 diag_egre3 date dead diag_muerte causa_externa using "${urgencias}\Master_hospitalizaciones_2009_2022", clear
+                
+				use personabasicaid diag_prin_ingre diag_egre1 diag_egre2 ///
+                    diag_egre3 date dead diag_muerte causa_externa using  ///
+                    "${urgencias}\Master_hospitalizaciones_2009_2022", clear
 				
-				rename (diag_egre1 diag_egre2 diag_egre3) (diag_r1 diag_r2 diag_r3)
+				rename (diag_egre1 diag_egre2 diag_egre3)       ///
+                       (diag_r1 diag_r2 diag_r3)
 			}
 			
 			compress
@@ -159,7 +149,8 @@ forvalues year = 2009/2021 {
 		destring personabasicaid, force replace
 		
 		* Aqui haces el merge con tu base master de personabasicaid
-		merge m:1 personabasicaid using "${data}\Master_sample.dta", keep(3) nogen
+		merge m:1 personabasicaid using "${data}\Master_sample.dta",    ///
+              keep(3) nogen
 		
 		cap noi destring causa_externa, replace
 		
@@ -186,7 +177,9 @@ forvalues i = 1/8 {
 	    
 		local service = "urgencias"
 		
-		use personabasicaid diag_prin diag_r1 diag_r2 diag_r3 fecha_ingreso dead causa_externa using "${urgencias}\Master_urgencias_2009_2022", clear
+		use personabasicaid diag_prin diag_r1 diag_r2 diag_r3           ///
+            fecha_ingreso dead causa_externa using                      ///
+            "${urgencias}\Master_urgencias_2009_2022", clear
 	
 		gen date = date(substr(fecha_ingreso,1,10),"YMD")
 		format date %td
@@ -199,7 +192,9 @@ forvalues i = 1/8 {
 	    
 		local service = "Hospitalizacion"
 		
-		use personabasicaid diag_prin_ingre diag_egre1 diag_egre2 diag_egre3 date dead diag_muerte causa_externa using  "${urgencias}\Master_hospitalizaciones_2009_2022", clear
+		use personabasicaid diag_prin_ingre diag_egre1 diag_egre2       ///
+            diag_egre3 date dead diag_muerte causa_externa using        ///
+            "${urgencias}\Master_hospitalizaciones_2009_2022", clear
 		
 		rename (diag_egre1 diag_egre2 diag_egre3) (diag_r1 diag_r2 diag_r3)
 				
@@ -219,7 +214,8 @@ forvalues i = 1/8 {
 			import delimited "${RIPS2}\BANREP_consultas2022_05_09.txt", clear
 		}
 				
-		keep personabasicaid cod_diag_prin cod_diag_r1 cod_diag_r2 cod_diag_r3 fecha_consul causa_externa cod_consul
+		keep personabasicaid cod_diag_prin cod_diag_r1 cod_diag_r2      ///
+             cod_diag_r3 fecha_consul causa_externa cod_consul
 					
 		rename (cod_diag_r1 cod_diag_r2 cod_diag_r3) (diag_r1 diag_r2 diag_r3)
 
@@ -287,9 +283,9 @@ forval y = 2009/2022 {
 	cap destring yearmode, replace
 	
 	* Unify diagnosis code
-	replace diag_prin = diag_prin_ingre if mi(diag_prin) & diag_prin_ingre != ""
+	replace diag_prin = diag_prin_ingre if mi(diag_prin) & !mi(diag_prin_ingre)
 	
-	replace diag_prin = cod_diag_prin if mi(diag_prin) & cod_diag_prin != ""
+	replace diag_prin = cod_diag_prin if mi(diag_prin) & !mi(cod_diag_prin)
 	
 	append using "${data}\Merge_individual_RIPS.dta", force
 	

@@ -16,23 +16,6 @@
 *************************************************************************/	
 clear all
 
-****************************************************************************
-* Globals
-****************************************************************************
-
-if "`c(hostname)'" == "SM201439" global pc "C:\Proyectos"
-else global pc "\\sm093119\Proyectos"
-
-if inlist("`c(username)'", "Pablo Uribe", "pu42") {
-    global root	"~\Documents\GitHub\pensions"
-}
-else {
-    global root	"Z:\Christian Posso\_banrep_research\proyectos\pensions"
-}
-
-global data      "${pc}\Banrep research\Pensions\Data"
-global urgencias "${pc}\Data"
-
 
 ****************************************************************************
 **#         1. Create RIPS variables
@@ -97,7 +80,8 @@ foreach d in diag_prin diag_r1 diag_r2 diag_r3 {
 	| substr(`d', 1, 3) == "I25")
 
 	*Cardiovascular
-	gen cardiovascular_`i' = (substr(`d', 1, 3)== "I46" | substr(`d', 1, 3)== "I50")
+	gen cardiovascular_`i' = (substr(`d', 1, 3)== "I46"             ///
+    | substr(`d', 1, 3) == "I50")
 
 
 	gen diag_laboral_`i' = ((substr(`d',1,3)=="R53")                ///
@@ -148,7 +132,8 @@ gen cons_trab_social    = (substr(cod_consul,5,2)=="09")
 
 gen cons_psiquiatra     = (substr(cod_consul,5,2)=="84")
 
-gen cons_mental         = (cons_psico == 1 | cons_psiquiatra == 1 | cons_trab_social == 1)
+gen cons_mental         = (cons_psico == 1 | cons_psiquiatra == 1 |     ///
+                          cons_trab_social == 1)
 
 
 global t_sensitive time_sensitive sepsis respiratory trauma stroke      ///
@@ -162,16 +147,19 @@ gen contador = 1
 
 compress
 
-* Count number of health services by age and keep one observation per person and age
+* Count number of health services by age and keep one observation per person 
+* and age
 bys personabasicaid age service: gegen nro_servicios = total(contador)
 
-** Replace all values for each person in a given age with the maximum value (1 if happens at that age)
+** Replace all values for each person in a given age with the maximum value 
+** (1 if happens at that age)
 foreach variable in $t_sensitive $work {
     dis as err "Creating variable for `variable'"
 	bys personabasicaid age: ereplace `variable' = max(`variable')
 }
 
-keep personabasicaid age service nro_servicios $t_sensitive $work poblacion* std_weeks
+keep personabasicaid age service nro_servicios $t_sensitive $work   ///
+    poblacion* std_weeks
 
 compress
 
@@ -276,7 +264,9 @@ forval i = 1/4{
 
 use `temp_diags', clear
 
-* The related diagnoses have too many missing values. We can drop them because we already know that any of the other diagnoses in that observation were chronic before the append 
+* The related diagnoses have too many missing values. We can drop them because 
+* we already know that any of the other diagnoses in that observation were 
+* chronic before the append 
 drop if mi(no_diagnosis)
 
 

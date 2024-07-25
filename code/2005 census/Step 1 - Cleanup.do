@@ -20,8 +20,6 @@ clear all
 * Globals
 ****************************************************************************
 
-global data "C:\Users\Pablo Uribe\Desktop\BanRep\Pensions\Data"
-
 global redefine wall garbage elec sewer runwat natgas phone toilet water    ///
        kitchex watsrc refrig washer stereo watheat shower blender oven      ///
        aircond fan tvc compute microw sex ill mdcar mdorg mdneu mdtra       ///
@@ -31,16 +29,19 @@ global redefine wall garbage elec sewer runwat natgas phone toilet water    ///
 * Import data, get DOB and create dummies
 ****************************************************************************
 
-use "${data}\ipumsi_00002.dta", clear
+use "${ext_data}\ipumsi_00002.dta", clear
 
 drop pernum *_pernum *_strata
 
 rename co2005a_* * // Remove prefix
 
-*** Arbitrary decision: Impute day of birth = 15 to all observations (day of birth is not included in the data)
+*** Arbitrary decision: Impute day of birth = 15 to all observations 
+*** (day of birth is not included in the data)
 gen fecha = "15" + "/" + string(bmon) + "/" + string(byr)
 
-*** Arbitrary decision: Impute January to observations without a month of birth (doesn't affect the poblacion conditions since they all start in January of a given year). This happens for 5.4% of the sample defined in line 22
+*** Arbitrary decision: Impute January to observations without a month of 
+*** birth (doesn't affect the poblacion conditions since they all start in 
+*** January of a given year). This happens for 5.4% of the sample defined in line 22
 replace fecha = "15" + "/" + "1" + "/" + string(byr) if bmon == 99
 
 gen fechanto = date(fecha, "DMY")
@@ -104,4 +105,4 @@ atleast_highschool pension empstat "More than 4 persons in dwelling"      ///
 
 compress
 
-save "${data}\processed_census.dta", replace
+save "${ext_data}\processed_census.dta", replace

@@ -1,4 +1,4 @@
-* 00000010
+* 00000011
 *! version 1.0.0
 * Do not erase or edit this file
 * It is used by Stata to track the ado and help
@@ -498,4 +498,44 @@ f r\regsave.ado
 f r\regsave_tbl.ado
 f r\regsave.hlp
 f r\regsave_tbl.hlp
+e
+S http://fmwww.bc.edu/repec/bocode/r
+N repkit.pkg
+D 25 Jul 2024
+U 11
+d 'REPKIT': module providing utility toolkit for reproducibility
+d 
+d  repkit is a package that aims to standardize best practices for
+d reproducibility and make them more accessible to the wider Stata
+d community. Currently, the package consists of one command called
+d repado. The purpose of repado is to manage command dependencies
+d within a project, ensuring that any user running the project code
+d utilizes the exact same version of command dependencies. This
+d intended to be used both across all team members in a project,
+d and by any future user reproducing the results of the project.
+d 
+d KW: reproducibility
+d KW: ado
+d KW: ado-management
+d 
+d Requires: Stata version 14.1
+d 
+d Distribution-Date: 20240516
+d 
+d Author: DIME Analytics, The World Bank, DECIE
+d Support: email dimeanalytics@@worldbank.org
+d 
+f r\repkit.ado
+f r\repkit.sthlp
+f r\repado.ado
+f r\repado.sthlp
+f r\repadolog.ado
+f r\repadolog.sthlp
+f r\reprun_dataline.ado
+f r\reprun.ado
+f r\reprun.sthlp
+f r\reproot.ado
+f r\reproot.sthlp
+f r\reproot_parse.ado
+f r\reproot_search.ado
 e
