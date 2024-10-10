@@ -47,7 +47,7 @@ if inlist("`c(username)'", "Pablo Uribe", "pu42") {
 }
 else {
     
-    global root	 "Z:\Christian Posso\_banrep_research\proyectos\Pensions"
+    global root	 "Z:\Christian Posso\_banrep_research\proyectos\pensions"
     local  run = "banrep"
     
 }
