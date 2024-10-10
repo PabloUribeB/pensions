@@ -1,0 +1,37 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}Z:\Christian Posso\_banrep_research\proyectos\pensions\Logs\PILA estimations.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}10 Oct 2024, 15:15:19
+{txt}
+{com}. 
+. 
+. ****************************************************************************
+. **#             1. Prepare data
+. ****************************************************************************
+. 
+. local replace replace
+{txt}
+{com}. 
+.         
+. use "${c -(}data{c )-}\mensual_PILA", clear
+{txt}
+{com}. 
+. * Process raw data to create relevant variables
+. quietly{c -(}
+{err}variable {bf}pension_cum{sf} not found
+{txt}{search r(111), local:r(111);}
+
+end of do-file
+{search r(111), local:r(111);}
+{com}.     *do "${c -(}do_files{c )-}\Step 4.2 - RIPS estimation.do"
+.     
+. {c )-}
+{txt}{search r(111), local:r(111);}
+
+end of do-file
+
+{search r(111), local:r(111);}
+
+{com}. 
