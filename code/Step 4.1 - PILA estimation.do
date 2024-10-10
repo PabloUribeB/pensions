@@ -88,7 +88,8 @@ quietly{
     * Dummy for whether they are affiliated to the public fund
     gen colpensiones = (inlist(afp_cod, "25-14", "25-11" ,"25-8", "ISSFSP"))
 
-    keep $outcomes poblacion* year month std_weeks std_days fecha_pila // For efficiency
+    keep codigo_pension colpensiones pila_salario_r_0 poblacion* year month     ///
+         std_weeks std_days fecha_pila // For efficiency
     
     bys personabasicaid: egen ever_colpensiones = max(colpensiones)
     
