@@ -35,10 +35,14 @@ use "${data}\master_sample.dta", clear
 qui rddensity std_weeks if poblacion_M50 == 1
 local pvalue: dis %04.3f e(pv_q)
 
+qui rddensity std_days if poblacion_M50 == 1
+local pvalue_d: dis %04.3f e(pv_q)
+
 twoway (hist fechantomode if poblacion_M50 == 1, xla(#15, angle(90)     ///
 format("%td")) xtitle(Date of birth) title(Men born between 48-52)      ///
-note("Manipulation test p-value: `pvalue'") bin(260) freq)              ///
-(pci 0 -3441 1500 -3441, color(red)), legend(off)
+note("Manipulation test p-value weeks: `pvalue'"                        ///
+"Manipulation test p-value days: `pvalue_d'") bin(260) freq),           ///
+xline(-3441, noextend lcolor(red) lpattern(solid)) legend(off)
 
 graph export "${graphs}\hist_M50.png", replace
 
@@ -47,10 +51,14 @@ graph export "${graphs}\hist_M50.png", replace
 qui rddensity std_weeks if poblacion_M54 == 1
 local pvalue: dis %04.3f e(pv_q)
 
+qui rddensity std_days if poblacion_M54 == 1
+local pvalue_d: dis %04.3f e(pv_q)
+
 twoway (hist fechantomode if poblacion_M54 == 1, xla(#15, angle(90)     ///
 format("%td")) xtitle(Date of birth) title(Men born between 52-56)      ///
-note("Manipulation test p-value: `pvalue'") bin(260) freq)              ///
-(pci 0 -1827 3000 -1827, color(red)), legend(off)
+note("Manipulation test p-value weeks: `pvalue'"                        ///
+"Manipulation test p-value days: `pvalue_d'") bin(260) freq),           ///
+xline(-1827, noextend lcolor(red) lpattern(solid)) legend(off)
 
 graph export "${graphs}\hist_M54.png", replace
 
@@ -59,10 +67,14 @@ graph export "${graphs}\hist_M54.png", replace
 qui rddensity std_weeks if poblacion_F55 == 1
 local pvalue: dis %04.3f e(pv_q)
 
+qui rddensity std_days if poblacion_F55 == 1
+local pvalue_d: dis %04.3f e(pv_q)
+
 twoway (hist fechantomode if poblacion_F55 == 1, xla(#15, angle(90)     ///
 format("%td")) xtitle(Date of birth) title(Women born between 53-57)    ///
-note("Manipulation test p-value: `pvalue'") bin(260) freq)              ///
-(pci 0 -1615 1500 -1615, color(red)), legend(off)
+note("Manipulation test p-value weeks: `pvalue'"                        ///
+"Manipulation test p-value days: `pvalue_d'") bin(260) freq),           ///
+xline(-1615, noextend lcolor(red) lpattern(solid)) legend(off)
 
 graph export "${graphs}\hist_F55.png", replace
 
@@ -71,10 +83,14 @@ graph export "${graphs}\hist_F55.png", replace
 qui rddensity std_weeks if poblacion_F59 == 1
 local pvalue: dis %04.3f e(pv_q)
 
+qui rddensity std_days if poblacion_F59 == 1
+local pvalue_d: dis %04.3f e(pv_q)
+
 twoway (hist fechantomode if poblacion_F59 == 1, xla(#15, angle(90)     ///
 format("%td")) xtitle(Date of birth) title(Women born between 57-61)    ///
-note("Manipulation test p-value: `pvalue'") bin(260) freq)              ///
-(pci 0 -1 2500 -1, color(red)), legend(off)
+note("Manipulation test p-value weeks: `pvalue'"                        ///
+"Manipulation test p-value days: `pvalue_d'") bin(260) freq),           ///
+xline(-1, noextend lcolor(red) lpattern(solid)) legend(off)
 
 graph export "${graphs}\hist_F59.png", replace
 

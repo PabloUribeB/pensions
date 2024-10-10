@@ -41,7 +41,7 @@ global RIPS2        "\\wmedesrv\gamma\rips"
 if inlist("`c(username)'", "Pablo Uribe", "pu42") {
     
     global root	    "~\Documents\GitHub\Pensions"
-    global ext_data "C:\Users\\`c(username)'\Dropbox\Pensions\Data"
+    global ext_data "C:\Users\\`c(username)'\Documents\GitHub\pensions\Data"
     local  run =    "external"
     
 }
@@ -75,7 +75,7 @@ global output   "${root}\Output"
 *** Census balance
 if "`run'" == "external" { // Data not in BanRep, so only run in external PC
 
-    do "${do_files}\2005 census\Step 1 - Cleanup.do"
+    *do "${do_files}\2005 census\Step 1 - Cleanup.do"
     do "${do_files}\2005 census\Step 2 - Estimation.do"
     
 }
@@ -86,14 +86,14 @@ if "`run'" == "banrep" { // Data only in BanRep
     
     do "${do_files}\Step 1 - Master dataset and exploratory analysis.do"
     do "${do_files}\Step 2 - Master descriptive stats.do"
-    do "${do_files}\Step 3.1 - PILA consolidation.do"
-    do "${do_files}\Step 3.2 - Merge with RIPS.do"
-    do "${do_files}\Step 3.2.1 - RIPS dataset.do"
+    *do "${do_files}\Step 3.1 - PILA consolidation.do"
+    *do "${do_files}\Step 3.2 - Merge with RIPS.do"
+    *do "${do_files}\Step 3.2.1 - RIPS dataset.do"
     do "${do_files}\Step 4.1 - PILA estimation.do"
-    do "${do_files}\Step 4.2 - RIPS estimation.do"
+    *do "${do_files}\Step 4.2 - RIPS estimation.do"
     
 }
 
-do "${do_files}\Step 5.1 - PILA plots.do"
-do "${do_files}\Step 5.2 - RIPS plots.do"
+*do "${do_files}\Step 5.1 - PILA plots.do"
+*do "${do_files}\Step 5.2 - RIPS plots.do"
 
