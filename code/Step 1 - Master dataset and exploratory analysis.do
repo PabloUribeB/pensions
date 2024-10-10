@@ -64,10 +64,10 @@ replace corte = date("12/31/1959", "MDY") if poblacion_F59 == 1
 
 
 * Days from cutoff point for each group
-gen     std_days = datediff(corte, fechantomode, "d") if poblacion == "M50"
-replace std_days = datediff(corte, fechantomode, "d") if poblacion == "M54"
-replace std_days = datediff(corte, fechantomode, "d") if poblacion == "F55"
-replace std_days = datediff(corte, fechantomode, "d") if poblacion == "F59"
+gen     std_days = datediff(corte, fechantomode, "d") if poblacion_M50 == 1
+replace std_days = datediff(corte, fechantomode, "d") if poblacion_M54 == 1
+replace std_days = datediff(corte, fechantomode, "d") if poblacion_F55 == 1
+replace std_days = datediff(corte, fechantomode, "d") if poblacion_F59 == 1
 
 gen fechaweek  = wofd(fechantomode)
 format %td corte
