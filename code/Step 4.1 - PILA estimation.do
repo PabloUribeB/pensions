@@ -119,7 +119,7 @@ forval year = 2009/2020 { // Loop through all years
                     foreach runvar in std_weeks std_days {
                         
                     dis as err "Cohort: `cohort'; Outcome: `outcome'; Date: "   ///
-                    "`year'-`month'; Runvar: `runvar'"
+                    "`year'-`month'; Runvar: `runvar' -> (1) Year by year RDD"
                     
                     rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
                     fecha_pila == ym(`year',`month'), vce(cluster `runvar')
@@ -192,7 +192,10 @@ foreach cohort in $first_cohorts {
         local elig eligible_w
         local name "week"
         foreach runvar in std_weeks std_days {
- 
+            
+            dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
+            "Runvar: `runvar' -> (2) Whole monthly panel RDD"
+            
             qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1,     ///
                 vce(cluster `runvar')
 
@@ -312,6 +315,9 @@ foreach cohort in $first_cohorts {
         
         foreach runvar in std_weeks std_days {
             
+        dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
+        "Runvar: `runvar' -> (3) Difference in discontinuities"
+                    
         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & post == 0, kernel(uniform)
 
         scalar bw_pre = e(hr)
@@ -355,6 +361,9 @@ foreach cohort in $first_cohorts {
             
             forval age = `min'/`max'{
                 
+                dis as err "Cohort: `cohort'; Outcome: `outcome'; Age: "    ///
+                "`age'; Runvar: `runvar' -> (4) Age by age RDD"
+                
                 rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
                 age == `age', vce(cluster `runvar')
 
@@ -368,8 +377,6 @@ foreach cohort in $first_cohorts {
                 runvar, `runvar')
                 
             }
-            
-            
         }
     }
 }
@@ -396,6 +403,9 @@ foreach cohort in $first_cohorts {
         local elig eligible_w
         local name "week"
         foreach runvar in std_weeks std_days {
+        
+            dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
+            "Runvar: `runvar' -> (5) Whole age panel RDD"
         
             qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
                 inrange(age, `ages'), vce(cluster `runvar')
@@ -481,24 +491,4 @@ foreach cohort in $first_cohorts {
 
         
 log close
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
