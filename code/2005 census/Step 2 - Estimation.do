@@ -15,6 +15,7 @@
 *************************************************************************
 *************************************************************************/	
 clear all
+set scheme white_tableau
 
 ****************************************************************************
 * Globals
@@ -29,20 +30,19 @@ has_moto has_bike enough_income has_car
 
 global rownames " "Male" "Was ill in past year" "Cardiac surgery in past year" "Organ transplant in past year" "Neurosurgery in past year" "Major trauma in past five years" "Congenital illness" "Joint replacement" "Dialysis for chronic insuff" "Serious burns" "HIV/AIDS" "Chemotherapy" "Intensive care" "Literate" "Works" "Affil or ret from pension fund" "Completed at least high school" "Cement, brick, stone wall" "Garbage by trash service" "Electrical energy" "Sewage drains" "Running water" "Natural gas" "Telephone" "Toilet connected to sewage" "Water service inside" "Exclusive area for cooking" "Water from aqueduct" "Refrigerator" "Washing machine" "Sound equipment" "Water heater" "Electric shower" "Blender" "Oven" "Air conditioner" "Fan" "Color TV" "Computer" "Microwave" "More than 4 persons in dwelling" "Cement floor" "At least 1 bathroom" "Owns dwelling" "Electrical, natural gas cooking" "Has motorcycle" "Has bicycle" "Has car" "Income enough for basic expenses" "
 
+global f_15 " "Male" "Was ill in past year" "Cardiac surgery in past year" "Organ transplant in past year" "Neurosurgery in past year" "Major trauma in past five years" "Congenital illness" "Joint replacement" "Dialysis for chronic insuff" "Serious burns" "HIV/AIDS" "Chemotherapy" "Intensive care" "Literate" "Works"
+
 local size: list sizeof global(rownames)
 
 matrix balance             = J(`size', 3, .)
 matrix balanceRD           = J(`size', 3, .)
-matrix balanceRD_final     = J(15, 3, .)
-matrix balanceRD_final_M50 = J(15, 3, .)
-matrix balanceRD_final_F55 = J(15, 3, .)
 
-foreach name in balance balanceRD balanceRD_final balanceRD_final_M50 ///
-balanceRD_final_F55 {
+foreach name in balance balanceRD {
             
     matrix rownames `name' = $rownames
             
 }
+
 
 * String of plot options
 local plot_options = "bylabels(, wrap(15)) "                                  ///
@@ -121,9 +121,9 @@ note(Joint test p-value: `pvalue')
 		 
 graph export "${graphs}\balance.png", replace
 
-		 
+/*		 
 ** Using RD specification
-gen above = (std_weeks >= 0)
+gen above = (std_weeks > 0)
 gen std_weeks2 = std_weeks ^ 2
 
 local row=1
@@ -132,7 +132,7 @@ foreach outcome in $covars{
 	rdbwselect `outcome' std_weeks, covs(poblacion_F55 poblacion_F59 poblacion_M50)
 	local h = e(h_mserd)
 	
-	svy: reg `outcome' above##c.std_weeks i.cohort if abs(std_weeks) <= `h'
+	svy: reg `outcome' i.above##c.std_weeks i.cohort if abs(std_weeks) <= `h'
 	
 	mat balanceRD[`row',1] = _b[1.above]
 	mat balanceRD[`row',2] = _b[1.above]  - _se[1.above]*1.96
@@ -152,18 +152,30 @@ groups("Was ill in past year"-"Intensive care" = "{bf:Health}"          ///
 graph export "${graphs}\balance_RD.png", replace
 
 
-
+*/
 
 ****************************************************************************
 **#       3. Final covariates used (final plots)
 ****************************************************************************
-gen above = (std_weeks >= 0)
+gen above = (std_weeks > 0)
 gen std_weeks2 = std_weeks^2
 
 global covars ill mdcar mdorg mdneu mdtra mdcon mdjoi mddia mdbur mdaid ///
 mdche mdint empstat pension atleast_highschool
 
 global rownames " "Was ill in past year" "Cardiac surgery in past year" "Organ transplant in past year" "Neurosurgery in past year" "Major trauma in past five years" "Congenital illness" "Joint replacement" "Dialysis for chronic insuff" "Serious burns" "HIV/AIDS" "Chemotherapy" "Intensive care" "Works" "Affil or ret from pension fund" "Completed at least high school" "
+
+local size: list sizeof global(rownames)
+
+matrix balanceRD_final     = J(`size', 3, .)
+matrix balanceRD_final_M50 = J(`size', 3, .)
+matrix balanceRD_final_F55 = J(`size', 3, .)
+
+foreach name in balanceRD_final balanceRD_final_M50 balanceRD_final_F55 {
+    
+    matrix rownames `name' = $rownames
+    
+}
 
 keep std_weeks poblacion_F55 poblacion_M50 above $covars wtperc cohort
 
@@ -176,7 +188,7 @@ foreach outcome in $covars{
 	rdbwselect `outcome' std_weeks, covs(poblacion_F55 poblacion_M50)
 	local h = e(h_mserd)
 	
-	svy: reg `outcome' above##c.std_weeks i.cohort if abs(std_weeks) <= `h'
+	svy: reg `outcome' i.above##c.std_weeks i.cohort if abs(std_weeks) <= `h'
 	
 	mat balanceRD_final[`row',1] = _b[1.above]
 	mat balanceRD_final[`row',2] = _b[1.above]  - _se[1.above]*1.96
@@ -203,7 +215,7 @@ foreach outcome in $covars{
 	rdbwselect `outcome' std_weeks if poblacion_M50 == 1
 	local h = e(h_mserd)
 	
-	svy: reg `outcome' above##c.std_weeks if abs(std_weeks) <= `h' & poblacion_M50 == 1
+	svy: reg `outcome' i.above##c.std_weeks if abs(std_weeks) <= `h' & poblacion_M50 == 1
 	
 	mat balanceRD_final_M50[`row',1] = _b[1.above]
 	mat balanceRD_final_M50[`row',2] = _b[1.above]  - _se[1.above]*1.96
@@ -231,7 +243,7 @@ foreach outcome in $covars{
 	rdbwselect `outcome' std_weeks if poblacion_F55 == 1
 	local h = e(h_mserd)
 	
-	svy: reg `outcome' above##c.std_weeks if abs(std_weeks) <= `h' & poblacion_F55 == 1
+	svy: reg `outcome' i.above##c.std_weeks if abs(std_weeks) <= `h' & poblacion_F55 == 1
 	
 	mat balanceRD_final_F55[`row',1] = _b[1.above]
 	mat balanceRD_final_F55[`row',2] = _b[1.above]  - _se[1.above]*1.96
