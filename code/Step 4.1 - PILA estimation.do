@@ -221,7 +221,7 @@ foreach cohort in $first_cohorts {
             }
 
 
-            reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 &  ///
+            qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
                 inrange(`runvar', -`HL', `HR'), vce(cluster `runvar')
 
             local Breg: dis %010.`dec'fc _b[1.`elig']
@@ -318,11 +318,13 @@ foreach cohort in $first_cohorts {
         dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
         "Runvar: `runvar' -> (3) Difference in discontinuities"
                     
-        qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & post == 0, kernel(uniform)
+        qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+            post == 0, kernel(uniform)
 
         scalar bw_pre = e(hr)
 
-        qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & post == 1, kernel(uniform)
+        qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+            post == 1, kernel(uniform)
 
         scalar bw_post = e(hr)
 
@@ -432,8 +434,8 @@ foreach cohort in $first_cohorts {
             }
 
 
-            reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 &  ///
-                inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),       ///
+            qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
+                inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),          ///
                 vce(cluster `runvar')
 
             local Breg: dis %010.`dec'fc _b[1.`elig']
