@@ -22,8 +22,8 @@ set graphics off
 
 global first_cohorts    M50 F55
 global second_cohorts   M54 F59
-global outcomes         codigo_pension colpensiones      ///
-                        pila_salario_r_0 pension_cum
+global outcomes         codigo_pension pension pension_cum colpensiones     ///
+                        pila_salario_r_0
 
 
 capture log close
@@ -88,8 +88,8 @@ quietly{
     * Dummy for whether they are affiliated to the public fund
     gen colpensiones = (inlist(afp_cod, "25-14", "25-11" ,"25-8", "ISSFSP"))
 
-    keep codigo_pension colpensiones pila_salario_r_0 poblacion* year month     ///
-         std_weeks std_days fecha_pila // For efficiency
+    keep codigo_pension pension colpensiones pila_salario_r_0 poblacion*    ///
+    year month std_weeks std_days fecha_pila personabasicaid // For efficiency
     
     bys personabasicaid: egen ever_colpensiones = max(colpensiones)
     
@@ -98,6 +98,10 @@ quietly{
     * Cumulative pension dummy
     gen persion_cum = pension
     replace pension_cum = pension_cum[_n-1] if pension_cum[_n-1] == 1
+    
+    labvars $outcomes "Contribution to any pension fund"    ///
+    "Retirement sheet" "Retirement sheet cumulative"        ///
+    "Contribution to Colpensiones" "Monthly wage (with 0's)"
     
 }
 
@@ -183,6 +187,8 @@ foreach cohort in $first_cohorts {
     
     foreach outcome in $outcomes {
         
+        local varlab: variable label `outcome'
+        
         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
             local dec = 0
         }
@@ -243,9 +249,9 @@ foreach cohort in $first_cohorts {
 
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR'),          ///
             vce(cluster `runvar') p(1) kernel(triangular) h(`HR' `HR') 	        ///
-            binselect(esmv)	graph_options(title(`varlab', size(medium))         ///
+            binselect(esmv)	graph_options(title(`varlab', size(medium) span)    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
-            xtitle(Distance to `name' of birth's cutoff) ytitle(`outcome')      ///
+            xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc))     ///
             note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg';"         ///
             "Effective number of observations: `N'."))
@@ -260,9 +266,9 @@ foreach cohort in $first_cohorts {
 
             biscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &       ///
             inrange(`runvar', -`HL', `HR'), n(b_avg) cluster(`runvar')          ///
-            rd(0) linetype(lfit) title(`varlab', size(medium))                  ///
+            rd(0) linetype(lfit) title(`varlab', size(medium) span)             ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
-            xtitle(Distance to `name' of birth's cutoff) ytitle(`outcome')      ///
+            xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             ylabel(, format(%010.`dec'fc))                                      ///
             note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg';"         ///
             "Effective number of observations: `N'.")
@@ -291,9 +297,9 @@ gen age = age(fechantomode,`dia_pila')
 
                         
 
-collapse (firstnm) poblacion* std_weeks std_days            ///
-         (mean) pila_salario_r_0                            ///
-         (max) codigo_pension pension_cum colpensiones,     ///
+collapse (firstnm) poblacion* std_weeks std_days                    ///
+         (mean) pila_salario_r_0                                    ///
+         (max) pension codigo_pension pension_cum colpensiones,     ///
          by(personabasicaid age)
 
 sort personabasicaid age
@@ -316,7 +322,7 @@ foreach cohort in $first_cohorts {
         
         foreach runvar in std_weeks std_days {
             
-        dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
+        dis as err "Cohort: `cohort'; Outcome: `outcome'; "                 ///
         "Runvar: `runvar' -> (3) Difference in discontinuities"
                     
         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
@@ -396,6 +402,8 @@ foreach cohort in $first_cohorts {
     
     foreach outcome in $outcomes {
         
+        local varlab: variable label `outcome'
+        
         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
             local dec = 0
         }
@@ -458,9 +466,9 @@ foreach cohort in $first_cohorts {
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR') &         ///
             inrange(age, `ages'), vce(cluster `runvar') p(1) kernel(triangular) ///
             h(`HR' `HR') binselect(esmv)                                        ///
-            graph_options(title(`varlab', size(medium))                         ///
+            graph_options(title(`varlab', size(medium) span)                    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
-            xtitle(Distance to `name' of birth's cutoff) ytitle(`outcome')      ///
+            xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc))     ///
             note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg';"         ///
             "Effective number of observations: `N'."))
@@ -476,9 +484,9 @@ foreach cohort in $first_cohorts {
             biscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &       ///
             inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),              ///
             n(b_avg) cluster(`runvar') rd(0) linetype(lfit)                     ///
-            title(`varlab', size(medium))                                       ///
+            title(`varlab', size(medium) span)                                  ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
-            xtitle(Distance to `name' of birth's cutoff) ytitle(`outcome')      ///
+            xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             ylabel(, format(%010.`dec'fc))                                      ///
             note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg';"         ///
             "Effective number of observations: `N'.")
