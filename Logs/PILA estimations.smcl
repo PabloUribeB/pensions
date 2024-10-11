@@ -19,4 +19,2091 @@
 {txt}
 {com}. 
 . * Process raw data to create relevant variables
+. quietly{c -(}
+{txt}
+{com}. 
 . 
+. ****************************************************************************
+. **#             2. Year by year RDD
+. ****************************************************************************
+. 
+. forval year = 2009/2020 {c -(} // Loop through all years
+{txt}  2{com}. 
+.     * First cohorts (M50 & F55) retire in 2010, so only one year before and after
+.     if inrange(`year', 2009, 2011) {c -(}
+{txt}  3{com}.         
+.         foreach cohort in $first_cohorts {c -(}
+{txt}  4{com}.         
+.             foreach outcome in $outcomes {c -(}
+{txt}  5{com}.                 
+.                 forval month = 1/12 {c -(}
+{txt}  6{com}.                     
+.                     foreach runvar in std_weeks std_days {c -(}
+{txt}  7{com}.                         
+.                     dis as err "Cohort: `cohort'; Outcome: `outcome'; Date: "   ///
+>                     "`year'-`month'; Runvar: `runvar' -> (1) Year by year RDD"
+{txt}  8{com}.                     
+.                     rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
+>                     fecha_pila == ym(`year',`month'), vce(cluster `runvar')
+{txt}  9{com}. 
+.                     mat beta = e(tau_bc)            // Store robust beta
+{txt} 10{com}.                     mat vari = e(se_tau_rb)^2       // Store robust SE
+{txt} 11{com}. 
+.                     * Save estimation results in dataset
+.                     regsave using "${c -(}output{c )-}/PILA_results.dta", `replace'           ///
+>                     coefmat(beta) varmat(vari) ci level(95)                         ///
+>                     addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
+>                     month, `month', runvar, `runvar')
+{txt} 12{com}.                     
+.                     local replace append
+{txt} 13{com}.                     {c )-}
+{txt} 14{com}.                 {c )-}
+{txt} 15{com}.             {c )-}
+{txt} 16{com}.         {c )-}
+{txt} 17{com}.     {c )-}
+{txt} 18{com}.         
+.     * Second cohorts (M54 & F59) retire in Dec. 2014, so 6 years pre and 6 post.
+.     * This loop happens for all years in the loop (2009/2020)
+.     /*foreach cohort in $second_cohorts{c -(}
+>         
+>         foreach outcome in $outcomes{c -(}
+>             
+>             forval month = 1/12{c -(}
+>                 
+>                 rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
+>                 fecha_pila == ym(`year',`month'), vce(cluster std_weeks)
+> 
+>                 mat beta = e(tau_bc)                            // Store robust beta
+>                 mat vari = e(se_tau_rb)^2                       // Store robust SE
+> 
+>             * Save estimation results in dataset
+>             regsave using "${c -(}output{c )-}/PILA_results.dta", append coefmat(beta)    ///
+>             varmat(vari) ci level(95) addlabel(outcome, `outcome', cohort,          ///
+>             `cohort', year, `year', month, `month')
+>             {c )-}
+>         {c )-}
+>     {c )-}*/
+. {c )-}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-1; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    12046{col 34}    13268{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   19.579{col 34}   19.579
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   32.130{col 34}   32.130
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.609{col 34}    0.609
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       32{col 34}       33
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} -.0143{col 33} .01099{col 43}-1.3010{col 52}0.193{col 60}-.035847{col 73} .007244
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.7212{col 52}0.085{col 60}-.043679{col 73} .002833
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-1; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    11506{col 34}    12175{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  127.204{col 34}  127.204
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  223.558{col 34}  223.558
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.569{col 34}    0.569
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      222{col 34}      223
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.01496{col 33} .01173{col 43}-1.2749{col 52}0.202{col 60}-.037952{col 73} .008037
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.4862{col 52}0.137{col 60}-.046217{col 73} .006354
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-2; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    10806{col 34}    11978{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   17.277{col 34}   17.277
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   28.894{col 34}   28.894
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.598{col 34}    0.598
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       28{col 34}       29
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.01338{col 33} .01011{col 43}-1.3239{col 52}0.186{col 60}-.033197{col 73}  .00643
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.7247{col 52}0.085{col 60}-.041891{col 73} .002675
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-2; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    10884{col 34}    11429{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  120.413{col 34}  120.413
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  208.781{col 34}  208.781
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.577{col 34}    0.577
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      208{col 34}      208
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00879{col 33} .01246{col 43}-0.7060{col 52}0.480{col 60} -.03321{col 73} .015621
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.9385{col 52}0.348{col 60}-.041868{col 73} .014754
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-3; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    16317{col 34}    18656{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   26.414{col 34}   26.414
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   40.228{col 34}   40.228
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.657{col 34}    0.657
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       40{col 34}       41
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00205{col 33} .00957{col 43}-0.2144{col 52}0.830{col 60}-.020812{col 73} .016707
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.4162{col 52}0.677{col 60}-.026703{col 73} .017348
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-3; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    15717{col 34}    17268{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  176.151{col 34}  176.151
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  276.929{col 34}  276.929
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.636{col 34}    0.636
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      275{col 34}      276
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00035{col 33} .00946{col 43}-0.0374{col 52}0.970{col 60}  -.0189{col 73} .018191
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.1428{col 52}0.886{col 60}-.023665{col 73}  .02045
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-4; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    12581{col 34}    13906{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   20.375{col 34}   20.375
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   31.169{col 34}   31.169
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.654{col 34}    0.654
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       31{col 34}       32
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00818{col 33}  .0085{col 43}-0.9623{col 52}0.336{col 60}-.024843{col 73} .008481
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.1319{col 52}0.258{col 60}-.030588{col 73} .008192
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-4; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    13194{col 34}    14013{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  147.435{col 34}  147.435
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  232.545{col 34}  232.545
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.634{col 34}    0.634
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      231{col 34}      232
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00209{col 33} .01043{col 43}-0.2006{col 52}0.841{col 60}-.022528{col 73} .018344
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.2367{col 52}0.813{col 60}-.027716{col 73} .021742
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-5; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    14456{col 34}    16235{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   23.817{col 34}   23.817
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   33.099{col 34}   33.099
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.720{col 34}    0.720
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       33{col 34}       34
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}  .0041{col 33} .01121{col 43}0.3654{col 52}0.715{col 60}-.017881{col 73} .026075
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2333{col 52}0.816{col 60}-.022743{col 73} .028888
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-5; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    13093{col 34}    13920{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  146.473{col 34}  146.473
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  225.856{col 34}  225.856
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.649{col 34}    0.649
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      224{col 34}      225
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00398{col 33} .01037{col 43}0.3840{col 52}0.701{col 60}-.016348{col 73} .024314
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2471{col 52}0.805{col 60}-.021321{col 73} .027472
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-6; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    13224{col 34}    14617{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   21.673{col 34}   21.673
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   32.368{col 34}   32.368
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.670{col 34}    0.670
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       32{col 34}       33
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00043{col 33} .00903{col 43}-0.0473{col 52}0.962{col 60}-.018128{col 73} .017274
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.2096{col 52}0.834{col 60} -.02319{col 73} .018709
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-6; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    13093{col 34}    13920{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  146.619{col 34}  146.619
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  229.989{col 34}  229.989
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.638{col 34}    0.638
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      228{col 34}      229
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00227{col 33} .01024{col 43}0.2213{col 52}0.825{col 60}-.017804{col 73} .022336
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.1158{col 52}0.908{col 60}-.022775{col 73} .025636
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-7; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    12046{col 34}    13268{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   19.587{col 34}   19.587
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   29.981{col 34}   29.981
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.653{col 34}    0.653
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       29{col 34}       30
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00055{col 33} .01057{col 43}0.0516{col 52}0.959{col 60}-.020167{col 73} .021258
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.2341{col 52}0.815{col 60}-.026217{col 73} .020623
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-7; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    11426{col 34}    12089{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  126.775{col 34}  126.775
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  206.241{col 34}  206.241
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.615{col 34}    0.615
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      206{col 34}      206
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00264{col 33} .01174{col 43}0.2251{col 52}0.822{col 60} -.02036{col 73} .025644
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0177{col 52}0.986{col 60}-.027654{col 73}  .02716
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-8; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    10806{col 34}    11978{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   17.624{col 34}   17.624
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   28.465{col 34}   28.465
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.619{col 34}    0.619
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       28{col 34}       29
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00871{col 33} .01269{col 43}-0.6867{col 52}0.492{col 60}-.033582{col 73} .016157
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.9875{col 52}0.323{col 60}-.042613{col 73} .014058
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-8; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    10367{col 34}    10881{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  114.315{col 34}  114.315
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  195.380{col 34}  195.380
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.585{col 34}    0.585
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      195{col 34}      195
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00614{col 33} .01197{col 43}-0.5128{col 52}0.608{col 60}-.029592{col 73} .017319
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.7411{col 52}0.459{col 60}-.037894{col 73}   .0171
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-9; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    12581{col 34}    13906{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   20.438{col 34}   20.438
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   29.651{col 34}   29.651
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.689{col 34}    0.689
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       29{col 34}       30
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00147{col 33} .01143{col 43}0.1289{col 52}0.897{col 60}-.020927{col 73} .023873
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0312{col 52}0.975{col 60}-.027474{col 73} .026611
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-9; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    11753{col 34}    12466{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  130.249{col 34}  130.249
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  202.131{col 34}  202.131
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.644{col 34}    0.644
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      202{col 34}      202
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00199{col 33} .01074{col 43}0.1853{col 52}0.853{col 60}-.019063{col 73} .023044
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0168{col 52}0.987{col 60} -.02535{col 73} .024919
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-10; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    11428{col 34}    12635{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   18.128{col 34}   18.128
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   28.120{col 34}   28.120
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.645{col 34}    0.645
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       28{col 34}       29
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00266{col 33} .01327{col 43}-0.2005{col 52}0.841{col 60}-.028677{col 73} .023354
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.4177{col 52}0.676{col 60}-.037985{col 73} .024638
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-10; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    10452{col 34}    10980{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  115.801{col 34}  115.801
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  186.934{col 34}  186.934
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.619{col 34}    0.619
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      186{col 34}      186
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00422{col 33} .01147{col 43}-0.3680{col 52}0.713{col 60}-.026699{col 73} .018258
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.6174{col 52}0.537{col 60}-.034434{col 73} .017937
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-11; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    12046{col 34}    13268{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   19.403{col 34}   19.403
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   29.396{col 34}   29.396
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.660{col 34}    0.660
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       29{col 34}       30
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.01202{col 33} .01294{col 43}-0.9291{col 52}0.353{col 60}-.037382{col 73} .013339
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.1005{col 52}0.271{col 60}-.046478{col 73} .013052
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-11; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     9735{col 34}    10270{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  107.254{col 34}  107.254
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  182.292{col 34}  182.292
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.588{col 34}    0.588
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      182{col 34}      182
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.01924{col 33} .01259{col 43}-1.5286{col 52}0.126{col 60}-.043913{col 73}  .00543
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.6800{col 52}0.093{col 60}-.052666{col 73}  .00405
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-12; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111279{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    15029{col 34}    17117{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   24.012{col 34}   24.012
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   32.026{col 34}   32.026
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.750{col 34}    0.750
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       32{col 34}       33
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.01064{col 33} .01044{col 43}-1.0189{col 52}0.308{col 60}-.031095{col 73} .009823
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.0820{col 52}0.279{col 60}-.036814{col 73} .010626
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Date: 2009-12; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165312
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111357{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    13738{col 34}    14441{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  152.533{col 34}  152.533
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  227.078{col 34}  227.078
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.672{col 34}    0.672
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      226{col 34}      227
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00782{col 33} .01127{col 43}-0.6945{col 52}0.487{col 60}-.029905{col 73} .014256
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.6231{col 52}0.533{col 60} -.03487{col 73} .018047
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-1; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    104404
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    69805{col 34}    34599{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     9686{col 34}    11057{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   24.406{col 34}   24.406
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   40.386{col 34}   40.386
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.604{col 34}    0.604
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       40{col 34}       41
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} 1.2e-05{col 33} .00066{col 43}0.0180{col 52}0.986{col 60} -.00128{col 73} .001304
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.2343{col 52}0.815{col 60}-.001687{col 73} .001327
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-1; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    104404
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    69855{col 34}    34549{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     9736{col 34}    10628{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  169.452{col 34}  169.452
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  266.756{col 34}  266.756
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.635{col 34}    0.635
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      265{col 34}      266
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} 2.6e-05{col 33} .00076{col 43}0.0338{col 52}0.973{col 60}-.001455{col 73} .001506
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.1918{col 52}0.848{col 60}-.001915{col 73} .001574
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-2; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    107187
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    71553{col 34}    35634{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    10370{col 34}    11847{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   25.751{col 34}   25.751
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   38.245{col 34}   38.245
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.673{col 34}    0.673
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       38{col 34}       39
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00012{col 33} .00017{col 43}-0.7347{col 52}0.463{col 60}-.000458{col 73} .000208
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.1992{col 52}0.230{col 60}-.000537{col 73} .000129
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-2; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the preliminary bandwidth. Try checking for mass points with option {cmd:masspoints(check)}.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    107187
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    71601{col 34}    35586{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    10002{col 34}    10932{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  169.933{col 34}  169.933
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  257.037{col 34}  257.037
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.661{col 34}    0.661
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      256{col 34}      257
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00014{col 33} .00016{col 43}-0.9047{col 52}0.366{col 60}-.000448{col 73} .000165
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.4825{col 52}0.138{col 60}-.000485{col 73} .000067
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-3; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    107166
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    71500{col 34}    35666{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     7209{col 34}     7964{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   17.676{col 34}   17.676
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   29.583{col 34}   29.583
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.597{col 34}    0.597
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       29{col 34}       30
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00052{col 33} .00072{col 43}-0.7203{col 52}0.471{col 60}-.001935{col 73} .000895
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.9411{col 52}0.347{col 60}-.002445{col 73} .000859
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-3; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    107166
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    71548{col 34}    35618{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     7676{col 34}     8100{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  127.630{col 34}  127.630
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  215.406{col 34}  215.406
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.593{col 34}    0.593
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      214{col 34}      215
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00048{col 33} .00084{col 43}-0.5771{col 52}0.564{col 60}-.002122{col 73} .001156
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.7863{col 52}0.432{col 60}-.002672{col 73} .001142
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-4; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    106853
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    71127{col 34}    35726{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    12290{col 34}    13812{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   29.106{col 34}   29.106
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   44.471{col 34}   44.471
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.654{col 34}    0.654
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       44{col 34}       45
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00083{col 33}  .0005{col 43}1.6700{col 52}0.095{col 60}-.000144{col 73} .001804
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}1.4422{col 52}0.149{col 60}-.000309{col 73} .002033
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-4; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    106853
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    71173{col 34}    35680{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     9947{col 34}    10736{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  167.413{col 34}  167.413
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  269.314{col 34}  269.314
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.622{col 34}    0.622
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      268{col 34}      269
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00088{col 33} .00068{col 43}1.2901{col 52}0.197{col 60}-.000458{col 73}  .00222
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}1.0596{col 52}0.289{col 60}-.000742{col 73}  .00249
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-5; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    106595
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    70785{col 34}    35810{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     9241{col 34}    10288{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   22.599{col 34}   22.599
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   37.395{col 34}   37.395
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.604{col 34}    0.604
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       37{col 34}       38
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00064{col 33}  .0004{col 43}-1.5754{col 52}0.115{col 60}-.001426{col 73} .000155
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.5890{col 52}0.112{col 60}-.001768{col 73} .000185
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-5; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    106595
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    70835{col 34}    35760{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     8419{col 34}     9013{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  141.592{col 34}  141.592
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  246.323{col 34}  246.323
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.575{col 34}    0.575
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      245{col 34}      246
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00064{col 33} .00044{col 43}-1.4628{col 52}0.144{col 60}-.001506{col 73} .000219
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.4553{col 52}0.146{col 60}-.001788{col 73} .000264
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-6; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    105230
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    69818{col 34}    35412{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     8338{col 34}     9223{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   20.096{col 34}   20.096
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   30.366{col 34}   30.366
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.662{col 34}    0.662
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       30{col 34}       31
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00185{col 33} .00057{col 43}-3.2589{col 52}0.001{col 60}-.002966{col 73}-.000738
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-3.1223{col 52}0.002{col 60}-.003441{col 73}-.000787
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-6; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    105230
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    69865{col 34}    35365{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     7463{col 34}     7889{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  124.469{col 34}  124.469
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  199.726{col 34}  199.726
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.623{col 34}    0.623
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      199{col 34}      199
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00191{col 33} .00096{col 43}-1.9915{col 52}0.046{col 60}-.003796{col 73} -.00003
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.8731{col 52}0.061{col 60}-.004402{col 73}   .0001
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-7; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    105045
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    69466{col 34}    35579{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    13107{col 34}    14706{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   31.297{col 34}   31.297
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   38.295{col 34}   38.295
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.817{col 34}    0.817
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       38{col 34}       39
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00099{col 33} .00057{col 43}-1.7344{col 52}0.083{col 60}-.002111{col 73} .000129
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.6935{col 52}0.090{col 60} -.00274{col 73}   .0002
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-7; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    105045
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    69513{col 34}    35532{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     9401{col 34}    10011{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  158.156{col 34}  158.156
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  232.579{col 34}  232.579
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.680{col 34}    0.680
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      231{col 34}      232
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00114{col 33} .00077{col 43}-1.4842{col 52}0.138{col 60}-.002643{col 73} .000365
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.4280{col 52}0.153{col 60}-.003063{col 73} .000481
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-8; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    104081
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    68686{col 34}    35395{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    15355{col 34}    17319{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   37.984{col 34}   37.984
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   44.606{col 34}   44.606
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.852{col 34}    0.852
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       44{col 34}       45
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00022{col 33} .00081{col 43}0.2716{col 52}0.786{col 60} -.00136{col 73} .001797
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0371{col 52}0.970{col 60}-.002163{col 73} .002083
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-8; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    104081
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    68733{col 34}    35348{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     7764{col 34}     8273{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  130.752{col 34}  130.752
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  174.238{col 34}  174.238
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.750{col 34}    0.750
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      174{col 34}      174
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00015{col 33} .00138{col 43}0.1064{col 52}0.915{col 60} -.00256{col 73} .002854
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2022{col 52}0.840{col 60}-.002878{col 73}  .00354
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-9; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    104473
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    68751{col 34}    35722{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    13853{col 34}    15701{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   33.787{col 34}   33.787
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   37.888{col 34}   37.888
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.892{col 34}    0.892
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       37{col 34}       38
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00186{col 33} .00083{col 43}2.2306{col 52}0.026{col 60} .000225{col 73}  .00349
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}1.2644{col 52}0.206{col 60}-.000687{col 73} .003183
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-9; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    104473
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    68801{col 34}    35672{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    12743{col 34}    13861{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  210.693{col 34}  210.693
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  297.675{col 34}  297.675
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.708{col 34}    0.708
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      296{col 34}      297
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00199{col 33} .00111{col 43}1.7944{col 52}0.073{col 60}-.000183{col 73} .004156
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}1.3266{col 52}0.185{col 60}-.000842{col 73} .004369
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-10; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    103931
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    68201{col 34}    35730{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     7953{col 34}     8904{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   19.638{col 34}   19.638
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   28.939{col 34}   28.939
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.679{col 34}    0.679
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       28{col 34}       29
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00038{col 33} .00088{col 43}0.4313{col 52}0.666{col 60}-.001342{col 73} .002099
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.2649{col 52}0.791{col 60}-.002526{col 73} .001924
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-10; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    103931
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    68252{col 34}    35679{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     5524{col 34}     5837{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   91.290{col 34}   91.290
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  160.268{col 34}  160.268
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.570{col 34}    0.570
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      160{col 34}      160
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00037{col 33} .00105{col 43}-0.3540{col 52}0.723{col 60}-.002429{col 73} .001686
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.6828{col 52}0.495{col 60}-.003283{col 73} .001586
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-11; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    103788
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    67965{col 34}    35823{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     8325{col 34}     9313{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   20.992{col 34}   20.992
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   26.008{col 34}   26.008
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.807{col 34}    0.807
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       26{col 34}       27
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00046{col 33} .00112{col 43}-0.4100{col 52}0.682{col 60}-.002651{col 73} .001734
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.7577{col 52}0.449{col 60}  -.0031{col 73} .001371
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-11; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    103788
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    68017{col 34}    35771{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     7352{col 34}     7755{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  122.214{col 34}  122.214
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  189.290{col 34}  189.290
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.646{col 34}    0.646
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      189{col 34}      189
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00058{col 33} .00084{col 43}-0.6913{col 52}0.489{col 60}-.002215{col 73}  .00106
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.0322{col 52}0.302{col 60}-.002869{col 73}  .00089
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-12; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    101659
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    66379{col 34}    35280{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     8204{col 34}     9128{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   20.461{col 34}   20.461
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   27.083{col 34}   27.083
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.755{col 34}    0.755
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       27{col 34}       28
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00075{col 33} .00099{col 43}0.7602{col 52}0.447{col 60}-.001185{col 73} .002686
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.5030{col 52}0.615{col 60}-.001925{col 73} .003255
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Date: 2009-12; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    101659
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}    66426{col 34}    35233{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     5985{col 34}     6335{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  101.411{col 34}  101.411
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  161.571{col 34}  161.571
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.628{col 34}    0.628
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}      161{col 34}      161
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00123{col 33} .00101{col 43}1.2160{col 52}0.224{col 60} -.00075{col 73} .003202
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}1.3477{col 52}0.178{col 60}-.000752{col 73} .004063
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-1; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the preliminary bandwidth. Try checking for mass points with option {cmd:masspoints(check)}.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165310
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111277{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     3174{col 34}     3818{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}    5.166{col 34}    5.166
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   19.447{col 34}   19.447
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.266{col 34}    0.266
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       19{col 34}       20
+
+Outcome: pension_cum. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-8.9e-16{col 33} 7.7e-16{col 43}-1.1588{col 52}0.247{col 60}-2.4e-15{col 73} 6.1e-16
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0824{col 52}0.934{col 60}-5.5e-15{col 73} 5.1e-15
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-1; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165310
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111355{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     2562{col 34}     2687{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   29.823{col 34}   29.823
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   79.832{col 34}   79.832
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.374{col 34}    0.374
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       79{col 34}       80
+
+Outcome: pension_cum. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}      0{col 33} 3.0e-16{col 43}0.0000{col 52}1.000{col 60}-5.8e-16{col 73} 5.8e-16
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2389{col 52}0.811{col 60}-1.6e-15{col 73} 2.0e-15
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-2; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the preliminary bandwidth. Try checking for mass points with option {cmd:masspoints(check)}.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165310
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111277{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     3174{col 34}     3818{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}    5.166{col 34}    5.166
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   19.447{col 34}   19.447
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.266{col 34}    0.266
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       19{col 34}       20
+
+Outcome: pension_cum. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-8.9e-16{col 33} 7.7e-16{col 43}-1.1588{col 52}0.247{col 60}-2.4e-15{col 73} 6.1e-16
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0824{col 52}0.934{col 60}-5.5e-15{col 73} 5.1e-15
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-2; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165310
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111355{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     2562{col 34}     2687{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   29.823{col 34}   29.823
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   79.832{col 34}   79.832
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.374{col 34}    0.374
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       79{col 34}       80
+
+Outcome: pension_cum. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}      0{col 33} 3.0e-16{col 43}0.0000{col 52}1.000{col 60}-5.8e-16{col 73} 5.8e-16
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2389{col 52}0.811{col 60}-1.6e-15{col 73} 2.0e-15
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-3; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the preliminary bandwidth. Try checking for mass points with option {cmd:masspoints(check)}.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165310
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111277{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     3174{col 34}     3818{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}    5.166{col 34}    5.166
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   19.447{col 34}   19.447
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.266{col 34}    0.266
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       19{col 34}       20
+
+Outcome: pension_cum. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-8.9e-16{col 33} 7.7e-16{col 43}-1.1588{col 52}0.247{col 60}-2.4e-15{col 73} 6.1e-16
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0824{col 52}0.934{col 60}-5.5e-15{col 73} 5.1e-15
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-3; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165310
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111355{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     2562{col 34}     2687{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   29.823{col 34}   29.823
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   79.832{col 34}   79.832
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.374{col 34}    0.374
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       79{col 34}       80
+
+Outcome: pension_cum. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}      0{col 33} 3.0e-16{col 43}0.0000{col 52}1.000{col 60}-5.8e-16{col 73} 5.8e-16
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2389{col 52}0.811{col 60}-1.6e-15{col 73} 2.0e-15
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-4; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the preliminary bandwidth. Try checking for mass points with option {cmd:masspoints(check)}.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165310
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111277{col 34}    54033{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     3174{col 34}     3818{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}    5.166{col 34}    5.166
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   19.447{col 34}   19.447
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.266{col 34}    0.266
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       19{col 34}       20
+
+Outcome: pension_cum. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-8.9e-16{col 33} 7.7e-16{col 43}-1.1588{col 52}0.247{col 60}-2.4e-15{col 73} 6.1e-16
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0824{col 52}0.934{col 60}-5.5e-15{col 73} 5.1e-15
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_weeks
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-4; Runvar: std_days -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {cmd:masspoints(check)}. 
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}
+Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    165310
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   111355{col 34}    53955{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}     2562{col 34}     2687{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   29.823{col 34}   29.823
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   79.832{col 34}   79.832
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.374{col 34}    0.374
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}       79{col 34}       80
+
+Outcome: pension_cum. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}      0{col 33} 3.0e-16{col 43}0.0000{col 52}1.000{col 60}-5.8e-16{col 73} 5.8e-16
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2389{col 52}0.811{col 60}-1.6e-15{col 73} 2.0e-15
+{txt}{hline 19}{c BT}{hline 60}
+Std. Err. adjusted for clusters in std_days
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Date: 2009-5; Runvar: std_weeks -> (1) Year by year RDD
+{res}{err}Mass points detected in the running variable.
+{err}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {cmd:masspoints(check)}.
+{res}{err}Estimates might be unreliable due to low number of effective observations.
+{err}Invertibility problem: check variability of running variable around cutoff. Try checking for mass points with option {cmd:masspoints(check)}.
+{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
+
+end of do-file
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
+{com}.     *do "${c -(}do_files{c )-}\Step 4.2 - RIPS estimation.do"
+.     
+. {c )-}
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
+
+end of do-file
+
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
+
+{com}. 
