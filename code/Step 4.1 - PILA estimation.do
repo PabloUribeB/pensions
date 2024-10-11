@@ -96,7 +96,7 @@ quietly{
     keep if ever_colpensiones == 1
     
     * Cumulative pension dummy
-    gen persion_cum = pension
+    gen pension_cum = pension
     replace pension_cum = pension_cum[_n-1] if pension_cum[_n-1] == 1
     
     labvars $outcomes "Contribution to any pension fund"    ///
