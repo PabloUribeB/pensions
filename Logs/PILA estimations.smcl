@@ -1,9 +1,9 @@
 {smcl}
-{txt}{sf}{ul off}{.-}
+{com}{sf}{ul off}{txt}{.-}
       name:  {res}<unnamed>
        {txt}log:  {res}Z:\Christian Posso\_banrep_research\proyectos\pensions\Logs\PILA estimations.smcl
   {txt}log type:  {res}smcl
- {txt}opened on:  {res}10 Oct 2024, 15:15:19
+ {txt}opened on:  {res}10 Oct 2024, 16:45:33
 {txt}
 {com}. 
 . 
@@ -20,7 +20,7 @@
 {com}. 
 . * Process raw data to create relevant variables
 . quietly{c -(}
-{err}variable {bf}pension_cum{sf} not found
+{err}variable {bf}personabasicaid{sf} not found
 {txt}{search r(111), local:r(111);}
 
 end of do-file
@@ -34,4 +34,4 @@ end of do-file
 
 {search r(111), local:r(111);}
 
-{com}. 
+{com}. exit, clear
