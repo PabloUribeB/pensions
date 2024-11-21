@@ -128,7 +128,7 @@ forval year = 2009/2020 { // Loop through all years
                     dis as err "Cohort: `cohort'; Outcome: `outcome'; Date: "        ///
                     "`year'-`month'; Runvar: `runvar' -> (1) Year by year RDD"
                     
-                    mat drop beta vari
+                    cap mat drop beta vari
                     
                     cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & ///
                     fecha_pila == ym(`year',`month'), vce(cluster `runvar')
