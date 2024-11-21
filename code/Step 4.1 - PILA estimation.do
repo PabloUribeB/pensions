@@ -95,6 +95,8 @@ quietly{
     
     keep if ever_colpensiones == 1
     
+    sort personabasicaid fecha_pila
+    
     * Cumulative pension dummy
     gen pension_cum = pension
     replace pension_cum = pension_cum[_n-1] if pension_cum[_n-1] == 1
@@ -123,17 +125,19 @@ forval year = 2009/2020 { // Loop through all years
                     
                     foreach runvar in std_weeks std_days {
                         
-                    dis as err "Cohort: `cohort'; Outcome: `outcome'; Date: "   ///
+                    dis as err "Cohort: `cohort'; Outcome: `outcome'; Date: "        ///
                     "`year'-`month'; Runvar: `runvar' -> (1) Year by year RDD"
                     
-                    rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
+                    mat drop beta vari
+                    
+                    cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & ///
                     fecha_pila == ym(`year',`month'), vce(cluster `runvar')
 
-                    mat beta = e(tau_bc)            // Store robust beta
-                    mat vari = e(se_tau_rb)^2       // Store robust SE
+                    cap noi mat beta = e(tau_bc)            // Store robust beta
+                    cap noi mat vari = e(se_tau_rb)^2       // Store robust SE
 
                     * Save estimation results in dataset
-                    regsave using "${output}/PILA_results.dta", `replace'           ///
+                    cap noi regsave using "${output}/PILA_results.dta", `replace'   ///
                     coefmat(beta) varmat(vari) ci level(95)                         ///
                     addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
                     month, `month', runvar, `runvar')
