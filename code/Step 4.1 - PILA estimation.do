@@ -82,8 +82,8 @@ quietly{
     gen 	pila_salario_r_0 = pila_salario_r
     replace pila_salario_r_0 = 0 if mi(pila_salario_r)
 
-	* Replace missing values in pension with zero
-	replace pension = 0 if mi(pension)
+    * Replace missing values in pension with zero
+    replace pension = 0 if mi(pension)
 	
     * Dummy for pension fund code
     gen codigo_pension = (!mi(afp_cod))
@@ -92,7 +92,7 @@ quietly{
     gen colpensiones = (inlist(afp_cod, "25-14", "25-11" ,"25-8", "ISSFSP"))
 
     keep codigo_pension pension colpensiones pila_salario_r_0 poblacion*    ///
-    year month std_weeks std_days fecha_pila personabasicaid // For efficiency
+    year month std_weeks std_days fecha_pila personabasicaid ibc_pens // For efficiency
     
     bys personabasicaid: egen ever_colpensiones = max(colpensiones)
     
@@ -103,6 +103,8 @@ quietly{
     * Cumulative pension dummy
     gen pension_cum = pension
     bys personabasicaid (fecha_pila): replace pension_cum = pension_cum[_n-1] if pension_cum[_n-1] == 1
+    
+    * Create proxy for pension using ibc_pens. Sortear por id y fecha. Mirar los datos y ver si hay gente que cuando deja de cotizar en ibc pension una vez maso a la edad de pension, vuelven a cotizar ahi o si el salario que se observa es por trabajos despues de la pension (que no cotizan a pension) Si es asi, coger el ultimo periodo de ibc pension como el periodo de pension = 1
     
     labvars $outcomes "Contribution to any pension fund"    ///
     "Retirement sheet" "Retirement sheet cumulative"        ///
