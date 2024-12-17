@@ -136,7 +136,7 @@ forval y = 2009/2020 {
 		merge m:1 year month using "${ipc}\IPC mensual", keep(1 3) nogen
 		
 		*Generate real wages (base 2018m12)
-		global vars pila_salario pila_salario_max arp_cot_obl ibc_rprof 
+		global vars pila_salario pila_salario_max arp_cot_obl ibc_rprof ibc_pens
 		
 		foreach var in $vars {
 			

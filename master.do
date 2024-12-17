@@ -45,11 +45,19 @@ if inlist("`c(username)'", "Pablo Uribe", "pu42") {
     local  run =    "external"
     
 }
-else {
-    
+
+if "`c(username)'" == "cpossosu" {
+
+    global root	 "\\wmedesrv\GAMMA\Christian Posso\_banrep_research\proyectos\pensions"
+    local  run = "banrep"
+
+}
+	
+else{
+
     global root	 "Z:\Christian Posso\_banrep_research\proyectos\pensions"
     local  run = "banrep"
-    
+
 }
 
 cap mkdir "${root}\Logs"
@@ -86,7 +94,7 @@ if "`run'" == "banrep" { // Data only in BanRep
     
     *do "${do_files}\Step 1 - Master dataset and exploratory analysis.do"
     *do "${do_files}\Step 2 - Master descriptive stats.do"
-    *do "${do_files}\Step 3.1 - PILA consolidation.do"
+    do "${do_files}\Step 3.1 - PILA consolidation.do"
     *do "${do_files}\Step 3.2 - Merge with RIPS.do"
     *do "${do_files}\Step 3.2.1 - RIPS dataset.do"
     do "${do_files}\Step 4.1 - PILA estimation.do"
