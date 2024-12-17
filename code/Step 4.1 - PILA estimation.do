@@ -82,6 +82,9 @@ quietly{
     gen 	pila_salario_r_0 = pila_salario_r
     replace pila_salario_r_0 = 0 if mi(pila_salario_r)
 
+	* Replace missing values in pension with zero
+	replace pension = 0 if mi(pension)
+	
     * Dummy for pension fund code
     gen codigo_pension = (!mi(afp_cod))
 
@@ -99,7 +102,7 @@ quietly{
     
     * Cumulative pension dummy
     gen pension_cum = pension
-    replace pension_cum = pension_cum[_n-1] if pension_cum[_n-1] == 1
+    bys personabasicaid (fecha_pila): replace pension_cum = pension_cum[_n-1] if pension_cum[_n-1] == 1
     
     labvars $outcomes "Contribution to any pension fund"    ///
     "Retirement sheet" "Retirement sheet cumulative"        ///
@@ -218,7 +221,7 @@ foreach cohort in $first_cohorts {
 
             local t = e(tau_bc) / e(se_tau_rb)
 
-            local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
+            local N: 	dis %10.0f e(N_b_l) + e(N_b_r)
             local N: 	dis strtrim("`N'")
 
             if abs(`t') >= 1.645 {
@@ -250,34 +253,32 @@ foreach cohort in $first_cohorts {
                 local Breg = "`Breg'*"
             }
 
-
+			local HL: 	dis %7.2fc `HL'
+			
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR'),          ///
             vce(cluster `runvar') p(1) kernel(triangular) h(`HR' `HR') 	        ///
             binselect(esmv)	graph_options(title(`varlab', size(medium) span)    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc))     ///
-            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg';"         ///
+            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'; "        ///
             "Effective number of observations: `N'."))
 
-            scalar b_l = e(J_star_l)
-            scalar b_r = e(J_star_r)
-            scalar b_avg = (b_l + b_r) / 2
-
-            graph export "${graphs}\\`outcome'_`cohort'_`runvar'_rdplot.png",   ///
+			
+            graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_rdplot.png",   ///
                 replace width(1920) height(1080)
 
 
-            biscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &       ///
-            inrange(`runvar', -`HL', `HR'), n(b_avg) cluster(`runvar')          ///
+            binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
+            inrange(`runvar', -`HL', `HR'), cluster(`runvar')                   ///
             rd(0) linetype(lfit) title(`varlab', size(medium) span)             ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             ylabel(, format(%010.`dec'fc))                                      ///
-            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg';"         ///
+            note("Rdrobust: `B'. Standard RDD: `Breg'; "                        ///
             "Effective number of observations: `N'.")
 
-            graph export "${graphs}\\`outcome'_`cohort'_`runvar'_bscatter.png", ///
+            graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_bscatter.png", ///
                 replace width(1920) height(1080)
 
             local elig eligible_d
@@ -433,7 +434,7 @@ foreach cohort in $first_cohorts {
 
             local t = e(tau_bc) / e(se_tau_rb)
 
-            local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
+            local N: 	dis %10.0f e(N_b_l) + e(N_b_r)
             local N: 	dis strtrim("`N'")
 
             if abs(`t') >= 1.645 {
@@ -466,6 +467,7 @@ foreach cohort in $first_cohorts {
                 local Breg = "`Breg'*"
             }
 
+            local HL: 	dis %7.2fc `HL'
 
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR') &         ///
             inrange(age, `ages'), vce(cluster `runvar') p(1) kernel(triangular) ///
@@ -474,28 +476,28 @@ foreach cohort in $first_cohorts {
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc))     ///
-            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg';"         ///
+            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'; "        ///
             "Effective number of observations: `N'."))
 
             scalar b_l = e(J_star_l)
             scalar b_r = e(J_star_r)
             scalar b_avg = (b_l + b_r) / 2
 
-            graph export "${graphs}\\`outcome'_`cohort'_`runvar'_rdplot_ages.png",  ///
+            graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_rdplot_ages.png",  ///
                 replace width(1920) height(1080)
 
 
-            biscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &       ///
+            binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
             inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),              ///
-            n(b_avg) cluster(`runvar') rd(0) linetype(lfit)                     ///
+            cluster(`runvar') rd(0) linetype(lfit)                              ///
             title(`varlab', size(medium) span)                                  ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             ylabel(, format(%010.`dec'fc))                                      ///
-            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg';"         ///
+            note("Rdrobust: `B'. Standard RDD: `Breg';"                         ///
             "Effective number of observations: `N'.")
 
-            graph export "${graphs}\\`outcome'_`cohort'_`runvar'_bscatter_ages.png", ///
+            graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_bscatter_ages.png", ///
                 replace width(1920) height(1080)
 
             local elig eligible_d
