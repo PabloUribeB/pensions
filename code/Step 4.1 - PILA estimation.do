@@ -23,7 +23,7 @@ set graphics off
 global first_cohorts    M50 F55
 global second_cohorts   M54 F59
 global outcomes         codigo_pension pension pension_cum colpensiones     ///
-                        pila_salario_r_0
+                        pila_salario_r_0 pension_ibc pension_ibc_cum
 
 
 capture log close
@@ -104,10 +104,25 @@ quietly{
     gen pension_cum = pension
     bys personabasicaid (fecha_pila): replace pension_cum = pension_cum[_n-1] if pension_cum[_n-1] == 1
     
-    * Create proxy for pension using ibc_pens. Sortear por id y fecha. Mirar los datos y ver si hay gente que cuando deja de cotizar en ibc pension una vez maso a la edad de pension, vuelven a cotizar ahi o si el salario que se observa es por trabajos despues de la pension (que no cotizan a pension) Si es asi, coger el ultimo periodo de ibc pension como el periodo de pension = 1
+    * Create proxy for pension using ibc_pens
+    tempvar last_ibc tot_mis
+    egen `last_ibc' = lastnm(fecha_pila) if !mi(ibc_pens), by(personabasicaid)
+
+    bys personabasicaid: ereplace `last_ibc' = max(`last_ibc')
+
+    egen `tot_mis' = total(missing(ibc_pens)) if fecha_pila >= `last_ibc',  ///
+    by(personabasicaid)
+
+    gen pension_ibc = (fecha_pila == `last_ibc' & `tot_mis' >= 4)
+
+    gen pension_ibc_cum = pension_ibc
+
+    bys personabasicaid (fecha_pila): replace pension_ibc_cum =     ///
+        pension_ibc_cum[_n-1] if pension_ibc_cum[_n-1] == 1
+        
     
-    labvars $outcomes "Contribution to any pension fund"    ///
-    "Retirement sheet" "Retirement sheet cumulative"        ///
+    labvars $outcomes "Contribution to any pension fund"        ///
+    "Retirement sheet" "Retirement sheet cumulative"            ///
     "Contribution to Colpensiones" "Monthly wage (with 0's)"
     
 }
@@ -319,7 +334,7 @@ gen eligible_d = (std_days > 0)
 ****************************************************************************
 
 local replace replace
-gen post = (age >= 60)
+gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
 
 foreach cohort in $first_cohorts {
     
