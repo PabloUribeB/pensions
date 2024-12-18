@@ -94,10 +94,10 @@ if "`run'" == "banrep" { // Data only in BanRep
     
     *do "${do_files}\Step 1 - Master dataset and exploratory analysis.do"
     *do "${do_files}\Step 2 - Master descriptive stats.do"
-    do "${do_files}\Step 3.1 - PILA consolidation.do"
+    *do "${do_files}\Step 3.1 - PILA consolidation.do"
     *do "${do_files}\Step 3.2 - Merge with RIPS.do"
     *do "${do_files}\Step 3.2.1 - RIPS dataset.do"
-    *do "${do_files}\Step 4.1 - PILA estimation.do"
+    do "${do_files}\Step 4.1 - PILA estimation.do"
     *do "${do_files}\Step 4.2 - RIPS estimation.do"
     
 }
