@@ -123,7 +123,8 @@ quietly{
     
     labvars $outcomes "Contribution to any pension fund"        ///
     "Retirement sheet" "Retirement sheet cumulative"            ///
-    "Contribution to Colpensiones" "Monthly wage (with 0's)"
+    "Contribution to Colpensiones" "Monthly wage (with 0's)"    ///
+    "Retirement (IBC proxy)" "Retirement (IBC proxy) cumulative"
     
 }
 
