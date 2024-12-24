@@ -234,7 +234,7 @@ foreach cohort in $first_cohorts {
             local HL = e(h_l)
             local HR = e(h_r)
 
-            local B: 	dis %010.`dec'fc e(tau_bc)
+            local B: 	dis %010.`dec'f e(tau_bc)
             local B: 	dis strtrim("`B'")
 
             local t = e(tau_bc) / e(se_tau_rb)
@@ -256,7 +256,7 @@ foreach cohort in $first_cohorts {
             qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
                 inrange(`runvar', -`HL', `HR'), vce(cluster `runvar')
 
-            local Breg: dis %010.`dec'fc _b[1.`elig']
+            local Breg: dis %010.`dec'f _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
 
             local t = _b[1.`elig'] / _se[1.`elig']
@@ -271,7 +271,7 @@ foreach cohort in $first_cohorts {
                 local Breg = "`Breg'*"
             }
 
-			local HL: 	dis %7.2fc `HL'
+			local HL: 	dis %7.2f `HL'
 			
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR'),          ///
             vce(cluster `runvar') p(1) kernel(triangular) h(`HR' `HR') 	        ///
@@ -447,7 +447,7 @@ foreach cohort in $first_cohorts {
             local HL = e(h_l)
             local HR = e(h_r)
 
-            local B: 	dis %010.`dec'fc e(tau_bc)
+            local B: 	dis %010.`dec'f e(tau_bc)
             local B: 	dis strtrim("`B'")
 
             local t = e(tau_bc) / e(se_tau_rb)
@@ -470,7 +470,7 @@ foreach cohort in $first_cohorts {
                 inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),          ///
                 vce(cluster `runvar')
 
-            local Breg: dis %010.`dec'fc _b[1.`elig']
+            local Breg: dis %010.`dec'f _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
 
             local t = _b[1.`elig'] / _se[1.`elig']
@@ -485,7 +485,7 @@ foreach cohort in $first_cohorts {
                 local Breg = "`Breg'*"
             }
 
-            local HL: 	dis %7.2fc `HL'
+            local HL: 	dis %7.2f `HL'
 
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR') &         ///
             inrange(age, `ages'), vce(cluster `runvar') p(1) kernel(triangular) ///
