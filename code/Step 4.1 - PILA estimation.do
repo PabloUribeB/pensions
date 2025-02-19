@@ -216,9 +216,11 @@ foreach cohort in $first_cohorts {
         
         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
             local dec = 0
+            local pren = 10
         }
         else {
             local dec = 3
+            local pren = 7
         }
         
         local elig eligible_w
@@ -234,7 +236,7 @@ foreach cohort in $first_cohorts {
             local HL = e(h_l)
             local HR = e(h_r)
 
-            local B: 	dis %010.`dec'f e(tau_bc)
+            local B: 	dis %`pren'.`dec'f e(tau_bc)
             local B: 	dis strtrim("`B'")
 
             local t = e(tau_bc) / e(se_tau_rb)
@@ -256,7 +258,7 @@ foreach cohort in $first_cohorts {
             qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
                 inrange(`runvar', -`HL', `HR'), vce(cluster `runvar')
 
-            local Breg: dis %010.`dec'f _b[1.`elig']
+            local Breg: dis %`pren'.`dec'f _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
 
             local t = _b[1.`elig'] / _se[1.`elig']
@@ -278,7 +280,7 @@ foreach cohort in $first_cohorts {
             binselect(esmv)	graph_options(title(`varlab', size(medium) span)    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc))     ///
+            legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
             note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'; "        ///
             "Effective number of observations: `N'."))
 
@@ -292,7 +294,7 @@ foreach cohort in $first_cohorts {
             rd(0) linetype(lfit) title(`varlab', size(medium) span)             ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            ylabel(, format(%010.`dec'fc))                                      ///
+            ylabel(, format(%`pren'.`dec'fc))                                   ///
             note("Rdrobust: `B'. Standard RDD: `Breg'; "                        ///
             "Effective number of observations: `N'.")
 
@@ -429,9 +431,11 @@ foreach cohort in $first_cohorts {
         
         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
             local dec = 0
+            local pren = 10
         }
         else {
             local dec = 3
+            local pren = 7
         }
         
         local elig eligible_w
@@ -447,7 +451,7 @@ foreach cohort in $first_cohorts {
             local HL = e(h_l)
             local HR = e(h_r)
 
-            local B: 	dis %010.`dec'f e(tau_bc)
+            local B: 	dis %`pren'.`dec'f e(tau_bc)
             local B: 	dis strtrim("`B'")
 
             local t = e(tau_bc) / e(se_tau_rb)
@@ -470,7 +474,7 @@ foreach cohort in $first_cohorts {
                 inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),          ///
                 vce(cluster `runvar')
 
-            local Breg: dis %010.`dec'f _b[1.`elig']
+            local Breg: dis %`pren'.`dec'f _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
 
             local t = _b[1.`elig'] / _se[1.`elig']
@@ -493,7 +497,7 @@ foreach cohort in $first_cohorts {
             graph_options(title(`varlab', size(medium) span)                    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            legend(rows(1) position(bottom)) ylabel(, format(%010.`dec'fc))     ///
+            legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))     ///
             note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'; "        ///
             "Effective number of observations: `N'."))
 
@@ -511,7 +515,7 @@ foreach cohort in $first_cohorts {
             title(`varlab', size(medium) span)                                  ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            ylabel(, format(%010.`dec'fc))                                      ///
+            ylabel(, format(%`pren'.`dec'fc))                                      ///
             note("Rdrobust: `B'. Standard RDD: `Breg';"                         ///
             "Effective number of observations: `N'.")
 

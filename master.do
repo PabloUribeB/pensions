@@ -97,7 +97,10 @@ if "`run'" == "banrep" { // Data only in BanRep
     *do "${do_files}\Step 3.1 - PILA consolidation.do"
     *do "${do_files}\Step 3.2 - Merge with RIPS.do"
     *do "${do_files}\Step 3.2.1 - RIPS dataset.do"
-    do "${do_files}\Step 4.1 - PILA estimation.do"
+    statapush using "${do_files}\Step 4.1 - PILA estimation.do",    ///
+            token(afuisb3n88xy8brst2g381e1jsn63o)                   ///
+            userid(u7id63j518ys46zi6bzcktvtitykmx)                  ///
+            message(Pila estimations)
     *do "${do_files}\Step 4.2 - RIPS estimation.do"
     
 }
