@@ -281,8 +281,7 @@ foreach cohort in $first_cohorts {
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
-            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'; "        ///
-            "Effective number of observations: `N'."))
+            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'."))
 
 			
             graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_rdplot.png",   ///
@@ -295,8 +294,7 @@ foreach cohort in $first_cohorts {
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             ylabel(, format(%`pren'.`dec'fc))                                   ///
-            note("Rdrobust: `B'. Standard RDD: `Breg'; "                        ///
-            "Effective number of observations: `N'.")
+            note("Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.")
 
             graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_bscatter.png", ///
                 replace width(1920) height(1080)
@@ -498,8 +496,7 @@ foreach cohort in $first_cohorts {
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))     ///
-            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'; "        ///
-            "Effective number of observations: `N'."))
+            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'."))
 
             scalar b_l = e(J_star_l)
             scalar b_r = e(J_star_r)
@@ -516,8 +513,7 @@ foreach cohort in $first_cohorts {
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             ylabel(, format(%`pren'.`dec'fc))                                      ///
-            note("Rdrobust: `B'. Standard RDD: `Breg';"                         ///
-            "Effective number of observations: `N'.")
+            note("Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.")
 
             graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_bscatter_ages.png", ///
                 replace width(1920) height(1080)
