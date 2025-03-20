@@ -216,11 +216,11 @@ foreach cohort in $first_cohorts {
         
         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
             local dec = 0
-            local pren = 10
+            local pren "10"
         }
         else {
             local dec = 3
-            local pren = 7
+            local pren "07"
         }
         
         local elig eligible_w
@@ -236,12 +236,12 @@ foreach cohort in $first_cohorts {
             local HL = e(h_l)
             local HR = e(h_r)
 
-            local B: 	dis %`pren'.`dec'f e(tau_bc)
+            local B: 	dis %`pren'.`dec'fc e(tau_bc)
             local B: 	dis strtrim("`B'")
 
             local t = e(tau_bc) / e(se_tau_rb)
 
-            local N: 	dis %10.0f e(N_b_l) + e(N_b_r)
+            local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
             local N: 	dis strtrim("`N'")
 
             if abs(`t') >= 1.645 {
@@ -258,7 +258,7 @@ foreach cohort in $first_cohorts {
             qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
                 inrange(`runvar', -`HL', `HR'), vce(cluster `runvar')
 
-            local Breg: dis %`pren'.`dec'f _b[1.`elig']
+            local Breg: dis %`pren'.`dec'fc _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
 
             local t = _b[1.`elig'] / _se[1.`elig']
@@ -429,11 +429,11 @@ foreach cohort in $first_cohorts {
         
         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
             local dec = 0
-            local pren = 10
+            local pren "10"
         }
         else {
             local dec = 3
-            local pren = 7
+            local pren "07"
         }
         
         local elig eligible_w
@@ -449,12 +449,12 @@ foreach cohort in $first_cohorts {
             local HL = e(h_l)
             local HR = e(h_r)
 
-            local B: 	dis %`pren'.`dec'f e(tau_bc)
+            local B: 	dis %`pren'.`dec'fc e(tau_bc)
             local B: 	dis strtrim("`B'")
 
             local t = e(tau_bc) / e(se_tau_rb)
 
-            local N: 	dis %10.0f e(N_b_l) + e(N_b_r)
+            local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
             local N: 	dis strtrim("`N'")
 
             if abs(`t') >= 1.645 {
@@ -472,7 +472,7 @@ foreach cohort in $first_cohorts {
                 inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),          ///
                 vce(cluster `runvar')
 
-            local Breg: dis %`pren'.`dec'f _b[1.`elig']
+            local Breg: dis %`pren'.`dec'fc _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
 
             local t = _b[1.`elig'] / _se[1.`elig']
