@@ -1,0 +1,134 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{setspace}
+\usepackage[bookmarksopen,colorlinks,linkcolor=black,urlcolor=Blue,citecolor=black]{hyperref}
+\usepackage{multirow}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{float,lscape}
+\usepackage{longtable}
+\usepackage[margin=2.54cm, include foot]{geometry}
+\usepackage{enumitem}
+\usepackage{wrapfig}
+\usepackage{threeparttable}
+\usepackage{multicol}
+\usepackage{dcolumn}
+\usepackage{geometry}
+\usepackage{makecell}
+\usepackage{amsmath}
+\usepackage[nameinlink]{cleveref}
+\usepackage{appendix}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage[T1]{fontenc}
+\usepackage{rotating}
+\usepackage[natbibapa]{apacite}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{afterpage}
+\usepackage{bbm}
+\usepackage{pdflscape}
+\hypersetup{
+	colorlinks,
+	citecolor=Blue,
+	linkcolor=Blue,
+	}
+\usepackage{titling}
+
+\begin{document}
+\renewcommand{\BOthers}[1]{et al.\hbox{}}
+\newcommand\fnote[1]{\captionsetup{font=footnotesize}\caption*{#1}}
+
+% FOR ADDING IN-LINE COMMENTS THAT CAN BE TOGGLED ON AND OFF
+\newcommand{\xxx}[2][show]{ % Replace "show" with any other word to hide XXX comments.
+ \ifthenelse{\equal{#1}{show} }{ \textcolor{red}{X #2 X}}{}}
+
+%\vspace{-2.35cm}
+\title{\Large \textbf{The impact of pension reforms on retirees}}
+\author{Pablo Uribe \\ \small \textit{Yale University}} 
+\maketitle
+
+\vspace{-0.5cm}
+
+% \begin{center}
+%     \Large \textcolor{red}{This is a preliminary draft of an ongoing project. Please do not share}
+% \end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+    
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\end{abstract}
+
+
+\textit{\textbf{Keywords:}} Pay as You Go, Pension, Public Pension, Retirement Pension.
+
+\vspace{0.5cm}
+\textit{\textbf{JEL Classification:}} H55.
+
+\vspace{.5cm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+Pension reforms can have far-reaching consequences, affecting both labor market dynamics and individual well-being. As governments face increasing fiscal pressure from aging populations, raising the retirement age has become a common policy response. A large body of research shows that increasing the retirement age influences employment, earnings, and the timing of retirement \citep{fisher2010pension,geyer2020labor,hernaes2016pension,sanchez2014delaying}. However, evidence on the health effects of working beyond the traditional retirement age remains mixed—some studies suggest little to no impact, while others find adverse consequences, particularly for vulnerable workers \citep{coe2011retirement,hagen2018effects,maimaris2010impact,pilipiec2021effect}. This paper contributes to this debate by examining the health consequences of a pension reform in Colombia that increased the retirement age by two years.
+
+
+\section{Setting \label{sec:setting}}
+
+Law 100 of 1993 established Colombia’s Social Security System, which is made up of three subsystems: pensions, health, and professional risks. The General Pension System (SGP, by its Spanish acronym) created a dual-pillar structure that allows workers to choose between a public pay-as-you-go scheme and an individual savings regime. Once workers select a regime, they are legally required to stay affiliated to the same one for a minimum of five years before transferring. The main objective of this new system was to expand pension coverage across the country and to make sure people were covered against any contingencies that may derive from old age, disabilities or death.
+
+Regardless of the system that an individual chooses to join when starting their work life, contributions are handled equivalently. For dependent workers, the contribution is split between employers and employees, with the former covering a larger share of the total contribution. On the other hand, independent workers are responsible to pay for the entirety of their contribution. While the share of income that has to be contributed is the same for everyone, independent workers calculate this share on 40\% of their total salary instead ---since they have to cover it in its entirety. Currently, the mandatory contribution is 16\% of the monthly wage. For dependent workers, employers cover 12\% and the worker covers the remaining 4\%.
+
+\subsection{The Private Pension Regime}
+
+The \textit{Régimen de Ahorro Individual Solidario} (RAIS) --or Individual Savings Regime with Solidarity-- operates as a fully funded scheme where each worker accumulates savings in a private pension account. These pensions are managed by private funds who charge administration fees and are responsible for investing the money. Each worker can choose the fund that suits their needs and providers typically offer different investment portfolios depending on individuals' risk tolerance. Since contributors have flexibility to switch between providers, the latter have to compete to attract individuals.
+
+A key feature of this regime is that there is no fixed retirement age. Instead, pension eligibility depends on the accumulated balance being sufficient to finance a monthly lifetime pension of at least 110\% of the monthly minimum wage. If the individual wants to keep contributing towards their pension, their employer is required to continue paying their share of the contribution while there still exists a contract with the employer until the latter turns 60 (women) or 62 (men).
+
+Alternatively, if savings are not enough to finance such pension, workers can obtain a guaranteed minimum pension as long as they have contributed for at least 1,150 weeks. However, if an individual fails to meet the pension requirements, they receive a lump-sum payment upon retirement, which includes the total amount they contributed and the returns on the investment. 
+
+\subsection{The Public Pension Regime}
+The \textit{Régimen de Prima Media} (RPM) --or Average Premium Regime-- is Colombia's public pay-as-you-go pension system. Under this scheme, contributions from active workers finance the pensions of current retirees. Unlike the private system, where pension is determined by the accumulated contributions plus market returns, the RPM guarantees a fixed pension formula, making it the preferred option for workers seeking stability in their old age.
+
+Colpensiones currently serves as the administrator of this public pension system. Originally, the administration of the RPM was the responsibility of the \textit{Instituto de Seguros Sociales} (ISS); however, subsequent institutional reforms led to Colpensiones taking over these functions to provide a more focused and efficient management of resources. In this way, Colpensiones continues the work of the ISS to ensure that the benefit structure of the RPM is preserved.
+
+Law 100 of 1993 initially set the retirement age at 55 years for women and 60 years for men, with a requirement of 1,000 weeks of contributions to qualify for a pension. Pension amounts are determined by a replacement rate that depends on total weeks contributed, with a minimum pension floor set at the legal monthly minimum wage. The calculated rate is applied to the average monthly salary of the last 10 years of contributions to determine the total allowance that will be paid monthly to the retiree.\footnote{A total of 13 allowances are paid over the course of a year, since retirees receive a bonus payment on top of the monthly pension in December.} In addition to the standard old-age pension, the system provides disability and survivor benefits, ensuring coverage for individuals who experience a loss of labor capacity or for the dependents of deceased workers.
+
+A key feature of the RPM, as established by Law 100, was the planned increase in the retirement age. The legislation established that, starting in 2014, the minimum retirement age would increase to 57 years for women and 62 years for men. This policy change was intended to improve the system’s financial sustainability by reducing the number of years individuals receive benefits while extending their contribution period. However, the law also contemplated a Transition Regime (TR) that allowed certain workers to remain under the previous retirement conditions. Specifically, individuals who were at least 35 years old (women) or 40 years old (men) in December 23, 1994, or those who had accumulated 750 weeks of contributions by that date, were permitted to retire under the original age thresholds of 55 and 60. This transition regime created a gradual adjustment for those close to retirement while fully enforcing the new retirement age for younger cohorts.
+
+However, these TR conditions were revised in subsequent reforms, further modifying the timeline for retirement eligibility and introducing additional constraints on early retirement. In its core, the system's structure was not heavily modified until Law 2381 of 2024. Since July 1, 2025, every formal worker has to be affiliated to Colpensiones with contributions up to 2.3 monthly minimum wages. If their income is higher, they may voluntarily choose the fund of their choice (Colpensiones or any private fund) to contribute on the rest of their income above the threshold.
+
+\subsection{Legislative Act 01 of 2005}
+
+Legislative Act 01 of 2005 (LA-01) introduced a major reform to Colombia’s public pension system, accelerating the elimination of the transition regime established by Law 100 and further restricting early retirement options.\footnote{This reform only affects Colpensiones affiliates, as there is no age requirement for individuals contributing to RAIS.} Initially, the TR was set to expire in 2014, but LA-01 moved this deadline forward to July 31, 2010, except for individuals who had contributed to Colpensiones for at least 750 weeks --around 15 years-- by the time this Act came into force in July 25, 2005. These individuals maintained their status until 2014.
+
+Maintaining this transition regime until July 31, 2010 implies that women (men) who were part of the TR as established by Law 100, would be able to retire at 55 (60) years old only if they were born on or before July 31, 1954 (1950). If an individual was originally part of the TR but was born on August 1, or later, they would not be able to retire as expected and would have to work an additional two years, unless they met the contribution requirement in 2005. For these individuals, they had until the end of 2014 to meet all the requirements and become entitled to a pension. Otherwise, they would have to work until they are 57 (women) or 62 (men) years old.
+
+
+
+
+\section{Data \label{sec:data}}
+
+
+
+\section{Empirical Strategy \label{sec:strategy}}
+
+\subsection{Balance}
+
+\subsection{Manipulation}
+
+\section{Results}
+
+
+\section{Conclusions}
+
+\newpage
+\bibliographystyle{apacite}
+\bibliography{references}
+
+\end{document}
