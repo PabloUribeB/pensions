@@ -151,8 +151,9 @@ forval year = 2009/2020 { // Loop through all years
                     
                     cap mat drop beta vari
                     
+                    ** RDRobust estimation
                     cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & ///
-                    fecha_pila == ym(`year',`month'), vce(cluster `runvar')
+                    fecha_pila == ym(`year',`month'), vce(hc3)
 
                     cap noi mat beta = e(tau_bc)            // Store robust beta
                     cap noi mat vari = e(se_tau_rb)^2       // Store robust SE
@@ -161,7 +162,25 @@ forval year = 2009/2020 { // Loop through all years
                     cap noi regsave using "${output}/PILA_results.dta", `replace'   ///
                     coefmat(beta) varmat(vari) ci level(95)                         ///
                     addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
-                    month, `month', runvar, `runvar')
+                    month, `month', runvar, `runvar', model, "rdrobust")
+                    
+                    ** RDHonest estimation
+                    cap noi rdhonest `outcome' `runvar' if poblacion_`cohort' == 1 & ///
+                    fecha_pila == ym(`year',`month')
+                    
+                    cap noi mat beta = e(est)            // Store robust beta
+                    cap noi mat vari = e(se)^2           // Store robust SE
+                    local li95       = e(TCiL)
+                    local ui95       = e(TCiU)
+                    local M          = e(M)
+                    
+                    cap noi regsave using "${output}/PILA_results.dta", append      ///
+                    coefmat(beta) varmat(vari)                                      ///
+                    addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
+                    month, `month', runvar, `runvar', model, "rdhonest",            ///
+                    ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
+                    
+                    
                     
                     local replace append
                     }
@@ -231,7 +250,7 @@ foreach cohort in $first_cohorts {
             "Runvar: `runvar' -> (2) Whole monthly panel RDD"
             
             qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1,     ///
-                vce(cluster `runvar')
+                vce(hc3)
 
             local HL = e(h_l)
             local HR = e(h_r)
@@ -256,7 +275,7 @@ foreach cohort in $first_cohorts {
 
 
             qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
-                inrange(`runvar', -`HL', `HR'), vce(cluster `runvar')
+                inrange(`runvar', -`HL', `HR'), vce(hc3)
 
             local Breg: dis %`pren'.`dec'fc _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
@@ -276,12 +295,12 @@ foreach cohort in $first_cohorts {
 			local HL: 	dis %7.2f `HL'
 			
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR'),          ///
-            vce(cluster `runvar') p(1) kernel(triangular) h(`HR' `HR') 	        ///
+            vce(hc3) p(1) kernel(triangular) h(`HR' `HR') 	                    ///
             binselect(esmv)	graph_options(title(`varlab', size(medium) span)    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
-            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'."))
+            note(`""Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'.""'))
 
 			
             graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_rdplot.png",   ///
@@ -289,12 +308,12 @@ foreach cohort in $first_cohorts {
 
 
             binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
-            inrange(`runvar', -`HL', `HR'), cluster(`runvar')                   ///
+            inrange(`runvar', -`HL', `HR'), vce(robust)                         ///
             rd(0) linetype(lfit) title(`varlab', size(medium) span)             ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             ylabel(, format(%`pren'.`dec'fc))                                   ///
-            note("Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.")
+            note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
 
             graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_bscatter.png", ///
                 replace width(1920) height(1080)
@@ -397,7 +416,7 @@ foreach cohort in $first_cohorts {
                 "`age'; Runvar: `runvar' -> (4) Age by age RDD"
                 
                 rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
-                age == `age', vce(cluster `runvar')
+                age == `age', vce(hc3)
 
                 mat beta = e(tau_bc)            // Store robust beta
                 mat vari = e(se_tau_rb)^2       // Store robust SE
@@ -406,7 +425,24 @@ foreach cohort in $first_cohorts {
                 regsave using "${output}/PILA_results.dta", append              ///
                 coefmat(beta) varmat(vari) ci level(95)                         ///
                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
-                runvar, `runvar')
+                runvar, `runvar', model, "rdrobust")
+                
+                
+                ** RDHonest estimation
+                cap noi rdhonest `outcome' `runvar' if poblacion_`cohort' == 1 & ///
+                age == `age'
+                
+                cap noi mat beta = e(est)            // Store robust beta
+                cap noi mat vari = e(se)^2           // Store robust SE
+                local li95       = e(TCiL)
+                local ui95       = e(TCiU)
+                local M          = e(M)
+                
+                cap noi regsave using "${output}/PILA_results.dta", append      ///
+                coefmat(beta) varmat(vari)                                      ///
+                addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
+                runvar, `runvar', model, "rdhonest",                            ///
+                ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
                 
             }
         }
@@ -444,7 +480,7 @@ foreach cohort in $first_cohorts {
             "Runvar: `runvar' -> (5) Whole age panel RDD"
         
             qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
-                inrange(age, `ages'), vce(cluster `runvar')
+                inrange(age, `ages'), vce(hc3)
 
             local HL = e(h_l)
             local HR = e(h_r)
@@ -470,7 +506,7 @@ foreach cohort in $first_cohorts {
 
             qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
                 inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),          ///
-                vce(cluster `runvar')
+                vce(hc3)
 
             local Breg: dis %`pren'.`dec'fc _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
@@ -490,13 +526,13 @@ foreach cohort in $first_cohorts {
             local HL: 	dis %7.2f `HL'
 
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR') &         ///
-            inrange(age, `ages'), vce(cluster `runvar') p(1) kernel(triangular) ///
+            inrange(age, `ages'), vce(hc3) p(1) kernel(triangular)              ///
             h(`HR' `HR') binselect(esmv)                                        ///
             graph_options(title(`varlab', size(medium) span)                    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))     ///
-            note("Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'."))
+            note(`""Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'.""'))
 
             scalar b_l = e(J_star_l)
             scalar b_r = e(J_star_r)
@@ -508,12 +544,12 @@ foreach cohort in $first_cohorts {
 
             binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
             inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),              ///
-            cluster(`runvar') rd(0) linetype(lfit)                              ///
+            vce(robust) rd(0) linetype(lfit)                                    ///
             title(`varlab', size(medium) span)                                  ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             ylabel(, format(%`pren'.`dec'fc))                                      ///
-            note("Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.")
+            note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
 
             graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_bscatter_ages.png", ///
                 replace width(1920) height(1080)
