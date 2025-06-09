@@ -28,7 +28,7 @@ global outcomes         codigo_pension pension pension_cum colpensiones     ///
 
 capture log close
 
-log	using "${logs}\PILA estimations.smcl", replace
+log	using "${logs}\PILA estimations 2.smcl", replace
 
 
 ****************************************************************************
@@ -92,7 +92,7 @@ quietly{
     gen colpensiones = (inlist(afp_cod, "25-14", "25-11" ,"25-8", "ISSFSP"))
 
     keep codigo_pension pension colpensiones pila_salario_r_0 poblacion*    ///
-    year month std_weeks std_days fecha_pila personabasicaid ibc_pens // For efficiency
+    year month std_weeks std_days fecha_pila personabasicaid ibc_pens fechantomode // For efficiency
     
     bys personabasicaid: egen ever_colpensiones = max(colpensiones)
     
@@ -128,7 +128,7 @@ quietly{
     
 }
 
-
+/*
 ****************************************************************************
 **# 		2. Year by year RDD
 ****************************************************************************
@@ -324,18 +324,18 @@ foreach cohort in $first_cohorts {
     }
 }
 
-
+*/
 
 ****************************************************************************
 **# 		4. Collapse at age level
 ****************************************************************************
-restore
+*restore
 
 tempvar dia_pila
 gen `dia_pila' = dofm(fecha_pila + 1) - 1
 format %td `dia_pila'
 
-gen age = age(fechantomode,`dia_pila')
+gen age = age(fechantomode, `dia_pila')
 
                         
 
