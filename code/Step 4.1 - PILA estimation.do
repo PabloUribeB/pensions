@@ -341,8 +341,8 @@ gen age = age(fechantomode, `dia_pila')
 
 collapse (firstnm) poblacion* std_weeks std_days                    ///
          (mean) pila_salario_r_0                                    ///
-         (max) pension codigo_pension pension_cum colpensiones,     ///
-         by(personabasicaid age)
+         (max) pension codigo_pension pension_cum colpensiones      ///
+         pension_ibc pension_ibc_cum, by(personabasicaid age)
 
 sort personabasicaid age
 
