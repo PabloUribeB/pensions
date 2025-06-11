@@ -28,7 +28,7 @@ global outcomes         codigo_pension pension pension_cum colpensiones     ///
 
 capture log close
 
-log	using "${logs}\PILA estimations 2.smcl", replace
+log	using "${logs}\PILA estimations 3.smcl", replace
 
 
 ****************************************************************************
@@ -352,7 +352,7 @@ gen eligible_d = (std_days > 0)
 ****************************************************************************
 **# 		5. Difference in discontinuities
 ****************************************************************************
-
+/*
 local replace replace
 gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
 
@@ -395,16 +395,16 @@ foreach cohort in $first_cohorts {
     replace post = (age >= 55)
 }
 
-      
+*/      
 ****************************************************************************
 **# 		6. RDD by age
 ****************************************************************************
-        
-qui sum age if poblacion_`cohort' == 1
-local min = r(min)
-local max = r(max)
 
 foreach cohort in $first_cohorts {
+    
+    qui sum age if poblacion_`cohort' == 1
+    local min = r(min)
+    local max = r(max)
     
     foreach outcome in $outcomes {
         
