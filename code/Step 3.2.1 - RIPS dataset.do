@@ -21,7 +21,9 @@ clear all
 **#         1. Create RIPS variables
 ****************************************************************************
 
-use if inrange(std_weeks, -22, 22) using "${data}\Merge_individual_RIPS.dta", clear
+use "${data}\Merge_individual_RIPS.dta", clear
+
+merge m:1 personabasicaid using "${data}/Master_for_RIPS.dta", nogen keep(3)
 
 drop diag_prin_ingre fecha_ingreso cod_diag_prin fecha_consul
 

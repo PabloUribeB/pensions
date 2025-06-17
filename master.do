@@ -35,7 +35,7 @@ global data_master  "${pc}\Proyectos\PILA master"
 global pila_og      "\\sm134796\D\Originales\PILA\1.Pila mensualizada\PILA mes cotizado"
 global ipc          "\\sm037577\D\Proyectos\Banrep research\c_2018_SSO Servicio Social Obligatorio\Project SSO Training\Data"
 global urgencias    "${pc}\Proyectos\Data"
-global RIPS         "\\sm134796\E\RIPS\Stata"
+global RIPS         "\\sm209696\E\RIPS\Stata"
 global RIPS2        "\\wmedesrv\gamma\rips"
 
 * Set path to reproducibility package (where ado and code are located)
@@ -97,7 +97,7 @@ if "`run'" == "banrep" { // Data only in BanRep
     *do "${do_files}\Step 2 - Master descriptive stats.do"
     *do "${do_files}\Step 3.1 - PILA consolidation.do"
     *do "${do_files}\Step 3.1.1 - Master sample for RIPS.do"
-    do "${do_files}\Step 3.2 - Merge with RIPS.do"
+    *do "${do_files}\Step 3.2 - Merge with RIPS.do"
     do "${do_files}\Step 3.2.1 - RIPS dataset.do"
     *do "${do_files}\Step 4.1 - PILA estimation.do"
     *do "${do_files}\Step 4.2 - RIPS estimation.do"
