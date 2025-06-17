@@ -149,7 +149,7 @@ forvalues year = 2009/2021 {
 		destring personabasicaid, force replace
 		
 		* Aqui haces el merge con tu base master de personabasicaid
-		merge m:1 personabasicaid using "${data}\Master_sample.dta",    ///
+		merge m:1 personabasicaid using "${data}\Master_for_RIPS.dta",    ///
               keep(3) nogen
 		
 		cap noi destring causa_externa, replace
@@ -254,7 +254,7 @@ forvalues i = 1/8 {
 	
 	cap drop aux
 	
-	merge m:1 personabasicaid using "${data}\Master_sample.dta", keep(3) nogen
+	merge m:1 personabasicaid using "${data}\Master_for_RIPS.dta", keep(3) nogen
 		
 	gen service = "`service'"
 	

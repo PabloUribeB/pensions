@@ -403,8 +403,8 @@ foreach cohort in $first_cohorts {
 foreach cohort in $first_cohorts {
     
     qui sum age if poblacion_`cohort' == 1
-    local min = r(min)
-    local max = r(max)
+    local min = r(min) + 1
+    local max = r(max) - 1
     
     foreach outcome in $outcomes {
         
@@ -415,18 +415,21 @@ foreach cohort in $first_cohorts {
                 dis as err "Cohort: `cohort'; Outcome: `outcome'; Age: "    ///
                 "`age'; Runvar: `runvar' -> (4) Age by age RDD"
                 
-                rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
-                age == `age', vce(hc3)
+				clear results
+				
+                cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1  ///
+                & age == `age', vce(hc3) masspoints(check)
 
                 mat beta = e(tau_bc)            // Store robust beta
                 mat vari = e(se_tau_rb)^2       // Store robust SE
 
                 * Save estimation results in dataset
-                regsave using "${output}/PILA_results.dta", append              ///
+                cap noi regsave using "${output}/PILA_results.dta", append      ///
                 coefmat(beta) varmat(vari) ci level(95)                         ///
                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
                 runvar, `runvar', model, "rdrobust")
                 
+				clear results
                 
                 ** RDHonest estimation
                 cap noi rdhonest `outcome' `runvar' if poblacion_`cohort' == 1 & ///
@@ -531,7 +534,7 @@ foreach cohort in $first_cohorts {
             graph_options(title(`varlab', size(medium) span)                    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))     ///
+            legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
             note(`""Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'.""'))
 
             scalar b_l = e(J_star_l)
