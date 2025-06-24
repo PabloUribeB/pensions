@@ -20,7 +20,7 @@ clear all
 ****************************************************************************
 **#         1. Create RIPS variables
 ****************************************************************************
-/*
+
 use "${data}/Merge_individual_RIPS.dta", clear
 
 merge m:1 personabasicaid using "${data}/Master_for_RIPS.dta", nogen keep(3)
@@ -180,7 +180,7 @@ compress
 save "${data}/personabasicaid_age_RIPS.dta", replace	
 
 
-*/
+
 ********************************************************************************
 **#      Merge with Chronic diseases to get comorbidity index weights      
 ********************************************************************************
