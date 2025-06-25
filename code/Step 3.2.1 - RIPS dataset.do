@@ -176,6 +176,12 @@ foreach var of varlist nro_serviciosHospitalizacion-cons_mental {
 	replace `var' = 0 if mi(`var')
 }
 
+foreach var of varlist poblacion* {
+    bys personabasicaid: ereplace `var' = max(`var')
+}
+
+drop _fillin
+
 compress
 save "${data}/personabasicaid_age_RIPS.dta", replace	
 
@@ -343,13 +349,19 @@ replace be25_chronic = 0 if mi(be25_chronic) & mi(pre_MWI) == 0
 
 drop cohort median_MWI abso_mwi
 
-keep if (inrange(age, 59, 71) & poblacion_M50 == 1) | 			///
-		(inrange(age, 54, 66) & poblacion_F55 == 1) | 			///
-		(inrange(age, 55, 67) & poblacion_M54 == 1) | 			///
-		(inrange(age, 50, 62) & poblacion_F59 == 1)
+keep if (inrange(age, 59, 71) & poblacion_M50 == 1) |           ///
+        (inrange(age, 54, 66) & poblacion_F55 == 1) |           ///
+        (inrange(age, 55, 67) & poblacion_M54 == 1) |           ///
+        (inrange(age, 50, 62) & poblacion_F59 == 1)
 
 compress
 
 save "${data}/Estimation_sample_RIPS.dta", replace
 
 erase "${data}/personabasicaid_age_RIPS.dta"
+
+
+mdesc poblacion* age
+
+tab age if poblacion_M50 == 1, m
+tab age if poblacion_F55 == 1, m

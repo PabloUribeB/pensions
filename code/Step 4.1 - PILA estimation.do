@@ -6,7 +6,7 @@
 			   Yale University
 			   p.uribe@yale.edu
 				
-2) Date: May 21, 2024
+2) Date: June 17, 2025
 
 3) Objective: Perform monthly estimations for labor market outcomes across
 			  cohorts
