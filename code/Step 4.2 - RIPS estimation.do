@@ -27,7 +27,7 @@ cardiovascular infarct chronic diag_mental
 global intensive nro_servicios nro_consultas nro_procedimientos         ///
 nro_urgencias nro_Hospitalizacion
 
-global first_cohorts poblacion_M50 poblacion_F55
+global first_cohorts M50 F55
 
 global outcomes $extensive pre_MWI $intensive
 
