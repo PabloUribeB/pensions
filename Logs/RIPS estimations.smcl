@@ -1,0 +1,81 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/RIPS estimations.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}26 Jun 2025, 10:16:08
+{txt}
+{com}. 
+. 
+. ****************************************************************************
+. **#          1. Data filtering and estimation variables
+. ****************************************************************************
+. dis as err "(1) Data filtering and estimation variables"
+{res}{err}(1) Data filtering and estimation variables
+{txt}
+{com}. 
+. use if (poblacion_M50 == 1 | poblacion_F55 == 1) using          ///
+>     "${c -(}data{c )-}/Estimation_sample_RIPS.dta", clear //Only use those cohorts (faster)
+{txt}
+{com}. 
+. keep if (inrange(age, 59, 69) & poblacion_M50 == 1) |           ///
+>         (inrange(age, 54, 64) & poblacion_F55 == 1)
+{txt}(968,880 observations deleted)
+
+{com}. 
+. * Process raw data to create and label relevant variables
+. quietly{c -(}
+{txt}
+{com}.         
+.    
+. ****************************************************************************
+. **#          2. Difference in discontinuities
+. ****************************************************************************
+. local replace replace
+{txt}
+{com}. gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
+{txt}
+{com}. 
+. foreach cohort in $first_cohorts {c -(}
+{txt}  2{com}.     
+.     foreach outcome in $outcomes {c -(}
+{txt}  3{com}.             
+.     dis as err "Cohort: `cohort'; Outcome: `outcome'; "                 ///
+>     "Runvar: std_weeks -> (2) Difference in discontinuities"
+{txt}  4{com}.                 
+.     qui rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
+>         post == 0, kernel(uniform)
+{txt}  5{com}. 
+.     scalar bw_pre = e(hr)
+{txt}  6{com}. 
+.     qui rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
+>         post == 1, kernel(uniform)
+{txt}  7{com}. 
+.     scalar bw_post = e(hr)
+{txt}  8{com}. 
+.     scalar bw_avg = (bw_pre + bw_post) / 2
+{txt}  9{com}. 
+.     reg `outcome' i.eligible_w##c.std_weeks##i.post if                  ///
+>         poblacion_`cohort' == 1 & abs(std_weeks) <= bw_avg, robust
+{txt} 10{com}.     
+.     * Save estimation results in dataset
+.     regsave 1.eligible_w#1.post using "${c -(}output{c )-}/RIPS_results_diffdisc.dta", ///
+>     `replace' ci level(95) addlabel(outcome, `outcome', cohort, `cohort',    ///
+>     runvar, std_weeks)
+{txt} 11{com}.     
+.     local replace append
+{txt} 12{com}.         
+.     {c )-}
+{txt} 13{com}. {c )-}
+{err}Cohort: poblacion_M50; Outcome: service; Runvar: std_weeks -> (2) Difference in discontinuities
+poblacion_poblacion_M50 not found
+{txt}{search r(111), local:r(111);}
+
+end of do-file
+{search r(111), local:r(111);}
+
+end of do-file
+
+{search r(111), local:r(111);}
+
+{com}. 
