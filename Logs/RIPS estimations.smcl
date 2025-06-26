@@ -1,9 +1,9 @@
 {smcl}
-{txt}{sf}{ul off}{.-}
+{com}{sf}{ul off}{txt}{.-}
       name:  {res}<unnamed>
        {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/RIPS estimations.smcl
   {txt}log type:  {res}smcl
- {txt}opened on:  {res}26 Jun 2025, 10:16:08
+ {txt}opened on:  {res}26 Jun 2025, 13:15:48
 {txt}
 {com}. 
 . 
@@ -25,7 +25,1588 @@
 {com}. 
 . * Process raw data to create and label relevant variables
 . quietly{c -(}
-{txt}
+    {txt}=struct rename_peldf {c -(}
+    =        string scalar        element
+    =        real scalar  elementtype
+    =        real scalar            arg
+    =        real scalar            match
+    =struct rename_patterndf {c -(}
+    =        real scalar  patterntype
+    =        string scalar            original
+    =        struct rename_peldf rowvector          ellist
+    =        real rowvector            n_of
+    =        string rowvector            varnames
+    =        string matrix            pieces
+    =struct rename_optiondf {c -(}
+    =        real scalar       isrecase
+    =        real scalar       isrecase_upper, isrecase_lower, isrecase_proper
+    =        real scalar       isdryrun
+    =        real scalar       isrenumber, isaddnumber
+    =        real scalar            from
+    =        real scalar       issort
+    =        real scalar       isdebug
+    =        real scalar       istest
+    =        real scalar       isr
+    =void rename_optiondf_init(struct rename_optiondf scalar option)
+    =        option.isrecase = option.isdryrun = 0
+    =                                option.isrecase_proper = 0
+    =        option.isrenumber = option.isaddnumber = 0
+    =        option.issort     = 0
+    =        option.isdebug    = 0
+    =        option.istest     = 0
+    =        option.isr        = 0
+    =struct rename_renamedf {c -(}
+    =        struct rename_patterndf rowvector      oldplist
+    =        struct rename_patterndf rowvector      newplist
+    =        struct rename_optiondf scalar       option
+    =void rename_cmd(string scalar thirdarg)
+    =        string scalar    input
+    =real scalar can_do_fast(string scalar input)
+    =        string rowvector    token
+    =        real scalar    rc
+    =        if (length(token)!=2) return(0)
+    =        if (!st_isname(token[1])) return(0)
+    =        if (!st_isname(token[2])) return(0)
+    =        if (token[1] == token[2]) return(0)
+    =        return(1)
+    =void rename_cmd_u(string scalar input)
+    =        struct rename_renamedf scalar       ren
+    =                dump_pattern(ren.oldplist, "old after parsing", 0)
+    =                dump_pattern(ren.newplist, "new after parsing", 0)
+    =void xeq_old_to_new(struct rename_renamedf scalar ren)
+    =                dump_pattern(ren.oldplist, "old after linkage", 0)
+    =                dump_pattern(ren.newplist, "new after linkage", 0)
+    =                dump_pattern(ren.oldplist, "old final", 1)
+    =                dump_pattern(ren.newplist, "new final", 1)
+    =void xeq_recase(struct rename_renamedf scalar ren)
+    =        fillin_old_varnames(ren.oldplist, ren.newplist, 0)
+    =                dump_pattern(ren.oldplist, "old final", 1)
+    =                dump_pattern(ren.newplist, "new final", 1)
+    =void parse_cmd(struct rename_renamedf scalar ren, string scalar input)
+    =        real scalar            c
+    =        string scalar            lhs, ops
+    =        string scalar            oldnames, newnames
+    =        parse_cmd_pat_els(ren.oldplist, oldnames, 0)
+    =                parse_cmd_pat_els(ren.newplist, newnames, 1)
+    =real scalar parse_cmd_commaloc(string scalar s)
+    =        real scalar    i, L
+    =        real scalar    nestlev
+    =        string scalar    c
+    =void getarg(string scalar input, string scalar arg, string scalar rest)
+    =        real scalar    L, npar, i
+    =        string scalar    c
+    =void parse_cmd_options(struct rename_optiondf scalar option, string scalar ops)
+    =        string scalar            token
+    =        transmorphic      t
+    =        rename_optiondf_init(option)
+    =void confirm_options_consistent(struct rename_optiondf scalar option)
+    =        string rowvector    list
+    =void parse_cmd_options_u(struct rename_optiondf scalar option, string scalar token, transmorphic t)
+    =real scalar parse_cmd_options_u_std(struct rename_optiondf scalar option, string scalar source)
+    =        real scalar    l
+    =                option.isdebug = 1
+    =                option.isdryrun = 1
+    =                option.isrecase = option.isrecase_lower = 1
+    =                option.isrecase = option.isrecase_proper= 1
+    =                option.isr = 1
+    =                option.issort = 1
+    =                option.istest = 1
+    =                option.isrecase = option.isrecase_upper = 1
+    =        else    return(0)
+    =        return(1)
+    =real scalar parse_cmd_options_u_number(struct rename_optiondf scalar option, string scalar source,
+    =                                                                transmorphic t)
+    =        string scalar            token
+    =        real scalar            from
+    =        real scalar            l
+    =        string scalar            op
+    =        if (option.isrenumber | option.isaddnumber)  return(0)
+    =                option.isrenumber = 1
+    =                option.isaddnumber = 1
+    =                return(1)
+    =        return(1)
+    =void parse_cmd_pat_els(struct rename_patterndf rowvector pat, string scalar toparse, real pattype)
+    =        string scalar            token, curlist
+    =        transmorphic      t
+    =        real scalar       first
+    =        first   = 1
+    =                                first    = 1
+    =                                first   = 0
+    =void parse_cmd_pat_el(struct rename_patterndf rowvector pat, string scalar token, real pattype)
+    =        string scalar            mytoken
+    =        struct rename_patterndf scalar      mypat
+    =        real scalar            i, j
+    =        real matrix            found
+    =        mypat.n_of        = J(1, (8), 0)
+    =        confirm_not_empty(mytoken, pattype==0 ?
+    =                if (i=strpos(mytoken, "*")) found = (found \ (i, (3)))
+    =                if (i=strpos(mytoken, "?")) found = (found \ (i, (4) ))
+    =                if (i=strpos(mytoken, "#")) found = (found \ (i, (5)))
+    =                if (i=strpos(mytoken, "(")) found = (found \ (i, (6)))
+    =                if (i=strpos(mytoken, "=")) found = (found \ (i, (7)))
+    =                if (i=strpos(mytoken, ".")) found = (found \ (i, (8)))
+    =                        if (i==(3)) {c -(}
+    =                        else if (i==(4)) {c -(}
+    =                        else if (i==(5)) {c -(}
+    =                        else if (i==(6)) {c -(}
+    =                        else if (i==(7)) {c -(}
+    =                        else if (i==(8)) {c -(}
+    =string scalar set_subscript(struct rename_patterndf scalar pat, string scalar token, real pt)
+    =        real scalar    i
+    =        string scalar    c
+    =        if (pt != 1) {c -(}
+    =        if (pt != 1)              return(token)
+    =void set_pat_ETstrlist(struct rename_patterndf scalar pat, string scalar token)
+    =        struct rename_peldf scalar          el
+    =        el.elementtype = (1)
+    =        pat.n_of[(1)] = pat.n_of[(1)] + 1
+    =string scalar set_pat_str(struct rename_patterndf scalar pat, string scalar token)
+    =        struct rename_peldf scalar          el
+    =        el.elementtype = (2)
+    =string scalar set_pat_ETstar(struct rename_patterndf scalar pat, string scalar token, real scalar loc)
+    =        struct rename_peldf scalar          el
+    =        if (pat.patterntype == 0 && length(pat.ellist)) {c -(}
+    =                if (pat.ellist[length(pat.ellist)].elementtype == (3)) {c -(}
+    =        el.elementtype = (3)
+    =string scalar set_pat_ETnum_v(struct rename_patterndf scalar pat, string scalar token, real scalar loc)
+    =        struct rename_peldf scalar          el
+    =        if (pat.patterntype == 0 && length(pat.ellist)) {c -(}
+    =                if (pat.ellist[length(pat.ellist)].elementtype == (5)) {c -(}
+    =        el.elementtype = (5)
+    =string scalar set_pat_ETeq(struct rename_patterndf scalar pat, string scalar token, real scalar loc)
+    =        struct rename_peldf scalar  el
+    =        if (pat.patterntype == 0) {c -(}
+    =        el.elementtype = (7)
+    =string scalar set_pat_ETodot(struct rename_patterndf scalar pat, string scalar token, real scalar loc)
+    =        struct rename_peldf scalar  el
+    =        if (pat.patterntype == 0) {c -(}
+    =        el.elementtype = (8)
+    =string scalar set_pat_ETqm(struct rename_patterndf scalar pat, string scalar token, real scalar loc)
+    =        struct rename_peldf scalar  el
+    =        el.elementtype = (4)
+    =string scalar set_pat_ETnum_f(struct rename_patterndf scalar pat, string scalar token, real scalar loc)
+    =        struct rename_peldf scalar          el
+    =        real scalar            j
+    =        el.elementtype = (6)
+    =        if (el.arg > 10) {c -(}
+    =void make_patternlist_lengths_equal(struct rename_renamedf scalar ren)
+    =void build_recase_newpattern(struct rename_renamedf scalar ren)
+    =        real scalar    i
+    =        ren.newplist = rename_patterndf(length(ren.oldplist))
+    =                ren.newplist[i].n_of        = J(1, (8), 0)
+    =void link_patterns(struct rename_renamedf scalar ren)
+    =        real scalar    i, jn
+    =real scalar check_and_fix_ETnum(struct rename_patterndf scalar newp, struct rename_optiondf scalar option)
+    =        real scalar            n, j, jn
+    =        real scalar  tt
+    =                if (tt==(5) | tt==(6)) {c -(}
+    =                                (tt==(5) ? (9) : (10))
+    =struct rename_linklocdf {c -(}
+    =        real scalar    j_old, last_sequential_j_old
+    =        real scalar    j_new
+    =        real scalar    jn
+    =        real rowvector    mapsub
+    =void rename_linklocdf_init(struct rename_linklocdf scalar ll, real scalar jn)
+    =void rename_linklocdf_next(struct rename_linklocdf scalar ll, struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp)
+    =        real scalar subscr
+    =real scalar map_subscript(real scalar subscr, real rowvector mapsub, struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp)
+    =void link_patterns_u(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp, real scalar jn)
+    =        struct rename_linklocdf scalar      ll
+    =        rename_linklocdf_init(ll, jn)
+    =        rename_linklocdf_next(ll, oldp, newp)
+    =                rename_linklocdf_next(ll, oldp, newp)
+    =real rowvector pelidx_of_wcidx(struct rename_patterndf scalar oldp)
+    =        real rowvector            toret
+    =        real scalar            i
+    =        real scalar  tt
+    =                if (tt!=(1) & tt!=(2)) toret = (toret, i)
+    =void confirm_wildcards_link(struct rename_patterndf scalar oldp, real scalar j_old,
+    =                            struct rename_patterndf scalar newp, real scalar j_new)
+    =        real scalar  tt_old, tt_new
+    =        if (tt_new == (3)) return
+    =        if (tt_new == (8))  return
+    =        if (tt_new == (4)) {c -(}
+    =                if (tt_old == (4)) return
+    =        if (tt_new==(5) | tt_new==(6)) {c -(}
+    =                if (tt_old==(5) | tt_old==(6)) return
+    =string scalar printable_wildcard(struct rename_peldf scalar el)
+    =        real scalar  tt
+    =        if (tt == (3))  return("*")
+    =        if (tt == (4))    return("?")
+    =        if (tt == (8))  return(".")
+    =        if (tt == (5)) return("#")
+    =        if (tt == (6)) return("(" + el.arg*"*" + ")")
+    =real scalar count_wildcards(struct rename_patterndf scalar pat)
+    =        return(pat.n_of[(3)]  +
+    =               pat.n_of[(4)]    +
+    =               pat.n_of[(5)] +
+    =               pat.n_of[(6)] +
+    =               pat.n_of[(8)])
+    =real scalar is_wildcard(real scalar tt)
+    =        return( tt == (3)  |
+    =                tt == (4)    |
+    =                tt == (5) |
+    =                tt == (6) |
+    =                tt == (9) |
+    =                tt == (10) |
+    =                tt == (8)  )
+    =real scalar find_next_wildcard(struct rename_peldf rowvector d, real scalar j0)
+    =        real scalar    j
+    =void fillin_old_varnames(struct rename_patterndf rowvector oldplist, struct rename_patterndf rowvector newplist,
+    =                                                        real scalar issort)
+    =        real scalar    i
+    =        string scalar    tmpname
+    =void fillin_old_varnames_u(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp,
+    =                                        real scalar issort, string scalar tmpname)
+    =        string rowvector            varnames, piece
+    =        real scalar            i, n, nvars, nels
+    =        string matrix            pieces
+    =        real scalar  tt
+    =        real scalar       filter_varlist, fillin_pieces
+    =        filter_varlist = (oldp.n_of[(5)] + oldp.n_of[(6)] != 0)
+    =        fillin_pieces  = (newp.n_of[(5)] + newp.n_of[(6)] +
+    =                          newp.n_of[(3)]  + newp.n_of[(4)]    != 0)
+    =        if (issort) fillin_pieces = 1
+    =                        if (tt==(3) | tt==(4)) {c -(}
+    =string scalar varlistpattern(struct rename_peldf rowvector ellist)
+    =        real scalar    j
+    =        string scalar    result
+    =        if (ellist[1].elementtype == (1)) return(ellist[1].element)
+    =string scalar varlist_el(struct rename_peldf scalar el)
+    =        if (el.elementtype == (2))    return(el.element)
+    =        if (el.elementtype == (3))   return("*")
+    =        if (el.elementtype == (4))     return("?")
+    =        if (el.elementtype == (5))  return("?*")
+    =        if (el.elementtype == (6))  return(el.arg*"?")
+    =struct rename_matchdf {c -(}
+    =        real scalar    j0, j1
+    =        real scalar    i0, i1
+    =        string scalar    name
+    =        string rowvector    pieces
+    =real scalar matchvarname(string rowvector pieces, struct rename_peldf rowvector ellist, string scalar name)
+    =        struct rename_matchdf scalar        m
+    =                if (ellist[1].elementtype==(1)) {c -(}
+    =                        return(1)
+    =        if (!match_step(m, ellist)) return(0)
+    =        return(1)
+    =void match_setup(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist, string scalar name)
+    =real scalar match_step(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist)
+    =        real scalar            lefttomatch
+    =        real scalar      mr
+    =        real scalar     r
+    =                if ((r=match_query_done(m))!=(-1)) return(r)
+    =                if (match_simplification(m, ellist)==-1) return(0)
+    =                if ((r=match_query_done(m))!=(-1)) return(r)
+    =                        if (match_step_1(m, ellist)==-1) return(0)
+    =                        if ((r=match_query_done(m))!=(-1)) return(r)
+    =                        return(0)
+    =                        if (mr==-1 | mr==0) return(0)
+    =                        if (mr==-1 | mr==0) return(0)
+    =real scalar match_step_1(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist)
+    =        if (ellist[m.j0].elementtype==(5)) {c -(}
+    =                return(match_ETnum_v(m, ellist, 1))
+    =        if (ellist[m.j0].elementtype==(3)) {c -(}
+    =        return(-1)
+    =real scalar match_step_2(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist)
+    =        if (ellist[m.j0].elementtype==(5)) {c -(}
+    =                return(match_ETnum_v(m, ellist, 1))
+    =        if (ellist[m.j0+1].elementtype==(5)) {c -(}
+    =                return(match_ETnum_v(m, ellist, 0))
+    =        return(-1)
+    =real scalar match_step_3p(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist)
+    =        real scalar    j
+    =        if (ellist[m.j0].elementtype==(3)) {c -(}
+    =                if (ellist[j].elementtype==(3)) {c -(}
+    =                if (ellist[j].elementtype==(5)) {c -(}
+    =                        return(match_ETnum_v(m, ellist, 0))
+    =        if (ellist[m.j0].elementtype==(5)) {c -(}
+    =                return(match_ETnum_v(m, ellist, 1))
+    =        return(-1)
+    =real scalar match_query_done(struct rename_matchdf scalar m)
+    =                if (m.i0 < m.i1) return(0)
+    =                return(1)
+    =        return((-1))
+    =real scalar match_simplification(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist)
+    =        real scalar      mr
+    =        while ((m.i1 >m.i0 & m.j1> m.j0)) {c -(}
+    =                mr = match_fixed(m, ellist, 1)
+    =                if (mr==-1) return(-1)
+    =                if (mr==0)   break
+    =        while ((m.i1 >m.i0 & m.j1> m.j0)) {c -(}
+    =                mr = match_fixed(m, ellist, 0)
+    =                if (mr==-1) return(-1)
+    =                if (mr==0)   break
+    =real scalar match_fixed(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist, real scalar s)
+    =        real scalar    j
+    =        j = (s==1 ? m.j0 : m.j1-1)
+    =        if (ellist[j].elementtype==(2))   return(match_ETstr(m, ellist, s))
+    =        if (ellist[j].elementtype==(6)) return(match_ETnum_f(m, ellist, s))
+    =        if (ellist[j].elementtype==(4))    return(match_ETqm(m, ellist, s))
+    =        return(0)
+    =real scalar match_ETstr(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist, real scalar s)
+    =        real scalar    j, len
+    =        j = (s==1 ? m.j0 : m.j1-1)
+    =        if (ellist[j].elementtype != (2)) return(0)
+    =        if ((s==1 ?  usubstr(m.name, m.i0, len) :
+    =                return(-1)
+    =        return(1)
+    =real scalar match_ETnum_f(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist, real scalar s)
+    =        real scalar    j, i, len
+    =        string scalar    str, c
+    =        j = (s==1 ? m.j0 : m.j1-1)
+    =        if (ellist[j].elementtype != (6)) return(0)
+    =        str = (s==1 ?  usubstr(m.name, m.i0, len) : usubstr(m.name, -len, .))
+    =        if (ustrlen(str)!=len) return(-1)
+    =                if (c<"0" | c>"9") return(-1)
+    =        return(1)
+    =real scalar match_ETqm(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist, real scalar s)
+    =        if (ellist[s==1 ? m.j0 : m.j1-1].elementtype != (4)) {c -(}
+    =                return(0)
+    =        if (m.i0==m.i1) return(-1)
+    =        return(1)
+    =real scalar match_ETnum_v(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist, real scalar s)
+    =        real scalar            j, i0, i1, len
+    =        string scalar            c
+    =        string scalar            c1
+    =        struct rename_matchdf scalar        hold
+    =        j = (s==1 ? m.j0 : m.j1-1)
+    =        if (ellist[j].elementtype != (5)) return(0)
+    =        if (s==1) {c -(}
+    =                if (match_step(m, ellist)==1) return(1)
+    =        return(-1)
+    =real scalar match_ETstar_left(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist)
+    =        real scalar            len, newlen
+    =        struct rename_matchdf scalar        hold
+    =        real scalar       next_is_ETnum_v
+    =        if (ellist[m.j0].elementtype != (3)) return(0)
+    =                post_match_piece(m, 1, len)
+    =                return(1)
+    =        next_is_ETnum_v = (ellist[m.j0+1].elementtype==(5))
+    =                post_match_piece(m, 1, len)
+    =                if (match_step(m, ellist)==1) {c -(}
+    =                                        post_match_piece(m, 1, newlen)
+    =                        return(1)
+    =        return(-1)
+    =real scalar mstargiveback(string scalar s)
+    =        real scalar    l
+    =        string scalar    c
+    =        string scalar    c1
+    =void post_match_piece(struct rename_matchdf scalar m, real scalar s, real scalar len)
+    =        if (s==1) {c -(}
+    =void sort_old_varnames(struct rename_renamedf scalar ren)
+    =        real scalar i
+    =void sort_appropriate_field(struct rename_patterndf rowvector oldplist, struct rename_patterndf rowvector newplist)
+    =        real scalar            i
+    =        real scalar            j
+    =real scalar j_of_renumber(struct rename_patterndf scalar plist)
+    =        real scalar            j
+    =        real scalar  tt
+    =                if (tt==(9) | tt==(10)) return(j)
+    =real scalar j_of_number(struct rename_patterndf scalar plist)
+    =        real scalar            j, jtoret
+    =        real scalar  tt
+    =                if (tt==(3) | tt==(4) | tt==(5) | tt==(6)) {c -(}
+    =void sort_on_field(struct rename_patterndf scalar plist, real scalar j)
+    =        real scalar  tt
+    =        real colvector            o
+    =        string colvector            vc
+    =                if (tt==(5) | tt==(6)) {c -(}
+    =void fillin_new_varnames_recase(struct rename_renamedf scalar ren)
+    =        real scalar    i
+    =void fillin_new_varnames(struct rename_patterndf rowvector oldplist, struct rename_patterndf rowvector newplist, real scalar from)
+    =        real scalar    i
+    =void fillin_new_varnames_u(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp, real scalar from)
+    =        real scalar    i
+    =        if (newp.ellist[1].elementtype==(1)) {c -(}
+    =void fillin_new_varnames_u_u(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp, real scalar from, real scalar i)
+    =        real scalar            j
+    =        string scalar            name
+    =        real scalar  tt
+    =                if (tt==(2)) {c -(}
+    =                else if (tt==(3)) {c -(}
+    =                else if (tt==(4)) {c -(}
+    =                else if (tt==(5)) {c -(}
+    =                else if (tt==(6)) {c -(}
+    =                else if (tt==(7)) {c -(}
+    =                else if (tt==(9)) {c -(}
+    =                else if (tt==(10)) {c -(}
+    =                else if (tt != (8)) {c -(}
+    =string scalar fmt_ETnum_f(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp, real scalar i, real scalar j)
+    =        real scalar    n, len
+    =        string scalar    res, orig
+    =string scalar fmt_ETnum_f_r(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp, real scalar j, real scalar from)
+    =        real scalar    n, len
+    =        string scalar res
+    =string matrix build_toren(struct rename_patterndf rowvector oldplist, struct rename_patterndf rowvector newplist)
+    =        string matrix    toren
+    =        real scalar    i, N, n, k, k2
+    =        real colvector    toselect
+    =        string rowvector    lastrow, newrow
+    =        real scalar hasomissions
+    =                                hasomissions = 1
+    =void perform_renames(string matrix toren, struct rename_optiondf scalar option)
+    =        real scalar       use_intermediary
+    =        string matrix            toren_nonulls
+    =                        perform_dryrun(toren, toren_nonulls, 0)
+    =void confirm_newnames_new(string matrix toren)
+    =        real scalar    i
+    =        real rowvector    varnum
+    =        string rowvector    tocheck, badvar
+    =void perform_set_r(string matrix toren)
+    =void perform_test(string matrix toren, real scalar use_intermediary)
+    =        real scalar    i
+    =void perform_rename_straight(string matrix toren)
+    =        real scalar    i
+    =        real scalar    breakstatus
+    =void perform_rename_intermediary(string matrix toren)
+    =        real scalar    i
+    =        real scalar    breakstatus
+    =        string rowvector    tmpname
+    =void perform_dryrun(string matrix toren, string matrix toren_nonulls, real scalar use_intermediary)
+    =        real scalar    i
+    =        real scalar    maxlen
+    =        string scalar    sfmt, sfmtit
+    =void dryrun_note1(string matrix toren, string matrix toren_nonulls)
+    =        real scalar    i
+    =        real scalar    nulls
+    =void dryrun_note2(string matrix toren, real scalar use_intermediary)
+    =        string colvector    dupnames, newname, oldname
+    =real scalar names_not_jointly_unique(string matrix toren)
+    =        real scalar    n0, n1
+    =        string colvector    fulllist
+    =void confirm_names_unique(string matrix toren)
+    =void confirm_names_unique_1(string matrix toren, real scalar j)
+    =        string colvector    names, corresponding
+    =        string scalar    s
+    =        real scalar    n
+    =string colvector corresponding_names(string matrix toren, string scalar name, real scalar js, real scalar jd)
+    =        real scalar    i
+    =        string colvector    dups
+    =void confirm_new_varnames_valid(string matrix toren)
+    =        real scalar    i, n
+    =        real colvector    bad
+    =void confirm_not_empty(string scalar str, string scalar expected)
+    =void errprint_bf_list(string vector list , |real scalar USER_MAXEL)
+    =        real scalar            MAXEL
+    =        real scalar            i, top
+    =        real scalar       chopped
+    =                        chopped = 1
+    =                        chopped = 0
+    =void errprint_bf_string(string scalar user_s, |real scalar USER_MAXLEN)
+    =        real scalar            MAXLEN
+    =        real scalar            len_last, target_last
+    =        real scalar            len_remaining
+    =        real scalar            i
+    =        string rowvector            els
+    =        string scalar            s, first, last
+    =        real scalar       cont
+    =        cont = 1
+    =                else            cont   = 0
+    =        string scalar    indent
+    =void error_preceding_dash( pattype)
+    =                        (pattype==0 ? "oldname" : "newname" ) )
+    =void error_following_dash( pattype, string scalar what)
+    =                        (pattype==0 ? "oldname" : "newname" ) )
+    =void option_not_allowed(string scalar option)
+    =void option_number_misspecified(string scalar op)
+    =void error_ETnum_f_too_long(real scalar n_digits)
+    =        errprintf("the {c -(}bf:(###...#){c )-} pattern is %g.\n", 10)
+    =void error_patternlengths_unequal(struct rename_patterndf rowvector oldplist, struct rename_patterndf rowvector newplist)
+    =        string scalar    s_old, s_new
+    =void error_too_many_renumbers(string scalar op, struct rename_patterndf scalar newp)
+    =void error_strlist_length(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp)
+    =        real scalar    n_old, n_new
+    =        string scalar    s_old, s_new
+    =void error_missing_ETnum(string scalar opname, struct rename_patterndf scalar newp)
+    =void error_too_many_wildcards(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp,
+    =                                                        real scalar isaddnumber)
+    =void error_wildcardmatch_qm(struct rename_patterndf scalar oldp, real scalar j_old,
+    =                            struct rename_patterndf scalar newp, real scalar j_new)
+    =void error_wildcardmatch_hash(struct rename_patterndf scalar oldp, real scalar j_old,
+    =                              struct rename_patterndf scalar newp, real scalar j_new)
+    =void error_no_right_bracket(string scalar original)
+    =void error_inside_brackets(string scalar original)
+    =void error_newnumber_subscripted(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp)
+    =void error_subscript_invalid(struct rename_patterndf scalar oldp, struct rename_patterndf scalar newp, real scalar subscr)
+    =void error_subscripts_in_old(struct rename_patterndf scalar pat)
+    =void dump_pattern(struct rename_patterndf rowvector pat, string scalar typ, real scalar incl_names)
+    =        real scalar    i, j, n
+    =        real scalar    nv, k, m
+    =                        pat[i].n_of[(2)],
+    =                        pat[i].n_of[(3)],
+    =                        pat[i].n_of[(4)],
+    =                        pat[i].n_of[(5)],
+    =                        pat[i].n_of[(6)],
+    =                        pat[i].n_of[(7)],
+    =                        pat[i].n_of[(8)])
+    =string scalar dump_xlate_tt(real scalar t)
+    =        if (t==(1))     return("ETstrlist")
+    =        if (t==(2))         return("ETstr")
+    =        if (t==(3))        return("ETstar")
+    =        if (t==(4))          return("ETqm")
+    =        if (t==(5))       return("ETnum_v")
+    =        if (t==(6))       return("ETnum_f")
+    =        if (t==(7))          return("ETeq")
+    =        if (t==(8))        return("ETodot")
+    =        if (t==(9))     return("ETnum_v_r")
+    =        if (t==(10))     return("ETnum_f_r")
+    =void dump_options(struct rename_renamedf scalar ren)
+    =void match_debug(struct rename_matchdf scalar m, struct rename_peldf rowvector ellist, string scalar msg)
+    =string rowvector list_subtract(string rowvector a, string rowvector b)
+    =        string rowvector result
+    =string rowvector expand_varlist(string scalar pattern, string scalar tmpname)
+    =        real scalar    rc
+    =        string rowvector    result
+    =string scalar ordinal_suffix(real scalar i)
+    =        real scalar    lastdigit
+    {hline 32} begin rename {hline}
+    - version 12
+    - mata: rename_cmd("`3'")
+    = mata: rename_cmd("nro_serviciosprocedimientos")
+      {hline 32} begin unab {hline}
+      - version 6
+      - gettoken user 0: 0, parse(" :")
+      - gettoken colon 0: 0, parse(" :")
+      - if `"`colon'"' != ":" {c -(} error 198 {c )-}
+      = if `":"' != ":" {c -(} error 198 {c )-}
+      - syntax [varlist(broken default=empty)] [, MIN(integer 1) MAX(integer 120000) NAME(string)]
+      - c_local `user' `varlist'
+      = c_local __000000 nro_serviciosHospitalizacion nro_serviciosurgencias nro_serviciosprocedimientos nro_serviciosconsultas
+      - local n : word count `varlist'
+      = local n : word count nro_serviciosHospitalizacion nro_serviciosurgencias nro_serviciosprocedimientos nro_serviciosconsultas
+      - if `n'>=`min' & `n'<=`max' {c -(} exit {c )-}
+      = if 4>=1 & 4<=120000 {c -(} exit {c )-}
+      {hline 34} end unab {hline}
+    {hline 34} end rename {hline}
+    {hline 34} begin egen {hline}
+    - version 6, missing
+    - local cvers = _caller()
+    - gettoken type 0 : 0, parse(" =(")
+    - gettoken name 0 : 0, parse(" =(")
+    - if `"`name'"'=="=" {c -(}
+    = if `"="'=="=" {c -(}
+    - local name `"`type'"'
+    = local name `"nro_servicios"'
+    - local type : set type
+    - {c )-}
+    - else {c -(}
+      gettoken eqsign 0 : 0, parse(" =(")
+      if `"`eqsign'"' != "=" {c -(}
+      error 198
+      {c )-}
+      {c )-}
+    - confirm new variable `name'
+    = confirm new variable nro_servicios
+    - gettoken fcn 0 : 0, parse(" =(")
+    - gettoken args 0 : 0, parse(" ,") match(par)
+    - if "`c(adoarchive)'"=="1" {c -(}
+    = if ""=="1" {c -(}
+      capture qui _stfilearchive find _g`fcn'.ado
+      if _rc {c -(}
+      di as err in smcl "unknown {c -(}bf:egen{c )-} function {c -(}bf:`fcn'(){c )-}"
+      exit 133
+      {c )-}
+      {c )-}
+    - else {c -(}
+    - capture qui findfile _g`fcn'.ado
+    = capture qui findfile _growtotal.ado
+      {hline 28} begin findfile {hline}
+      - version 8
+      - gettoken fn 0 : 0, parse(" ,")
+      - syntax [, ALL noDEScend PATH(string)]
+      - if `"`path'"'=="" {c -(}
+      = if `""'=="" {c -(}
+      - local path `"`c(adopath)'"'
+      = local path `"`"BASE"';`"PLUS"'"'
+      - {c )-}
+      - local n 0
+      - local subdir : adosubdir `"`fn'"'
+      = local subdir : adosubdir `"_growtotal.ado"'
+      - if `"`subdir'"' != "" {c -(}
+      = if `"_"' != "" {c -(}
+      - gettoken d path : path, parse(";")
+      - while `"`d'"'!="" {c -(}
+      = while `"BASE"'!="" {c -(}
+      - if `"`d'"' != ";" {c -(}
+      = if `"BASE"' != ";" {c -(}
+      - local d : sysdir `"`d'"'
+      = local d : sysdir `"BASE"'
+      - local ffn `"`d'`fn'"'
+      = local ffn `"C:\Program Files\Stata18\ado\base/_growtotal.ado"'
+      - capture confirm file `"`ffn'"'
+      = capture confirm file `"C:\Program Files\Stata18\ado\base/_growtotal.ado"'
+      - if _rc==0 {c -(}
+        di as txt `"`ffn'"'
+        if "`all'"=="" {c -(}
+        ret local fn `"`ffn'"'
+        exit
+        {c )-}
+        if `n' {c -(}
+        ret local fn `"`return(fn)' "`ffn'""'
+        {c )-}
+        else ret local fn `""`ffn'""'
+        local n 1
+        {c )-}
+      - if "`descend'"=="" {c -(}
+      = if ""=="" {c -(}
+      - local ffn `"`d'`subdir'`c(dirsep)'`fn'"'
+      = local ffn `"C:\Program Files\Stata18\ado\base/_/_growtotal.ado"'
+      - capture confirm file `"`ffn'"'
+      = capture confirm file `"C:\Program Files\Stata18\ado\base/_/_growtotal.ado"'
+      - if _rc==0 {c -(}
+      - di as txt `"`ffn'"'
+      = di as txt `"C:\Program Files\Stata18\ado\base/_/_growtotal.ado"'
+      - if "`all'"=="" {c -(}
+      = if ""=="" {c -(}
+      - ret local fn `"`ffn'"'
+      = ret local fn `"C:\Program Files\Stata18\ado\base/_/_growtotal.ado"'
+      - exit
+      {hline 30} end findfile {hline}
+    - if (`"`r(fn)'"' == "") {c -(}
+    = if (`"C:\Program Files\Stata18\ado\base/_/_growtotal.ado"' == "") {c -(}
+      di as err in smcl "unknown {c -(}bf:egen{c )-} function {c -(}bf:`fcn'(){c )-}"
+      exit 133
+      {c )-}
+    - {c )-}
+    - if `"`par'"' != "(" {c -(}
+    = if `"("' != "(" {c -(}
+      exit 198
+      {c )-}
+    - if `"`args'"' == "_all" | `"`args'"' == "*" {c -(}
+    = if `"nro_Hospitalizacion nro_urgencias             nro_procedimientos nro_consultas"' == "_all" | `"nro_Hospitalizacion nro_urgencias             nro_procedimientos nro_consultas"' == "*" {c -(}
+      version 7.0, missing
+      unab args : _all
+      local args : subinstr local args "`_sortindex'" "", all word
+      version 6.0, missing
+      {c )-}
+    - syntax [if] [in] [, *]
+    - if _by() {c -(}
+      local byopt "by(`_byvars')"
+      local cma ","
+      {c )-}
+    - else if `"`options'"' != "" {c -(}
+    = else if `""' != "" {c -(}
+      local cma ","
+      {c )-}
+    - tempvar dummy
+    - global EGEN_Varname `name'
+    = global EGEN_Varname nro_servicios
+    - version 7.0, missing
+    - global EGEN_SVarname `_sortindex'
+    = global EGEN_SVarname __000000
+    - version 6.0, missing
+    - if inlist("`fcn'","mode","concat","group") {c -(}
+    = if inlist("rowtotal","mode","concat","group") {c -(}
+      local vv : display "version " string(`cvers') ", missing:"
+      {c )-}
+    - capture noisily `vv' _g`fcn' `type' `dummy' = (`args') `if' `in' `cma' `byopt' `options'
+    = capture noisily  _growtotal float __000001 = (nro_Hospitalizacion nro_urgencias             nro_procedimientos nro_consultas)     
+      {hline 26} begin _growtotal {hline}
+      - version 6, missing
+      - gettoken type 0 : 0
+      - gettoken g 0 : 0
+      - gettoken eqs 0 : 0
+      - syntax varlist [if] [in] [, BY(string) Missing]
+      - version 7.0, missing
+      - local si $EGEN_SVarname
+      = local si __000000
+      - version 6.0, missing
+      - local varlist : list varlist - si
+      - if `"`by'"' != "" {c -(}
+      = if `""' != "" {c -(}
+        _egennoby rowtotal() `"`by'"'
+        {c )-}
+      - quietly {c -(}
+      - tokenize `varlist'
+      = tokenize nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas
+      - if "`missing'" == "" {c -(}
+      = if "" == "" {c -(}
+      - gen `type' `g' = cond(`1'>=.,0,`1') `if' `in'
+      = gen float __000001 = cond(nro_Hospitalizacion>=.,0,nro_Hospitalizacion)  
+      - mac shift
+      - while "`1'"!="" {c -(}
+      = while "nro_urgencias"!="" {c -(}
+      - replace `g'=`g'+cond(`1'>=.,0,`1') `if' `in'
+      = replace __000001=__000001+cond(nro_urgencias>=.,0,nro_urgencias)  
+      - mac shift
+      - {c )-}
+      - while "`1'"!="" {c -(}
+      = while "nro_procedimientos"!="" {c -(}
+      - replace `g'=`g'+cond(`1'>=.,0,`1') `if' `in'
+      = replace __000001=__000001+cond(nro_procedimientos>=.,0,nro_procedimientos)  
+      - mac shift
+      - {c )-}
+      - while "`1'"!="" {c -(}
+      = while "nro_consultas"!="" {c -(}
+      - replace `g'=`g'+cond(`1'>=.,0,`1') `if' `in'
+      = replace __000001=__000001+cond(nro_consultas>=.,0,nro_consultas)  
+      - mac shift
+      - {c )-}
+      - while "`1'"!="" {c -(}
+      = while ""!="" {c -(}
+        replace `g'=`g'+cond(`1'>=.,0,`1') `if' `in'
+        mac shift
+        {c )-}
+      - {c )-}
+      - else {c -(}
+        gen `type' `g' = cond(`1'>=.,.,`1') `if' `in'
+        mac shift
+        while "`1'"!="" {c -(}
+        replace `g' = cond(`g'==., cond(`1'>=.,.,`1'), cond(`1'>=., `g', `g' + `1')) `if' `in'
+        mac shift
+        {c )-}
+        {c )-}
+      - {c )-}
+      {hline 28} end _growtotal {hline}
+    - version 7.0, missing
+    - local message $EGEN_Message
+    = local message 
+    - version 6.0, missing
+    - global EGEN_SVarname
+    - global EGEN_Varname
+    - global EGEN_Message
+    - if _rc {c -(} exit _rc {c )-}
+    - if "`message'" == "" {c -(}
+    = if "" == "" {c -(}
+    - quietly count if missing(`dummy')
+    = quietly count if missing(__000001)
+    - if r(N) {c -(}
+      local s = cond(r(N)>1,"s","")
+      local N : di %11.0fc r(N)
+      local N `N'
+      di in bl "(`N' missing value`s' generated)"
+      {c )-}
+    - {c )-}
+    - rename `dummy' `name'
+    = rename __000001 nro_servicios
+    {hline 36} end egen {hline}
+    {hline 31} begin labvars {hline}
+    - vers 9.2
+    - syntax [anything(id = varlist equalok everything)] [, Remove Carryon Alternate NAMes ]
+    - if !(c(k)) {c -(}
+      di as err "no variables defined"
+      e 111
+      {c )-}
+    - if ("`alternate'`names'" != "") {c -(}
+    = if ("" != "") {c -(}
+      if ("`alternate'" != "") labvars_alt `0'
+      if ("`names'" != "") labvars_nam `0'
+      e 0
+      {c )-}
+    - loc opt : word count `remove' `carryon'
+    = loc opt : word count  
+    - if (`opt' > 1) {c -(}
+    = if (0 > 1) {c -(}
+      di as err "options remove and carryon not both allowed"
+      e 198
+      {c )-}
+    - if (`"`macval(anything)'"' == "") {c -(}
+    = if (`"cardiovascular chronic cons_psico consul estres hosp infarct        nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios          nro_urgencias pre_MWI proce service urg diag_mental                         "Cardiovascular" "Chronic disease" "Consultation with psychologist"         "Probability of consultation" "Stress" "Probability of hospitalization"     "Infarct" "Number of hospitalizations" "Number of consultations"            "Number of procedures" "Number of services" "Number of ER visits"           "Multi-morbidity index" "Probability of procedures"                         "Probability of health service" "Probability of ER visit" "Mental diagnosis""' == "") {c -(}
+      if !(`opt') {c -(}
+      di as err `"`c(k)' `= plural(`c(k)', "variable")' "' "but 0 labels specified"
+      e 100
+      {c )-}
+      else loc varlist *
+      {c )-}
+    - else {c -(}
+    - gettoken quotes : anything ,p(`"`""'\"') qed(q)
+    - if (`q') loc varlist *
+    = if (0) loc varlist *
+    - else {c -(}
+    - gettoken varlist anything : anything ,p("\")
+    - if (`"`macval(varlist)'"' == "\") loc varlist *
+    = if (`"cardiovascular chronic cons_psico consul estres hosp infarct        nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios          nro_urgencias pre_MWI proce service urg diag_mental                         "Cardiovascular" "Chronic disease" "Consultation with psychologist"         "Probability of consultation" "Stress" "Probability of hospitalization"     "Infarct" "Number of hospitalizations" "Number of consultations"            "Number of procedures" "Number of services" "Number of ER visits"           "Multi-morbidity index" "Probability of procedures"                         "Probability of health service" "Probability of ER visit" "Mental diagnosis""' == "\") loc varlist *
+    - else if (`"`macval(anything)'"' == "") {c -(}
+    = else if (`""' == "") {c -(}
+    - gettoken varlist anything : varlist ,p(`"`""'"')
+    - {c )-}
+    - else gettoken bs anything : anything ,p("\")
+    - {c )-}
+    - {c )-}
+    - unab varlist : `varlist'
+    = unab varlist : cardiovascular chronic cons_psico consul estres hosp infarct        nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios          nro_urgencias pre_MWI proce service urg diag_mental                         
+      {hline 32} begin unab {hline}
+      - version 6
+      - gettoken user 0: 0, parse(" :")
+      - gettoken colon 0: 0, parse(" :")
+      - if `"`colon'"' != ":" {c -(} error 198 {c )-}
+      = if `":"' != ":" {c -(} error 198 {c )-}
+      - syntax [varlist(broken default=empty)] [, MIN(integer 1) MAX(integer 120000) NAME(string)]
+      - c_local `user' `varlist'
+      = c_local varlist cardiovascular chronic cons_psico consul estres hosp infarct nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios nro_urgencias pre_MWI proce service urg diag_mental
+      - local n : word count `varlist'
+      = local n : word count cardiovascular chronic cons_psico consul estres hosp infarct nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios nro_urgencias pre_MWI proce service urg diag_mental
+      - if `n'>=`min' & `n'<=`max' {c -(} exit {c )-}
+      = if 17>=1 & 17<=120000 {c -(} exit {c )-}
+      {hline 34} end unab {hline}
+    - loc nvar : word count `varlist'
+    = loc nvar : word count cardiovascular chronic cons_psico consul estres hosp infarct nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios nro_urgencias pre_MWI proce service urg diag_mental
+    - loc nlab : word count `anything'
+    = loc nlab : word count "Cardiovascular" "Chronic disease" "Consultation with psychologist"         "Probability of consultation" "Stress" "Probability of hospitalization"     "Infarct" "Number of hospitalizations" "Number of consultations"            "Number of procedures" "Number of services" "Number of ER visits"           "Multi-morbidity index" "Probability of procedures"                         "Probability of health service" "Probability of ER visit" "Mental diagnosis"
+    - if (`nvar' != `nlab') {c -(}
+    = if (17 != 17) {c -(}
+      if (`nvar' < `nlab') loc opt 0
+      if !(`opt') {c -(}
+      di as err `"`nvar' `= plural(`nvar', "variable")' "' `"but `nlab' `= plural(`nlab', "label")' specified"'
+      e 198
+      {c )-}
+      {c )-}
+    - if ("`carryon'" == "") loc remove remove
+    = if ("" == "") loc remove remove
+    - token `"`macval(anything)'"'
+    = token `""Cardiovascular" "Chronic disease" "Consultation with psychologist"         "Probability of consultation" "Stress" "Probability of hospitalization"     "Infarct" "Number of hospitalizations" "Number of consultations"            "Number of procedures" "Number of services" "Number of ER visits"           "Multi-morbidity index" "Probability of procedures"                         "Probability of health service" "Probability of ER visit" "Mental diagnosis""'
+    - loc l 0
+    - foreach v of loc varlist {c -(}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Cardiovascular"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Cardiovascular"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Cardiovascular"', `"""') la var cardiovascular `"Cardiovascular"'
+    - else la var `v' "`lbl'"
+    = else la var cardiovascular "Cardiovascular"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var cardiovascular "Cardiovascular"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var cardiovascular "Cardiovascular"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Chronic disease"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Chronic disease"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Chronic disease"', `"""') la var chronic `"Chronic disease"'
+    - else la var `v' "`lbl'"
+    = else la var chronic "Chronic disease"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var chronic "Chronic disease"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var chronic "Chronic disease"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Consultation with psychologist"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Consultation with psychologist"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Consultation with psychologist"', `"""') la var cons_psico `"Consultation with psychologist"'
+    - else la var `v' "`lbl'"
+    = else la var cons_psico "Consultation with psychologist"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var cons_psico "Consultation with psychologist"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var cons_psico "Consultation with psychologist"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Probability of consultation"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Probability of consultation"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Probability of consultation"', `"""') la var consul `"Probability of consultation"'
+    - else la var `v' "`lbl'"
+    = else la var consul "Probability of consultation"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var consul "Probability of consultation"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var consul "Probability of consultation"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Stress"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Stress"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Stress"', `"""') la var estres `"Stress"'
+    - else la var `v' "`lbl'"
+    = else la var estres "Stress"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var estres "Stress"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var estres "Stress"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Probability of hospitalization"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Probability of hospitalization"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Probability of hospitalization"', `"""') la var hosp `"Probability of hospitalization"'
+    - else la var `v' "`lbl'"
+    = else la var hosp "Probability of hospitalization"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var hosp "Probability of hospitalization"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var hosp "Probability of hospitalization"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Infarct"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Infarct"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Infarct"', `"""') la var infarct `"Infarct"'
+    - else la var `v' "`lbl'"
+    = else la var infarct "Infarct"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var infarct "Infarct"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var infarct "Infarct"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Number of hospitalizations"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Number of hospitalizations"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Number of hospitalizations"', `"""') la var nro_Hospitalizacion `"Number of hospitalizations"'
+    - else la var `v' "`lbl'"
+    = else la var nro_Hospitalizacion "Number of hospitalizations"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var nro_Hospitalizacion "Number of hospitalizations"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var nro_Hospitalizacion "Number of hospitalizations"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Number of consultations"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Number of consultations"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Number of consultations"', `"""') la var nro_consultas `"Number of consultations"'
+    - else la var `v' "`lbl'"
+    = else la var nro_consultas "Number of consultations"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var nro_consultas "Number of consultations"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var nro_consultas "Number of consultations"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Number of procedures"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Number of procedures"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Number of procedures"', `"""') la var nro_procedimientos `"Number of procedures"'
+    - else la var `v' "`lbl'"
+    = else la var nro_procedimientos "Number of procedures"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var nro_procedimientos "Number of procedures"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var nro_procedimientos "Number of procedures"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Number of services"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Number of services"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Number of services"', `"""') la var nro_servicios `"Number of services"'
+    - else la var `v' "`lbl'"
+    = else la var nro_servicios "Number of services"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var nro_servicios "Number of services"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var nro_servicios "Number of services"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Number of ER visits"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Number of ER visits"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Number of ER visits"', `"""') la var nro_urgencias `"Number of ER visits"'
+    - else la var `v' "`lbl'"
+    = else la var nro_urgencias "Number of ER visits"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var nro_urgencias "Number of ER visits"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var nro_urgencias "Number of ER visits"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Multi-morbidity index"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Multi-morbidity index"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Multi-morbidity index"', `"""') la var pre_MWI `"Multi-morbidity index"'
+    - else la var `v' "`lbl'"
+    = else la var pre_MWI "Multi-morbidity index"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var pre_MWI "Multi-morbidity index"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var pre_MWI "Multi-morbidity index"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Probability of procedures"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Probability of procedures"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Probability of procedures"', `"""') la var proce `"Probability of procedures"'
+    - else la var `v' "`lbl'"
+    = else la var proce "Probability of procedures"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var proce "Probability of procedures"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var proce "Probability of procedures"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Probability of health service"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Probability of health service"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Probability of health service"', `"""') la var service `"Probability of health service"'
+    - else la var `v' "`lbl'"
+    = else la var service "Probability of health service"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var service "Probability of health service"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var service "Probability of health service"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Probability of ER visit"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Probability of ER visit"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Probability of ER visit"', `"""') la var urg `"Probability of ER visit"'
+    - else la var `v' "`lbl'"
+    = else la var urg "Probability of ER visit"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var urg "Probability of ER visit"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var urg "Probability of ER visit"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    - loc ++l
+    - if (`"`macval(`l')'"' != "") | ("`remove'" != "") {c -(}
+    = if (`"Mental diagnosis"' != "") | ("remove" != "") {c -(}
+    - loc lbl "``l''"
+    = loc lbl "Mental diagnosis"
+    - {c )-}
+    - if strpos(`"`macval(lbl)'"', `"""') la var `v' `"`lbl'"'
+    = if strpos(`"Mental diagnosis"', `"""') la var diag_mental `"Mental diagnosis"'
+    - else la var `v' "`lbl'"
+    = else la var diag_mental "Mental diagnosis"
+      {hline 34} begin la {hline}
+      - label `0'
+      = label var diag_mental "Mental diagnosis"
+        {hline 29} begin label {hline}
+        - version 10.0
+        - local vv : display "version " string(_caller()) ", missing:"
+        - gettoken val : 0
+        - if (strpos("`val'", "val") > 0 ) {c -(}
+        = if (strpos("var", "val") > 0 ) {c -(}
+          gettoken val 0 : 0
+          syntax anything [, nofix]
+          if "`fix'" != "" {c -(}
+          local fix ", nofix"
+          {c )-}
+          gettoken var rest : anything
+          while `"`rest'"' != "" {c -(}
+          gettoken lab rest : rest
+          local label "`lab'"
+          {c )-}
+          local vlist : list anything - lab
+          if "`lab'" == "." {c -(}
+          local lab ""
+          {c )-}
+          foreach var of varlist `vlist' {c -(}
+          `vv' _label `val' `var' `lab' `fix'
+          {c )-}
+          {c )-}
+        - else {c -(}
+        - `vv' _label `macval(0)'
+        = version 9.2, missing: _label var diag_mental "Mental diagnosis"
+        - {c )-}
+        {hline 31} end label {hline}
+      {hline 36} end la {hline}
+    - {c )-}
+    {hline 33} end labvars {hline}
+
 {com}.         
 .    
 . ****************************************************************************
@@ -67,15 +1648,927 @@
 {txt} 12{com}.         
 .     {c )-}
 {txt} 13{com}. {c )-}
-{err}Cohort: poblacion_M50; Outcome: service; Runvar: std_weeks -> (2) Difference in discontinuities
-poblacion_poblacion_M50 not found
-{txt}{search r(111), local:r(111);}
+  {txt}- foreach cohort in $first_cohorts {c -(}
+  = foreach cohort in M50 F55 {c -(}
+  - foreach outcome in $outcomes {c -(}
+  = foreach outcome in service consul proce urg hosp cons_psico estres        cardiovascular infarct chronic diag_mental pre_MWI nro_servicios nro_consultas nro_procedimientos         nro_urgencias nro_Hospitalizacion {c -(}
+  - dis as err "Cohort: `cohort'; Outcome: `outcome'; " "Runvar: std_weeks -> (2) Difference in discontinuities"
+  = dis as err "Cohort: M50; Outcome: service; " "Runvar: std_weeks -> (2) Difference in discontinuities"
+{err}Cohort: M50; Outcome: service; Runvar: std_weeks -> (2) Difference in discontinuities
+  {txt}- qui rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & post == 0, kernel(uniform)
+  = qui rdrobust service std_weeks if poblacion_M50 == 1 & post == 0, kernel(uniform)
+    {hline 30} begin rdrobust {hline}
+    - syntax anything [if] [in] [, c(real 0) fuzzy(string) deriv(real 0) p(string) q(real 0) h(string) b(string) rho(real 0) covs(string) covs_drop(string) kernel(string) weights(string) bwselect(string) vce(string) level(real 95) all scalepar(real 1) scaleregul(real 1) nochecks masspoints(string) bwcheck(real 0) bwrestrict(string) stdvars(string)]
+    - marksample touse
+    - preserve
+    - qui keep if `touse'
+    = qui keep if __000000
+    - tokenize "`anything'"
+    = tokenize "service std_weeks"
+    - local y `1'
+    = local y service
+    - local x `2'
+    = local x std_weeks
+    - local kernel = lower("`kernel'")
+    = local kernel = lower("uniform")
+    - local bwselect = lower("`bwselect'")
+    = local bwselect = lower("")
+    - local nnmatch = 3
+    - tokenize `vce'
+    = tokenize 
+    - local w : word count `vce'
+    = local w : word count 
+    - if `w' == 1 {c -(}
+    = if 0 == 1 {c -(}
+      local vce_select `"`1'"'
+      {c )-}
+    - if `w' == 2 {c -(}
+    = if 0 == 2 {c -(}
+      local vce_select `"`1'"'
+      if ("`vce_select'"=="nn") local nnmatch `"`2'"'
+      if ("`vce_select'"=="cluster" | "`vce_select'"=="nncluster") local clustvar `"`2'"'
+      {c )-}
+    - if `w' == 3 {c -(}
+    = if 0 == 3 {c -(}
+      local vce_select `"`1'"'
+      local clustvar `"`2'"'
+      local nnmatch `"`3'"'
+      if ("`vce_select'"!="cluster" & "`vce_select'"!="nncluster") di as error "{c -(}err{c )-}{c -(}cmd:vce(){c )-} incorrectly specified"
+      {c )-}
+    - if `w' > 3 {c -(}
+    = if 0 > 3 {c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:vce(){c )-} incorrectly specified"
+      exit 125
+      {c )-}
+    - local vce_type = "NN"
+    - if ("`vce_select'"=="hc0") local vce_type = "HC0"
+    = if (""=="hc0") local vce_type = "HC0"
+    - if ("`vce_select'"=="hc1") local vce_type = "HC1"
+    = if (""=="hc1") local vce_type = "HC1"
+    - if ("`vce_select'"=="hc2") local vce_type = "HC2"
+    = if (""=="hc2") local vce_type = "HC2"
+    - if ("`vce_select'"=="hc3") local vce_type = "HC3"
+    = if (""=="hc3") local vce_type = "HC3"
+    - if ("`vce_select'"=="cluster") local vce_type = "Cluster"
+    = if (""=="cluster") local vce_type = "Cluster"
+    - if ("`vce_select'"=="nncluster") local vce_type = "NNcluster"
+    = if (""=="nncluster") local vce_type = "NNcluster"
+    - if ("`vce_select'"=="cluster" | "`vce_select'"=="nncluster") local cluster = "cluster"
+    = if (""=="cluster" | ""=="nncluster") local cluster = "cluster"
+    - if ("`vce_select'"=="cluster") local vce_select = "hc0"
+    = if (""=="cluster") local vce_select = "hc0"
+    - if ("`vce_select'"=="nncluster") local vce_select = "nn"
+    = if (""=="nncluster") local vce_select = "nn"
+    - if ("`vce_select'"=="") local vce_select = "nn"
+    = if (""=="") local vce_select = "nn"
+    - tokenize `h'
+    = tokenize 
+    - local w : word count `h'
+    = local w : word count 
+    - if `w' == 1 {c -(}
+    = if 0 == 1 {c -(}
+      local h_l `"`1'"'
+      local h_r `"`1'"'
+      {c )-}
+    - if `w' == 2 {c -(}
+    = if 0 == 2 {c -(}
+      local h_l `"`1'"'
+      local h_r `"`2'"'
+      {c )-}
+    - if `w' >= 3 {c -(}
+    = if 0 >= 3 {c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:h(){c )-} only accepts two inputs"
+      exit 125
+      {c )-}
+    - tokenize `b'
+    = tokenize 
+    - local w : word count `b'
+    = local w : word count 
+    - if `w' == 1 {c -(}
+    = if 0 == 1 {c -(}
+      local b_l `"`1'"'
+      local b_r `"`1'"'
+      {c )-}
+    - if `w' == 2 {c -(}
+    = if 0 == 2 {c -(}
+      local b_l `"`1'"'
+      local b_r `"`2'"'
+      {c )-}
+    - if `w' >= 3 {c -(}
+    = if 0 >= 3 {c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:b(){c )-} only accepts two inputs"
+      exit 125
+      {c )-}
+    - if ("`h'"!="") {c -(}
+    = if (""!="") {c -(}
+      local bwselect = "Manual"
+      if ("`b'"=="") {c -(}
+      local b_r = `h_r'
+      local b_l = `h_l'
+      {c )-}
+      scalar rho= round(`rho', .0001)
+      if (rho>0) {c -(}
+      local b_l = `h_l'/`rho'
+      local b_r = `h_r'/`rho'
+      {c )-}
+      {c )-}
+    - if ("`h'"=="" & "`bwselect'"=="") local bwselect= "mserd"
+    = if (""=="" & ""=="") local bwselect= "mserd"
+    - tokenize `fuzzy'
+    = tokenize 
+    - local w : word count `fuzzy'
+    = local w : word count 
+    - if `w' == 1 {c -(}
+    = if 0 == 1 {c -(}
+      local fuzzyvar `"`1'"'
+      {c )-}
+    - if `w' == 2 {c -(}
+    = if 0 == 2 {c -(}
+      local fuzzyvar `"`1'"'
+      local sharpbw `"`2'"'
+      if `"`2'"' != "sharpbw" {c -(}
+      di as error "{c -(}err{c )-}fuzzy() only accepts sharpbw as a second input"
+      exit 125
+      {c )-}
+      {c )-}
+    - if `w' >= 3 {c -(}
+    = if 0 >= 3 {c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:fuzzy(){c )-} only accepts two inputs"
+      exit 125
+      {c )-}
+    - qui drop if mi(`y') | mi(`x')
+    = qui drop if mi(service) | mi(std_weeks)
+    - if ("`fuzzy'"~="") qui drop if mi(`fuzzyvar')
+    = if (""~="") qui drop if mi()
+    - if ("`cluster'"!="") qui drop if mi(`clustvar')
+    = if (""!="") qui drop if mi()
+    - if ("`covs'"~="") {c -(}
+    = if (""~="") {c -(}
+      qui ds `covs', alpha
+      local covs_list = r(varlist)
+      local ncovs: word count `covs_list'
+      foreach z in `covs_list' {c -(}
+      qui drop if mi(`z')
+      {c )-}
+      {c )-}
+    - if ("`weights'"~="") {c -(}
+    = if (""~="") {c -(}
+      qui drop if mi(`weights')
+      qui drop if `weights'<=0
+      {c )-}
+    - local covs_drop_coll = 0
+    - if ("`covs_drop'"=="") local covs_drop = "pinv"
+    = if (""=="") local covs_drop = "pinv"
+    - if ("`covs'"~="") {c -(}
+    = if (""~="") {c -(}
+      if ("`covs_drop'"=="invsym") local covs_drop_coll = 1
+      if ("`covs_drop'"=="pinv") local covs_drop_coll = 2
+      if ("`covs_drop'"!="off") {c -(}
+      qui _rmcoll `covs_list'
+      local nocoll_controls_cat `r(varlist)'
+      local nocoll_controls ""
+      foreach myString of local nocoll_controls_cat {c -(}
+      if ~strpos("`myString'", "o."){c -(}
+      if ~strpos("`myString'", "MYRUNVAR"){c -(}
+      local nocoll_controls "`nocoll_controls' `myString'"
+      {c )-}
+      {c )-}
+      {c )-}
+      local covs_new `nocoll_controls'
+      qui ds `covs_new', alpha
+      local covs_list_new = r(varlist)
+      local ncovs_new: word count `covs_list_new'
+      if (`ncovs_new'<`ncovs') {c -(}
+      local ncovs = "`ncovs_new'"
+      local covs_list = "`covs_list_new'"
+      di as error "{c -(}err{c )-}Multicollinearity issue detected in {c -(}cmd:covs{c )-}. Redundant covariates were removed."
+      {c )-}
+      {c )-}
+      {c )-}
+    - if ("`masspoints'"=="") local masspoints = "adjust"
+    = if (""=="") local masspoints = "adjust"
+    - if ("`stdvars'"=="") local stdvars = "off"
+    = if (""=="") local stdvars = "off"
+    - if ("`bwrestrict'"=="") local bwrestrict = "on"
+    = if (""=="") local bwrestrict = "on"
+    - qui su `x', d
+    = qui su std_weeks, d
+    - local N = r(N)
+    - local x_min = r(min)
+    - local x_max = r(max)
+    - local x_iq = r(p75)-r(p25)
+    - local x_sd = r(sd)
+    - if ("`deriv'">"0" & "`p'"=="" & "`q'"=="0") local p = `deriv'+1
+    = if ("0">"0" & ""=="" & "0"=="0") local p = 0+1
+    - if ("`p'"=="") local p = 1
+    = if (""=="") local p = 1
+    - if ("`q'"=="0") local q = `p'+1
+    = if ("0"=="0") local q = 1+1
+    - if ("`nochecks'"=="") {c -(}
+    = if (""=="") {c -(}
+    - if (`c'<=`x_min' | `c'>=`x_max'){c -(}
+    = if (0<=-155 | 0>=73){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:c(){c )-} should be set within the range of `x'"
+      exit 125
+      {c )-}
+    - if (`N'<20){c -(}
+    = if (158648<20){c -(}
+      di as error "{c -(}err{c )-}Not enough observations to perform bandwidth calculations"
+      di as error "{c -(}err{c )-}Estimates computed using entire sample"
+      local bwselect= "Manual"
+      qui su `x' if `x'<`c'
+      local range_l = abs(r(max)-r(min))
+      qui su `x' if `x'>=`c'
+      local range_r = abs(r(max)-r(min))
+      local bw_range = max(`range_l',`range_r')
+      local h = `bw_range'
+      local b = `bw_range'
+      local h_l = `bw_range'
+      local h_r = `bw_range'
+      local b_l = `bw_range'
+      local b_r = `bw_range'
+      {c )-}
+    - if ("`kernel'"~="uni" & "`kernel'"~="uniform" & "`kernel'"~="tri" & "`kernel'"~="triangular" & "`kernel'"~="epa" & "`kernel'"~="epanechnikov" & "`kernel'"~="" ){c -(}
+    = if ("uniform"~="uni" & "uniform"~="uniform" & "uniform"~="tri" & "uniform"~="triangular" & "uniform"~="epa" & "uniform"~="epanechnikov" & "uniform"~="" ){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:kernel(){c )-} incorrectly specified"
+      exit 7
+      {c )-}
+    - if ("`bwselect'"=="CCT" | "`bwselect'"=="IK" | "`bwselect'"=="CV" |"`bwselect'"=="cct" | "`bwselect'"=="ik" | "`bwselect'"=="cv"){c -(}
+    = if ("mserd"=="CCT" | "mserd"=="IK" | "mserd"=="CV" |"mserd"=="cct" | "mserd"=="ik" | "mserd"=="cv"){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:bwselect(){c )-} options IK, CCT and CV have been depricated. Please see help for new options"
+      exit 7
+      {c )-}
+    - if ("`bwselect'"!="mserd" & "`bwselect'"!="msetwo" & "`bwselect'"!="msesum" & "`bwselect'"!="msecomb1" & "`bwselect'"!="msecomb2" & "`bwselect'"!="cerrd" & "`bwselect'"!="certwo" & "`bwselect'"!="cersum" & "`bwselect'"!="cercomb1" & "`bwselect'"!="cercomb2" & "`bwselect'"~="Manual"){c -(}
+    = if ("mserd"!="mserd" & "mserd"!="msetwo" & "mserd"!="msesum" & "mserd"!="msecomb1" & "mserd"!="msecomb2" & "mserd"!="cerrd" & "mserd"!="certwo" & "mserd"!="cersum" & "mserd"!="cercomb1" & "mserd"!="cercomb2" & "mserd"~="Manual"){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:bwselect(){c )-} incorrectly specified"
+      exit 7
+      {c )-}
+    - if ("`vce_select'"~="nn" & "`vce_select'"~="" & "`vce_select'"~="cluster" & "`vce_select'"~="nncluster" & "`vce_select'"~="hc1" & "`vce_select'"~="hc2" & "`vce_select'"~="hc3" & "`vce_select'"~="hc0"){c -(}
+    = if ("nn"~="nn" & "nn"~="" & "nn"~="cluster" & "nn"~="nncluster" & "nn"~="hc1" & "nn"~="hc2" & "nn"~="hc3" & "nn"~="hc0"){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:vce(){c )-} incorrectly specified"
+      exit 7
+      {c )-}
+    - if ("`p'"<"0" | "`q'"<="0" | "`deriv'"<"0" | "`nnmatch'"<="0" ){c -(}
+    = if ("1"<"0" | "2"<="0" | "0"<"0" | "3"<="0" ){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:p(){c )-}, {c -(}cmd:q(){c )-}, {c -(}cmd:deriv(){c )-}, {c -(}cmd:nnmatch(){c )-} should be positive"
+      exit 411
+      {c )-}
+    - if ("`p'">="`q'" & "`q'">"0"){c -(}
+    = if ("1">="2" & "2">"0"){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:q(){c )-} should be higher than {c -(}cmd:p(){c )-}"
+      exit 125
+      {c )-}
+    - if ("`deriv'">"`p'" & "`deriv'">"0" ){c -(}
+    = if ("0">"1" & "0">"0" ){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:deriv(){c )-} can not be higher than {c -(}cmd:p(){c )-}"
+      exit 125
+      {c )-}
+    - if ("`p'">"0" ) {c -(}
+    = if ("1">"0" ) {c -(}
+    - local p_round = round(`p')/`p'
+    = local p_round = round(1)/1
+    - local q_round = round(`q')/`q'
+    = local q_round = round(2)/2
+    - local d_round = round(`deriv'+1)/(`deriv'+1)
+    = local d_round = round(0+1)/(0+1)
+    - local m_round = round(`nnmatch')/`nnmatch'
+    = local m_round = round(3)/3
+    - if (`p_round'!=1 | `q_round'!=1 |`d_round'!=1 |`m_round'!=1 ){c -(}
+    = if (1!=1 | 1!=1 |1!=1 |1!=1 ){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:p(){c )-}, {c -(}cmd:q(){c )-}, {c -(}cmd:deriv(){c )-} and {c -(}cmd:nnmatch(){c )-} should be integers"
+      exit 126
+      {c )-}
+    - {c )-}
+    - if (`level'>100 | `level'<=0){c -(}
+    = if (95>100 | 95<=0){c -(}
+      di as error "{c -(}err{c )-}{c -(}cmd:level(){c )-}should be set between 0 and 100"
+      exit 125
+      {c )-}
+    - {c )-}
+    - if ("`vce_select'"=="nn" | "`masspoints'"=="check" | "`masspoints'"=="adjust") {c -(}
+    = if ("nn"=="nn" | "adjust"=="check" | "adjust"=="adjust") {c -(}
+    - sort `x', stable
+    = sort std_weeks, stable
+    - if ("`vce_select'"=="nn") {c -(}
+    = if ("nn"=="nn") {c -(}
+    - tempvar dups dupsid
+    - by `x': gen dups = _N
+    = by std_weeks: gen dups = _N
+    - by `x': gen dupsid = _n
+    = by std_weeks: gen dupsid = _n
+    - {c )-}
+    - {c )-}
+    - if ("`kernel'"=="epanechnikov" | "`kernel'"=="epa") {c -(}
+    = if ("uniform"=="epanechnikov" | "uniform"=="epa") {c -(}
+      local kernel_type = "Epanechnikov"
+      local C_c = 2.34
+      {c )-}
+    - else if ("`kernel'"=="uniform" | "`kernel'"=="uni") {c -(}
+    = else if ("uniform"=="uniform" | "uniform"=="uni") {c -(}
+    - local kernel_type = "Uniform"
+    - local C_c = 1.843
+    - {c )-}
+    - else {c -(}
+      local kernel_type = "Triangular"
+      local C_c = 2.576
+      {c )-}
+    - mata{c -(}
+    - Y = st_data(.,("`y'"), 0); X = st_data(.,("`x'"), 0)
+    = Y = st_data(.,("service"), 0); X = st_data(.,("std_weeks"), 0)
+    - ind_l = selectindex(X:<`c'); ind_r = selectindex(X:>=`c')
+    = ind_l = selectindex(X:<0); ind_r = selectindex(X:>=0)
+    - X_l = X[ind_l]; X_r = X[ind_r]
+    - Y_l = Y[ind_l]; Y_r = Y[ind_r]
+    - dZ=dT=dC=Z_l=Z_r=T_l=T_r=C_l=C_r=fw_l=fw_r=g_l=g_r=dups_l=dups_r=dupsid_l=dupsid_r=g_l=g_r=eT_l=eT_r=eZ_l=eZ_r=indC_l=indC_r=eC_l=eC_r=0
+    - N = length(X); N_l = length(X_l); N_r = length(X_r)
+    - if ("`covs'"~="") {c -(}
+    = if (""~="") {c -(}
+    - Z = st_data(.,tokens("`covs_list'"), 0); dZ = cols(Z)
+    = Z = st_data(.,tokens(""), 0); dZ = cols(Z)
+    - Z_l = Z[ind_l,]; Z_r = Z[ind_r,]
+    - {c )-}
+    - if ("`fuzzy'"~="") {c -(}
+    = if (""~="") {c -(}
+    - T = st_data(.,("`fuzzyvar'"), 0); T_l = T[ind_l]; T_r = T[ind_r]; dT = 1
+    = T = st_data(.,(""), 0); T_l = T[ind_l]; T_r = T[ind_r]; dT = 1
+    - if (variance(T_l)==0 | variance(T_r)==0){c -(}
+    - T_l = T_r = 0
+    - st_local("perf_comp","perf_comp")
+    - {c )-}
+    - if ("`sharpbw'"!=""){c -(}
+    = if (""!=""){c -(}
+    - T_l = T_r = 0
+    - st_local("sharpbw","sharpbw")
+    - {c )-}
+    - {c )-}
+    - if ("`cluster'"!="") {c -(}
+    = if (""!="") {c -(}
+    - C = st_data(.,("`clustvar'"), 0)
+    = C = st_data(.,(""), 0)
+    - C_l = C[ind_l]; C_r = C[ind_r]
+    - indC_l = order(C_l,1); indC_r = order(C_r,1)
+    - g_l = rows(panelsetup(C_l[indC_l],1)); g_r = rows(panelsetup(C_r[indC_r],1))
+    - st_numscalar("g_l", g_l); st_numscalar("g_r", g_r)
+    - {c )-}
+    - if ("`weights'"~="") {c -(}
+    = if (""~="") {c -(}
+    - fw = st_data(.,("`weights'"), 0)
+    = fw = st_data(.,(""), 0)
+    - fw_l = fw[ind_l]; fw_r = fw[ind_r]
+    - {c )-}
+    - if ("`vce_select'"=="nn") {c -(}
+    = if ("nn"=="nn") {c -(}
+    - dups = st_data(.,("dups"), 0); dupsid = st_data(.,("dupsid"), 0)
+    - dups_l = dups[ind_l]; dups_r = dups[ind_r]
+    - dupsid_l = dupsid[ind_l]; dupsid_r = dupsid[ind_r]
+    - {c )-}
+    - h_l = `h_l'
+    = h_l = 
+    - h_r = `h_r'
+    = h_r = 
+    - b_l = `b_l'
+    = b_l = 
+    - b_r = `b_r'
+    = b_r = 
+    - masspoints_found = 0
+    - if ("`h'"=="") {c -(}
+    = if (""=="") {c -(}
+    - BWp = min((`x_sd',`x_iq'/1.349))
+    = BWp = min((51.51653381613558,0/1.349))
+    - x_sd = y_sd = 1
+    - c = `c'
+    = c = 0
+    - if ("`stdvars'"=="on") {c -(}
+    = if ("off"=="on") {c -(}
+    - y_sd = sqrt(variance(Y))
+    - x_sd = sqrt(variance(X))
+    - X_l = X_l/x_sd; X_r = X_r/x_sd
+    - Y_l = Y_l/y_sd; Y_r = Y_r/y_sd
+    - c = `c'/x_sd
+    = c = 0/x_sd
+    - BWp = min((1, (`x_iq'/x_sd)/1.349))
+    = BWp = min((1, (0/x_sd)/1.349))
+    - {c )-}
+    - x_l_min = min(X_l); x_l_max = max(X_l)
+    - x_r_min = min(X_r); x_r_max = max(X_r)
+    - range_l = c - x_l_min
+    - range_r = x_r_max - c
+    - mN = `N'
+    = mN = 158648
+    - bwcheck = `bwcheck'
+    = bwcheck = 0
+    - covs_drop_coll = `covs_drop_coll'
+    = covs_drop_coll = 0
+    - if ("`masspoints'"=="check" | "`masspoints'"=="adjust") {c -(}
+    = if ("adjust"=="check" | "adjust"=="adjust") {c -(}
+    - X_uniq_l = sort(uniqrows(X_l),-1)
+    - X_uniq_r = uniqrows(X_r)
+    - M_l = length(X_uniq_l)
+    - M_r = length(X_uniq_r)
+    - M = M_l + M_r
+    - st_numscalar("M_l", M_l); st_numscalar("M_r", M_r)
+    - mass_l = 1-M_l/N_l
+    - mass_r = 1-M_r/N_r
+    - if (mass_l>=0.1 | mass_r>=0.1){c -(}
+    - masspoints_found = 1
+    - display("{c -(}err{c )-}Mass points detected in the running variable.")
+    - if ("`masspoints'"=="adjust" & "`bwcheck'"=="0") bwcheck = 10
+    = if ("adjust"=="adjust" & "0"=="0") bwcheck = 10
+    - if ("`masspoints'"=="check") display("{c -(}err{c )-}Try using option {c -(}cmd:masspoints(adjust){c )-}.")
+    = if ("adjust"=="check") display("{c -(}err{c )-}Try using option {c -(}cmd:masspoints(adjust){c )-}.")
+    - {c )-}
+    - {c )-}
+    - c_bw = `C_c'*BWp*mN^(-1/5)
+    = c_bw = 1.843*BWp*mN^(-1/5)
+    - if ("`masspoints'"=="adjust") c_bw = `C_c'*BWp*M^(-1/5)
+    = if ("adjust"=="adjust") c_bw = 1.843*BWp*M^(-1/5)
+    - if ("`bwrestrict'"=="on") {c -(}
+    = if ("on"=="on") {c -(}
+    - bw_max = max((range_l,range_r))
+    - c_bw = min((c_bw, bw_max))
+    - {c )-}
+    - if (bwcheck > 0) {c -(}
+    - bwcheck_l = min((bwcheck, M_l))
+    - bwcheck_r = min((bwcheck, M_r))
+    - bw_min_l = abs(X_uniq_l:-c)[bwcheck_l] + 1e-8
+    - bw_min_r = abs(X_uniq_r:-c)[bwcheck_r] + 1e-8
+    - c_bw = max((c_bw, bw_min_l, bw_min_r))
+    - {c )-}
+    - C_d_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=`q'+1, nu=`q'+1, o_B=`q'+2, h_V=c_bw, h_B=range_l+1e-8, 0, "`vce_select'", `nnmatch', "`kernel'", dups_l, dupsid_l, covs_drop_coll)
+    = C_d_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=2+1, nu=2+1, o_B=2+2, h_V=c_bw, h_B=range_l+1e-8, 0, "nn", 3, "uniform", dups_l, dupsid_l, covs_drop_coll)
+    - C_d_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=`q'+1, nu=`q'+1, o_B=`q'+2, h_V=c_bw, h_B=range_r+1e-8, 0, "`vce_select'", `nnmatch', "`kernel'", dups_r, dupsid_r, covs_drop_coll)
+    = C_d_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=2+1, nu=2+1, o_B=2+2, h_V=c_bw, h_B=range_r+1e-8, 0, "nn", 3, "uniform", dups_r, dupsid_r, covs_drop_coll)
+    - if (C_d_l[1]==0 | C_d_l[2]==0 | C_d_r[1]==0 | C_d_r[2]==0 |C_d_l[1]==. | C_d_l[2]==. | C_d_l[3]==. |C_d_r[1]==. | C_d_r[2]==. | C_d_r[3]==.) printf("{c -(}err{c )-}Not enough variability to compute the preliminary bandwidth. Try checking for mass points with option {c -(}cmd:masspoints(check){c )-}.\n")
+    - if ("`bwselect'"=="msetwo" | "`bwselect'"=="certwo" | "`bwselect'"=="msecomb2" | "`bwselect'"=="cercomb2" ) {c -(}
+    = if ("mserd"=="msetwo" | "mserd"=="certwo" | "mserd"=="msecomb2" | "mserd"=="cercomb2" ) {c -(}
+    - d_bw_l = ( (C_d_l[1] / C_d_l[2]^2) * (`N'/mN) )^C_d_l[4]
+    = d_bw_l = ( (C_d_l[1] / C_d_l[2]^2) * (158648/mN) )^C_d_l[4]
+    - d_bw_r = ( (C_d_r[1] / C_d_r[2]^2) * (`N'/mN) )^C_d_l[4]
+    = d_bw_r = ( (C_d_r[1] / C_d_r[2]^2) * (158648/mN) )^C_d_l[4]
+    - if ("`bwrestrict'"=="on") {c -(}
+    = if ("on"=="on") {c -(}
+    - d_bw_l = min((d_bw_l, range_l))
+    - d_bw_r = min((d_bw_r, range_r))
+    - {c )-}
+    - if (bwcheck > 0) {c -(}
+    - d_bw_l = max((d_bw_l, bw_min_l))
+    - d_bw_r = max((d_bw_r, bw_min_r))
+    - {c )-}
+    - C_b_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=`q', nu=`p'+1, o_B=`q'+1, h_V=c_bw, h_B=d_bw_l, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_l, dupsid_l, covs_drop_coll)
+    = C_b_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=2, nu=1+1, o_B=2+1, h_V=c_bw, h_B=d_bw_l, 1, "nn", 3, "uniform", dups_l, dupsid_l, covs_drop_coll)
+    - b_bw_l = ( (C_b_l[1] / (C_b_l[2]^2 + `scaleregul'*C_b_l[3])) * (`N'/mN) )^C_b_l[4]
+    = b_bw_l = ( (C_b_l[1] / (C_b_l[2]^2 + 1*C_b_l[3])) * (158648/mN) )^C_b_l[4]
+    - C_b_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=`q', nu=`p'+1, o_B=`q'+1, h_V=c_bw, h_B=d_bw_r, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_r, dupsid_r, covs_drop_coll)
+    = C_b_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=2, nu=1+1, o_B=2+1, h_V=c_bw, h_B=d_bw_r, 1, "nn", 3, "uniform", dups_r, dupsid_r, covs_drop_coll)
+    - b_bw_r = ( (C_b_r[1] / (C_b_r[2]^2 + `scaleregul'*C_b_r[3])) * (`N'/mN) )^C_b_l[4]
+    = b_bw_r = ( (C_b_r[1] / (C_b_r[2]^2 + 1*C_b_r[3])) * (158648/mN) )^C_b_l[4]
+    - if ("`bwrestrict'"=="on") {c -(}
+    = if ("on"=="on") {c -(}
+    - b_bw_l = min((b_bw_l, range_l))
+    - b_bw_r = min((b_bw_r, range_r))
+    - {c )-}
+    - C_h_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=`p', nu=`deriv', o_B=`q', h_V=c_bw, h_B=b_bw_l, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_l, dupsid_l, covs_drop_coll)
+    = C_h_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=1, nu=0, o_B=2, h_V=c_bw, h_B=b_bw_l, 1, "nn", 3, "uniform", dups_l, dupsid_l, covs_drop_coll)
+    - h_bw_l = ( (C_h_l[1] / (C_h_l[2]^2 + `scaleregul'*C_h_l[3])) * (`N'/mN) )^C_h_l[4]
+    = h_bw_l = ( (C_h_l[1] / (C_h_l[2]^2 + 1*C_h_l[3])) * (158648/mN) )^C_h_l[4]
+    - C_h_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=`p', nu=`deriv', o_B=`q', h_V=c_bw, h_B=b_bw_r, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_r, dupsid_r, covs_drop_coll)
+    = C_h_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=1, nu=0, o_B=2, h_V=c_bw, h_B=b_bw_r, 1, "nn", 3, "uniform", dups_r, dupsid_r, covs_drop_coll)
+    - h_bw_r = ( (C_h_r[1] / (C_h_r[2]^2 + `scaleregul'*C_h_r[3])) * (`N'/mN) )^C_h_l[4]
+    = h_bw_r = ( (C_h_r[1] / (C_h_r[2]^2 + 1*C_h_r[3])) * (158648/mN) )^C_h_l[4]
+    - if ("`bwrestrict'"=="on") {c -(}
+    = if ("on"=="on") {c -(}
+    - h_bw_l = min((h_bw_l, range_l))
+    - h_bw_r = min((h_bw_r, range_r))
+    - {c )-}
+    - {c )-}
+    - if ("`bwselect'"=="msesum" | "`bwselect'"=="cersum" | "`bwselect'"=="msecomb1" | "`bwselect'"=="msecomb2" | "`bwselect'"=="cercomb1" | "`bwselect'"=="cercomb2") {c -(}
+    = if ("mserd"=="msesum" | "mserd"=="cersum" | "mserd"=="msecomb1" | "mserd"=="msecomb2" | "mserd"=="cercomb1" | "mserd"=="cercomb2") {c -(}
+    - d_bw_s = ( ((C_d_l[1] + C_d_r[1]) / (C_d_r[2] + C_d_l[2])^2) * (`N'/mN) )^C_d_l[4]
+    = d_bw_s = ( ((C_d_l[1] + C_d_r[1]) / (C_d_r[2] + C_d_l[2])^2) * (158648/mN) )^C_d_l[4]
+    - if ("`bwrestrict'"=="on") d_bw_s = min((d_bw_s, bw_max))
+    = if ("on"=="on") d_bw_s = min((d_bw_s, bw_max))
+    - if (bwcheck > 0) d_bw_s = max((d_bw_s, bw_min_l, bw_min_r))
+    - C_b_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=`q', nu=`p'+1, o_B=`q'+1, h_V=c_bw, h_B=d_bw_s, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_l, dupsid_l, covs_drop_coll)
+    = C_b_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=2, nu=1+1, o_B=2+1, h_V=c_bw, h_B=d_bw_s, 1, "nn", 3, "uniform", dups_l, dupsid_l, covs_drop_coll)
+    - C_b_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=`q', nu=`p'+1, o_B=`q'+1, h_V=c_bw, h_B=d_bw_s, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_r, dupsid_r, covs_drop_coll)
+    = C_b_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=2, nu=1+1, o_B=2+1, h_V=c_bw, h_B=d_bw_s, 1, "nn", 3, "uniform", dups_r, dupsid_r, covs_drop_coll)
+    - b_bw_s = ( ((C_b_l[1] + C_b_r[1]) / ((C_b_r[2] + C_b_l[2])^2 + `scaleregul'*(C_b_r[3]+C_b_l[3]))) * (`N'/mN) )^C_b_l[4]
+    = b_bw_s = ( ((C_b_l[1] + C_b_r[1]) / ((C_b_r[2] + C_b_l[2])^2 + 1*(C_b_r[3]+C_b_l[3]))) * (158648/mN) )^C_b_l[4]
+    - if ("`bwrestrict'"=="on") b_bw_s = min((b_bw_s, bw_max))
+    = if ("on"=="on") b_bw_s = min((b_bw_s, bw_max))
+    - C_h_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=`p', nu=`deriv', o_B=`q', h_V=c_bw, h_B=b_bw_s, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_l, dupsid_l, covs_drop_coll)
+    = C_h_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=1, nu=0, o_B=2, h_V=c_bw, h_B=b_bw_s, 1, "nn", 3, "uniform", dups_l, dupsid_l, covs_drop_coll)
+    - C_h_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=`p', nu=`deriv', o_B=`q', h_V=c_bw, h_B=b_bw_s, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_r, dupsid_r, covs_drop_coll)
+    = C_h_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=1, nu=0, o_B=2, h_V=c_bw, h_B=b_bw_s, 1, "nn", 3, "uniform", dups_r, dupsid_r, covs_drop_coll)
+    - h_bw_s = ( ((C_h_l[1] + C_h_r[1]) / ((C_h_r[2] + C_h_l[2])^2 + `scaleregul'*(C_h_r[3] + C_h_l[3]))) * (`N'/mN) )^C_h_l[4]
+    = h_bw_s = ( ((C_h_l[1] + C_h_r[1]) / ((C_h_r[2] + C_h_l[2])^2 + 1*(C_h_r[3] + C_h_l[3]))) * (158648/mN) )^C_h_l[4]
+    - if ("`bwrestrict'"=="on") h_bw_s = min((h_bw_s, bw_max))
+    = if ("on"=="on") h_bw_s = min((h_bw_s, bw_max))
+    - {c )-}
+    - if ("`bwselect'"=="mserd" | "`bwselect'"=="cerrd" | "`bwselect'"=="msecomb1" | "`bwselect'"=="msecomb2" | "`bwselect'"=="cercomb1" | "`bwselect'"=="cercomb2" | "`bwselect'"=="") {c -(}
+    = if ("mserd"=="mserd" | "mserd"=="cerrd" | "mserd"=="msecomb1" | "mserd"=="msecomb2" | "mserd"=="cercomb1" | "mserd"=="cercomb2" | "mserd"=="") {c -(}
+    - d_bw_d = ( ((C_d_l[1] + C_d_r[1]) / (C_d_r[2] - C_d_l[2])^2) * (`N'/mN) )^C_d_l[4]
+    = d_bw_d = ( ((C_d_l[1] + C_d_r[1]) / (C_d_r[2] - C_d_l[2])^2) * (158648/mN) )^C_d_l[4]
+    - if ("`bwrestrict'"=="on") d_bw_d = min((d_bw_d, bw_max))
+    = if ("on"=="on") d_bw_d = min((d_bw_d, bw_max))
+    - if (bwcheck > 0) d_bw_d = max((d_bw_d, bw_min_l, bw_min_r))
+    - C_b_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=`q', nu=`p'+1, o_B=`q'+1, h_V=c_bw, h_B=d_bw_d, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_l, dupsid_l, covs_drop_coll)
+    = C_b_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=2, nu=1+1, o_B=2+1, h_V=c_bw, h_B=d_bw_d, 1, "nn", 3, "uniform", dups_l, dupsid_l, covs_drop_coll)
+    - C_b_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=`q', nu=`p'+1, o_B=`q'+1, h_V=c_bw, h_B=d_bw_d, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_r, dupsid_r, covs_drop_coll)
+    = C_b_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=2, nu=1+1, o_B=2+1, h_V=c_bw, h_B=d_bw_d, 1, "nn", 3, "uniform", dups_r, dupsid_r, covs_drop_coll)
+    - b_bw_d = ( ((C_b_l[1] + C_b_r[1]) / ((C_b_r[2] - C_b_l[2])^2 + `scaleregul'*(C_b_r[3] + C_b_l[3]))) * (`N'/mN) )^C_b_l[4]
+    = b_bw_d = ( ((C_b_l[1] + C_b_r[1]) / ((C_b_r[2] - C_b_l[2])^2 + 1*(C_b_r[3] + C_b_l[3]))) * (158648/mN) )^C_b_l[4]
+    - if ("`bwrestrict'"=="on") b_bw_d = min((b_bw_d, bw_max))
+    = if ("on"=="on") b_bw_d = min((b_bw_d, bw_max))
+    - C_h_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=`p', nu=`deriv', o_B=`q', h_V=c_bw, h_B=b_bw_d, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_l, dupsid_l, covs_drop_coll)
+    = C_h_l = rdrobust_bw(Y_l, X_l, T_l, Z_l, C_l, fw_l, c=c, o=1, nu=0, o_B=2, h_V=c_bw, h_B=b_bw_d, 1, "nn", 3, "uniform", dups_l, dupsid_l, covs_drop_coll)
+    - C_h_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=`p', nu=`deriv', o_B=`q', h_V=c_bw, h_B=b_bw_d, `scaleregul', "`vce_select'", `nnmatch', "`kernel'", dups_r, dupsid_r, covs_drop_coll)
+    = C_h_r = rdrobust_bw(Y_r, X_r, T_r, Z_r, C_r, fw_r, c=c, o=1, nu=0, o_B=2, h_V=c_bw, h_B=b_bw_d, 1, "nn", 3, "uniform", dups_r, dupsid_r, covs_drop_coll)
+    - h_bw_d = ( ((C_h_l[1] + C_h_r[1]) / ((C_h_r[2] - C_h_l[2])^2 + `scaleregul'*(C_h_r[3] + C_h_l[3]))) * (`N'/mN) )^C_h_l[4]
+    = h_bw_d = ( ((C_h_l[1] + C_h_r[1]) / ((C_h_r[2] - C_h_l[2])^2 + 1*(C_h_r[3] + C_h_l[3]))) * (158648/mN) )^C_h_l[4]
+    - if ("`bwrestrict'"=="on") h_bw_d = min((h_bw_d, bw_max))
+    = if ("on"=="on") h_bw_d = min((h_bw_d, bw_max))
+    - {c )-}
+    - if (C_b_l[1]==0 | C_b_l[2]==0 | C_b_r[1]==0 | C_b_r[2]==0 |C_b_l[1]==. | C_b_l[2]==. | C_b_l[3]==. | C_b_r[1]==. | C_b_r[2]==. | C_b_r[3]==.) printf("{c -(}err{c )-}Not enough variability to compute the bias bandwidth (b). Try checking for mass points with option {c -(}cmd:masspoints(check){c )-}. \n")
+    - if (C_h_l[1]==0 | C_h_l[2]==0 | C_h_r[1]==0 | C_h_r[2]==0 |C_h_l[1]==. | C_h_l[2]==. | C_h_l[3]==. | C_h_r[1]==. | C_h_r[2]==. | C_h_r[3]==.) printf("{c -(}err{c )-}Not enough variability to compute the loc. poly. bandwidth (h). Try checking for mass points with option {c -(}cmd:masspoints(check){c )-}.\n")
+    - cer_h = mN^(-(`p'/((3+`p')*(3+2*`p'))))
+    = cer_h = mN^(-(1/((3+1)*(3+2*1))))
+    - if ("`cluster'"!="") cer_h = (g_l+g_r)^(-(`p'/((3+`p')*(3+2*`p'))))
+    = if (""!="") cer_h = (g_l+g_r)^(-(1/((3+1)*(3+2*1))))
+    - cer_b = 1
+    - if ("`bwselect'"=="mserd" | "`bwselect'"=="cerrd" | "`bwselect'"=="msecomb1" | "`bwselect'"=="msecomb2" | "`bwselect'"=="cercomb1" | "`bwselect'"=="cercomb2") {c -(}
+    = if ("mserd"=="mserd" | "mserd"=="cerrd" | "mserd"=="msecomb1" | "mserd"=="msecomb2" | "mserd"=="cercomb1" | "mserd"=="cercomb2") {c -(}
+    - h_l = h_r = h_mserd = x_sd*h_bw_d
+    - b_l = b_r = b_mserd = x_sd*b_bw_d
+    - {c )-}
+    - if ("`bwselect'"=="msesum" | "`bwselect'"=="cersum" | "`bwselect'"=="msecomb1" | "`bwselect'"=="msecomb2" | "`bwselect'"=="cercomb1" | "`bwselect'"=="cercomb2") {c -(}
+    = if ("mserd"=="msesum" | "mserd"=="cersum" | "mserd"=="msecomb1" | "mserd"=="msecomb2" | "mserd"=="cercomb1" | "mserd"=="cercomb2") {c -(}
+    - h_l = h_r = h_msesum = x_sd*h_bw_s
+    - b_l = b_r = b_msesum = x_sd*b_bw_s
+    - {c )-}
+    - if ("`bwselect'"=="msetwo" | "`bwselect'"=="certwo" | "`bwselect'"=="msecomb2" | "`bwselect'"=="cercomb2") {c -(}
+    = if ("mserd"=="msetwo" | "mserd"=="certwo" | "mserd"=="msecomb2" | "mserd"=="cercomb2") {c -(}
+    - h_l = h_msetwo_l = x_sd*h_bw_l
+    - h_r = h_msetwo_r = x_sd*h_bw_r
+    - b_l = b_msetwo_l = x_sd*b_bw_l
+    - b_r = b_msetwo_r = x_sd*b_bw_r
+    - {c )-}
+    - if ("`bwselect'"=="msecomb1" | "`bwselect'"=="cercomb1") {c -(}
+    = if ("mserd"=="msecomb1" | "mserd"=="cercomb1") {c -(}
+    - h_l = h_r = h_msecomb1 = min((h_mserd,h_msesum))
+    - b_l = b_r = b_msecomb1 = min((b_mserd,b_msesum))
+    - {c )-}
+    - if ("`bwselect'"=="msecomb2" | "`bwselect'"=="cercomb2") {c -(}
+    = if ("mserd"=="msecomb2" | "mserd"=="cercomb2") {c -(}
+    - h_l = (sort((h_mserd,h_msesum,h_msetwo_l)',1))[2]
+    - h_r = (sort((h_mserd,h_msesum,h_msetwo_r)',1))[2]
+    - b_l = (sort((b_mserd,b_msesum,b_msetwo_l)',1))[2]
+    - b_r = (sort((b_mserd,b_msesum,b_msetwo_r)',1))[2]
+    - {c )-}
+    - if ("`bwselect'"=="cerrd" | "`bwselect'"=="cersum" | "`bwselect'"=="certwo" | "`bwselect'"=="cercomb1" | "`bwselect'"=="cercomb2"){c -(}
+    = if ("mserd"=="cerrd" | "mserd"=="cersum" | "mserd"=="certwo" | "mserd"=="cercomb1" | "mserd"=="cercomb2"){c -(}
+    - h_l = h_l*cer_h
+    - h_r = h_r*cer_h
+    - b_l = b_l*cer_b
+    - b_r = b_r*cer_b
+    - {c )-}
+    - rho = `rho'
+    = rho = 0
+    - if (rho>0) {c -(}
+    - b_l = h_l/rho
+    - b_r = h_r/rho
+    - {c )-}
+    - c = `c'*x_sd
+    = c = 0*x_sd
+    - X_uniq_l = X_uniq_l*x_sd
+    - X_uniq_r = X_uniq_r*x_sd
+    - X_l = X_l*x_sd; X_r = X_r*x_sd
+    - Y_l = Y_l*y_sd; Y_r = Y_r*y_sd
+    - range_l = range_l*x_sd
+    - range_r = range_r*x_sd
+    - {c )-}
+    - {c )-}
+    - mata{c -(}
+    - c = strtoreal("`c'")
+    = c = strtoreal("0")
+    - w_h_l = rdrobust_kweight(X_l,`c',h_l,"`kernel'"); w_h_r = rdrobust_kweight(X_r,`c',h_r,"`kernel'")
+    = w_h_l = rdrobust_kweight(X_l,0,h_l,"uniform"); w_h_r = rdrobust_kweight(X_r,0,h_r,"uniform")
+    - w_b_l = rdrobust_kweight(X_l,`c',b_l,"`kernel'"); w_b_r = rdrobust_kweight(X_r,`c',b_r,"`kernel'")
+    = w_b_l = rdrobust_kweight(X_l,0,b_l,"uniform"); w_b_r = rdrobust_kweight(X_r,0,b_r,"uniform")
+    - if ("`weights'"~="") {c -(}
+    = if (""~="") {c -(}
+    - w_h_l = fw_l:*w_h_l; w_h_r = fw_r:*w_h_r
+    - w_b_l = fw_l:*w_b_l; w_b_r = fw_r:*w_b_r
+    - {c )-}
+    - ind_h_l = selectindex(w_h_l:> 0); ind_h_r = selectindex(w_h_r:> 0)
+    - ind_b_l = selectindex(w_b_l:> 0); ind_b_r = selectindex(w_b_r:> 0)
+    - N_h_l = length(ind_h_l); N_b_l = length(ind_b_l)
+    - N_h_r = length(ind_h_r); N_b_r = length(ind_b_r)
+    - if (N_h_l<10 | N_h_r<10 | N_b_l<10 | N_b_r<10){c -(}
+    - display("{c -(}err{c )-}Estimates might be unreliable due to low number of effective observations.")
+    - {c )-}
+    - ind_l = ind_b_l; ind_r = ind_b_r
+    - if (h_l>b_l) ind_l = ind_h_l
+    - if (h_r>b_r) ind_r = ind_h_r
+    - eN_l = length(ind_l); eN_r = length(ind_r)
+    - eY_l = Y_l[ind_l]; eY_r = Y_r[ind_r]
+    - eX_l = X_l[ind_l]; eX_r = X_r[ind_r]
+    - W_h_l = w_h_l[ind_l]; W_h_r = w_h_r[ind_r]
+    - W_b_l = w_b_l[ind_l]; W_b_r = w_b_r[ind_r]
+    - edups_l = edups_r = edupsid_l= edupsid_r = 0
+    - if ("`vce_select'"=="nn") {c -(}
+    = if ("nn"=="nn") {c -(}
+    - edups_l = dups_l[ind_l]; edups_r = dups_r[ind_r]
+    - edupsid_l = dupsid_l[ind_l]; edupsid_r = dupsid_r[ind_r]
+    - {c )-}
+    - u_l = (eX_l:-`c')/h_l; u_r = (eX_r:-`c')/h_r;
+    = u_l = (eX_l:-0)/h_l; u_r = (eX_r:-0)/h_r;
+    - R_q_l = J(eN_l,(`q'+1),.); R_q_r = J(eN_r,(`q'+1),.)
+    = R_q_l = J(eN_l,(2+1),.); R_q_r = J(eN_r,(2+1),.)
+    - for (j=1; j<=(`q'+1); j++) {c -(}
+    = for (j=1; j<=(2+1); j++) {c -(}
+    - R_q_l[.,j] = (eX_l:-`c'):^(j-1); R_q_r[.,j] = (eX_r:-`c'):^(j-1)
+    = R_q_l[.,j] = (eX_l:-0):^(j-1); R_q_r[.,j] = (eX_r:-0):^(j-1)
+    - {c )-}
+    - R_p_l = R_q_l[,1::(`p'+1)]; R_p_r = R_q_r[,1::(`p'+1)]
+    = R_p_l = R_q_l[,1::(1+1)]; R_p_r = R_q_r[,1::(1+1)]
+    - L_l = quadcross(R_p_l:*W_h_l,u_l:^(`p'+1)); L_r = quadcross(R_p_r:*W_h_r,u_r:^(`p'+1))
+    = L_l = quadcross(R_p_l:*W_h_l,u_l:^(1+1)); L_r = quadcross(R_p_r:*W_h_r,u_r:^(1+1))
+    - invG_q_l = cholinv(quadcross(R_q_l,W_b_l,R_q_l)); invG_q_r = cholinv(quadcross(R_q_r,W_b_r,R_q_r))
+    - invG_p_l = cholinv(quadcross(R_p_l,W_h_l,R_p_l)); invG_p_r = cholinv(quadcross(R_p_r,W_h_r,R_p_r))
+    - if (rank(invG_p_l)==. | rank(invG_p_r)==. | rank(invG_q_l)==. | rank(invG_q_r)==. ){c -(}
+    - display("{c -(}err{c )-}Invertibility problem: check variability of running variable around cutoff. Try checking for mass points with option {c -(}cmd:masspoints(check){c )-}.")
+    - exit(1)
+    - {c )-}
+    - e_p1 = J((`q'+1),1,0); e_p1[`p'+2]=1
+    = e_p1 = J((2+1),1,0); e_p1[1+2]=1
+    - e_v = J((`p'+1),1,0); e_v[`deriv'+1]=1
+    = e_v = J((1+1),1,0); e_v[0+1]=1
+    - Q_q_l = ((R_p_l:*W_h_l)' - h_l^(`p'+1)*(L_l*e_p1')*((invG_q_l*R_q_l')':*W_b_l)')'
+    = Q_q_l = ((R_p_l:*W_h_l)' - h_l^(1+1)*(L_l*e_p1')*((invG_q_l*R_q_l')':*W_b_l)')'
+    - Q_q_r = ((R_p_r:*W_h_r)' - h_r^(`p'+1)*(L_r*e_p1')*((invG_q_r*R_q_r')':*W_b_r)')'
+    = Q_q_r = ((R_p_r:*W_h_r)' - h_r^(1+1)*(L_r*e_p1')*((invG_q_r*R_q_r')':*W_b_r)')'
+    - D_l = eY_l; D_r = eY_r
+    - if ("`fuzzy'"~="") {c -(}
+    = if (""~="") {c -(}
+    - T = st_data(.,("`fuzzyvar'"), 0); dT = 1
+    = T = st_data(.,(""), 0); dT = 1
+    - T_l = select(T,X:<`c'); eT_l = T_l[ind_l]
+    = T_l = select(T,X:<0); eT_l = T_l[ind_l]
+    - T_r = select(T,X:>=`c'); eT_r = T_r[ind_r]
+    = T_r = select(T,X:>=0); eT_r = T_r[ind_r]
+    - D_l = D_l,eT_l; D_r = D_r,eT_r
+    - {c )-}
+    - if ("`covs'"~="") {c -(}
+    = if (""~="") {c -(}
+    - eZ_l = Z_l[ind_l,]; eZ_r = Z_r[ind_r,]
+    - D_l = D_l,eZ_l; D_r = D_r,eZ_r
+    - U_p_l = quadcross(R_p_l:*W_h_l,D_l); U_p_r = quadcross(R_p_r:*W_h_r,D_r)
+    - {c )-}
+    - if ("`cluster'"~="") {c -(}
+    = if (""~="") {c -(}
+    - eC_l = C_l[ind_l]; eC_r = C_r[ind_r]
+    - indC_l = order(eC_l,1); indC_r = order(eC_r,1)
+    - g_l = rows(panelsetup(eC_l[indC_l],1)); g_r = rows(panelsetup(eC_r[indC_r],1))
+    - {c )-}
+    - beta_p_l = invG_p_l*quadcross(R_p_l:*W_h_l,D_l); beta_q_l = invG_q_l*quadcross(R_q_l:*W_b_l,D_l); beta_bc_l = invG_p_l*quadcross(Q_q_l,D_l)
+    - beta_p_r = invG_p_r*quadcross(R_p_r:*W_h_r,D_r); beta_q_r = invG_q_r*quadcross(R_q_r:*W_b_r,D_r); beta_bc_r = invG_p_r*quadcross(Q_q_r,D_r)
+    - beta_p = beta_p_r - beta_p_l
+    - beta_q = beta_q_r - beta_q_l
+    - beta_bc = beta_bc_r - beta_bc_l
+    - if (dZ==0) {c -(}
+    - tau_cl = tau_Y_cl = `scalepar'*factorial(`deriv')*beta_p[(`deriv'+1),1]
+    = tau_cl = tau_Y_cl = 1*factorial(0)*beta_p[(0+1),1]
+    - tau_bc = tau_Y_bc = `scalepar'*factorial(`deriv')*beta_bc[(`deriv'+1),1]
+    = tau_bc = tau_Y_bc = 1*factorial(0)*beta_bc[(0+1),1]
+    - s_Y = 1
+    - tau_Y_cl_l = `scalepar'*factorial(`deriv')*beta_p_l[(`deriv'+1),1]
+    = tau_Y_cl_l = 1*factorial(0)*beta_p_l[(0+1),1]
+    - tau_Y_cl_r = `scalepar'*factorial(`deriv')*beta_p_r[(`deriv'+1),1]
+    = tau_Y_cl_r = 1*factorial(0)*beta_p_r[(0+1),1]
+    - tau_Y_bc_l = `scalepar'*factorial(`deriv')*beta_bc_l[(`deriv'+1),1]
+    = tau_Y_bc_l = 1*factorial(0)*beta_bc_l[(0+1),1]
+    - tau_Y_bc_r = `scalepar'*factorial(`deriv')*beta_bc_r[(`deriv'+1),1]
+    = tau_Y_bc_r = 1*factorial(0)*beta_bc_r[(0+1),1]
+    - bias_l = tau_Y_cl_l - tau_Y_bc_l
+    - bias_r = tau_Y_cl_r - tau_Y_bc_r
+    - if (dT>0) {c -(}
+    - tau_T_cl = factorial(`deriv')*beta_p[(`deriv'+1),2]
+    = tau_T_cl = factorial(0)*beta_p[(0+1),2]
+    - tau_T_bc = factorial(`deriv')*beta_bc[(`deriv'+1),2]
+    = tau_T_bc = factorial(0)*beta_bc[(0+1),2]
+    - s_Y = (1/tau_T_cl \ -(tau_Y_cl/tau_T_cl^2))
+    - B_F = tau_Y_cl-tau_Y_bc \ tau_T_cl-tau_T_bc
+    - tau_cl = tau_Y_cl/tau_T_cl
+    - tau_bc = tau_cl - s_Y'*B_F
+    - sV_T = 0 \ 1
+    - tau_T_cl_l = factorial(`deriv')*beta_p_l[(`deriv'+1),2]
+    = tau_T_cl_l = factorial(0)*beta_p_l[(0+1),2]
+    - tau_T_cl_r = factorial(`deriv')*beta_p_r[(`deriv'+1),2]
+    = tau_T_cl_r = factorial(0)*beta_p_r[(0+1),2]
+    - tau_T_bc_l = factorial(`deriv')*beta_bc_l[(`deriv'+1),2]
+    = tau_T_bc_l = factorial(0)*beta_bc_l[(0+1),2]
+    - tau_T_bc_r = factorial(`deriv')*beta_bc_r[(`deriv'+1),2]
+    = tau_T_bc_r = factorial(0)*beta_bc_r[(0+1),2]
+    - B_F_l = tau_Y_cl_l-tau_Y_bc_l \ tau_T_cl_l-tau_T_bc_l
+    - B_F_r = tau_Y_cl_r-tau_Y_bc_r \ tau_T_cl_r-tau_T_bc_r
+    - bias_l = s_Y'*B_F_l
+    - bias_r = s_Y'*B_F_r
+    - {c )-}
+    - {c )-}
+    - if (dZ>0) {c -(}
+    - ZWD_p_l = quadcross(eZ_l,W_h_l,D_l)
+    - ZWD_p_r = quadcross(eZ_r,W_h_r,D_r)
+    - colsZ = (2+dT)::(2+dT+dZ-1)
+    - UiGU_p_l = quadcross(U_p_l[,colsZ],invG_p_l*U_p_l)
+    - UiGU_p_r = quadcross(U_p_r[,colsZ],invG_p_r*U_p_r)
+    - ZWZ_p_l = ZWD_p_l[,colsZ] - UiGU_p_l[,colsZ]
+    - ZWZ_p_r = ZWD_p_r[,colsZ] - UiGU_p_r[,colsZ]
+    - ZWY_p_l = ZWD_p_l[,1::1+dT] - UiGU_p_l[,1::1+dT]
+    - ZWY_p_r = ZWD_p_r[,1::1+dT] - UiGU_p_r[,1::1+dT]
+    - ZWZ_p = ZWZ_p_r + ZWZ_p_l
+    - ZWY_p = ZWY_p_r + ZWY_p_l
+    - if ("`covs_drop_coll'"=="0") gamma_p = cholinv(ZWZ_p)*ZWY_p
+    = if ("0"=="0") gamma_p = cholinv(ZWZ_p)*ZWY_p
+    - if ("`covs_drop_coll'"=="1") gamma_p = invsym(ZWZ_p)*ZWY_p
+    = if ("0"=="1") gamma_p = invsym(ZWZ_p)*ZWY_p
+    - if ("`covs_drop_coll'"=="2") gamma_p = pinv(ZWZ_p)*ZWY_p
+    = if ("0"=="2") gamma_p = pinv(ZWZ_p)*ZWY_p
+    - s_Y = (1 \ -gamma_p[,1])
+    - if (dT==0) {c -(}
+    - tau_cl = `scalepar'*s_Y'*beta_p[(`deriv'+1),]'
+    = tau_cl = 1*s_Y'*beta_p[(0+1),]'
+    - tau_bc = `scalepar'*s_Y'*beta_bc[(`deriv'+1),]'
+    = tau_bc = 1*s_Y'*beta_bc[(0+1),]'
+    - tau_Y_cl_l = `scalepar'*s_Y'*beta_p_l[(`deriv'+1),]'
+    = tau_Y_cl_l = 1*s_Y'*beta_p_l[(0+1),]'
+    - tau_Y_cl_r = `scalepar'*s_Y'*beta_p_r[(`deriv'+1),]'
+    = tau_Y_cl_r = 1*s_Y'*beta_p_r[(0+1),]'
+    - tau_Y_bc_l = `scalepar'*s_Y'*beta_bc_l[(`deriv'+1),]'
+    = tau_Y_bc_l = 1*s_Y'*beta_bc_l[(0+1),]'
+    - tau_Y_bc_r = `scalepar'*s_Y'*beta_bc_r[(`deriv'+1),]'
+    = tau_Y_bc_r = 1*s_Y'*beta_bc_r[(0+1),]'
+    - bias_l = tau_Y_cl_l-tau_Y_bc_l
+    - bias_r = tau_Y_cl_r-tau_Y_bc_r
+    - {c )-}
+    - if (dT>0) {c -(}
+    - s_T = 1 \ -gamma_p[,2]
+    - sV_T = (0 \ 1 \ -gamma_p[,2] )
+    - tau_Y_cl = `scalepar'*factorial(`deriv')*s_Y'*vec((beta_p[ (`deriv'+1),1], beta_p[ (`deriv'+1),colsZ]))
+    = tau_Y_cl = 1*factorial(0)*s_Y'*vec((beta_p[ (0+1),1], beta_p[ (0+1),colsZ]))
+    - tau_Y_cl_l = `scalepar'*factorial(`deriv')*s_Y'*vec((beta_p_l[(`deriv'+1),1], beta_p_l[(`deriv'+1),colsZ]))
+    = tau_Y_cl_l = 1*factorial(0)*s_Y'*vec((beta_p_l[(0+1),1], beta_p_l[(0+1),colsZ]))
+    - tau_Y_cl_r = `scalepar'*factorial(`deriv')*s_Y'*vec((beta_p_r[(`deriv'+1),1], beta_p_r[(`deriv'+1),colsZ]))
+    = tau_Y_cl_r = 1*factorial(0)*s_Y'*vec((beta_p_r[(0+1),1], beta_p_r[(0+1),colsZ]))
+    - tau_Y_bc = `scalepar'*factorial(`deriv')*s_Y'*vec((beta_bc[ (`deriv'+1),1], beta_bc[ (`deriv'+1),colsZ]))
+    = tau_Y_bc = 1*factorial(0)*s_Y'*vec((beta_bc[ (0+1),1], beta_bc[ (0+1),colsZ]))
+    - tau_Y_bc_l = `scalepar'*factorial(`deriv')*s_Y'*vec((beta_bc_l[(`deriv'+1),1], beta_bc_l[(`deriv'+1),colsZ]))
+    = tau_Y_bc_l = 1*factorial(0)*s_Y'*vec((beta_bc_l[(0+1),1], beta_bc_l[(0+1),colsZ]))
+    - tau_Y_bc_r = `scalepar'*factorial(`deriv')*s_Y'*vec((beta_bc_r[(`deriv'+1),1], beta_bc_r[(`deriv'+1),colsZ]))
+    = tau_Y_bc_r = 1*factorial(0)*s_Y'*vec((beta_bc_r[(0+1),1], beta_bc_r[(0+1),colsZ]))
+    - tau_T_cl = factorial(`deriv')*s_T'*vec((beta_p[ (`deriv'+1),2], beta_p[ (`deriv'+1),colsZ]))
+    = tau_T_cl = factorial(0)*s_T'*vec((beta_p[ (0+1),2], beta_p[ (0+1),colsZ]))
+    - tau_T_cl_l = factorial(`deriv')*s_T'*vec((beta_p_l[(`deriv'+1),2], beta_p_l[(`deriv'+1),colsZ]))
+    = tau_T_cl_l = factorial(0)*s_T'*vec((beta_p_l[(0+1),2], beta_p_l[(0+1),colsZ]))
+    - tau_T_cl_r = factorial(`deriv')*s_T'*vec((beta_p_r[(`deriv'+1),2], beta_p_r[(`deriv'+1),colsZ]))
+    = tau_T_cl_r = factorial(0)*s_T'*vec((beta_p_r[(0+1),2], beta_p_r[(0+1),colsZ]))
+    - tau_T_bc = factorial(`deriv')*s_T'*vec((beta_bc[ (`deriv'+1),2], beta_bc[ (`deriv'+1),colsZ]))
+    = tau_T_bc = factorial(0)*s_T'*vec((beta_bc[ (0+1),2], beta_bc[ (0+1),colsZ]))
+    - tau_T_bc_l = factorial(`deriv')*s_T'*vec((beta_bc_l[(`deriv'+1),2], beta_bc_l[(`deriv'+1),colsZ]))
+    = tau_T_bc_l = factorial(0)*s_T'*vec((beta_bc_l[(0+1),2], beta_bc_l[(0+1),colsZ]))
+    - tau_T_bc_r = factorial(`deriv')*s_T'*vec((beta_bc_r[(`deriv'+1),2], beta_bc_r[(`deriv'+1),colsZ]))
+    = tau_T_bc_r = factorial(0)*s_T'*vec((beta_bc_r[(0+1),2], beta_bc_r[(0+1),colsZ]))
+    - B_F = tau_Y_cl-tau_Y_bc \ tau_T_cl-tau_T_bc
+    - s_Y = 1/tau_T_cl \ -(tau_Y_cl/tau_T_cl^2)
+    - tau_cl = tau_Y_cl/tau_T_cl
+    - tau_bc = tau_cl - s_Y'*B_F
+    - B_F_l = tau_Y_cl_l-tau_Y_bc_l \ tau_T_cl_l-tau_T_bc_l
+    - B_F_r = tau_Y_cl_r-tau_Y_bc_r \ tau_T_cl_r-tau_T_bc_r
+    - bias_l = s_Y'*B_F_l
+    - bias_r = s_Y'*B_F_r
+    - s_Y = (1/tau_T_cl \ -(tau_Y_cl/tau_T_cl^2) \ -(1/tau_T_cl)*gamma_p[,1] + (tau_Y_cl/tau_T_cl^2)*gamma_p[,2])
+    - {c )-}
+    - {c )-}
+    - hii_l=hii_r=predicts_p_l=predicts_p_r=predicts_q_l=predicts_q_r=0
+    - if ("`vce_select'"=="hc0" | "`vce_select'"=="hc1" | "`vce_select'"=="hc2" | "`vce_select'"=="hc3") {c -(}
+    = if ("nn"=="hc0" | "nn"=="hc1" | "nn"=="hc2" | "nn"=="hc3") {c -(}
+    - predicts_p_l=R_p_l*beta_p_l
+    - predicts_p_r=R_p_r*beta_p_r
+    - predicts_q_l=R_q_l*beta_q_l
+    - predicts_q_r=R_q_r*beta_q_r
+    - if ("`vce_select'"=="hc2" | "`vce_select'"=="hc3") {c -(}
+    = if ("nn"=="hc2" | "nn"=="hc3") {c -(}
+    - hii_l = rowsum((R_p_l*invG_p_l):*(R_p_l:*W_h_l))
+    - hii_r = rowsum((R_p_r*invG_p_r):*(R_p_r:*W_h_r))
+    - {c )-}
+    - {c )-}
+    - res_h_l = rdrobust_res(eX_l, eY_l, eT_l, eZ_l, predicts_p_l, hii_l, "`vce_select'", `nnmatch', edups_l, edupsid_l, `p'+1)
+    = res_h_l = rdrobust_res(eX_l, eY_l, eT_l, eZ_l, predicts_p_l, hii_l, "nn", 3, edups_l, edupsid_l, 1+1)
+    - res_h_r = rdrobust_res(eX_r, eY_r, eT_r, eZ_r, predicts_p_r, hii_r, "`vce_select'", `nnmatch', edups_r, edupsid_r, `p'+1)
+    = res_h_r = rdrobust_res(eX_r, eY_r, eT_r, eZ_r, predicts_p_r, hii_r, "nn", 3, edups_r, edupsid_r, 1+1)
+    - if ("`vce_select'"=="nn") {c -(}
+    = if ("nn"=="nn") {c -(}
+    - res_b_l = res_h_l; res_b_r = res_h_r
+    - {c )-}
+    - else {c -(}
+    - res_b_l = rdrobust_res(eX_l, eY_l, eT_l, eZ_l, predicts_q_l, hii_l, "`vce_select'", `nnmatch', edups_l, edupsid_l, `q'+1)
+    = res_b_l = rdrobust_res(eX_l, eY_l, eT_l, eZ_l, predicts_q_l, hii_l, "nn", 3, edups_l, edupsid_l, 2+1)
+    - res_b_r = rdrobust_res(eX_r, eY_r, eT_r, eZ_r, predicts_q_r, hii_r, "`vce_select'", `nnmatch', edups_r, edupsid_r, `q'+1)
+    = res_b_r = rdrobust_res(eX_r, eY_r, eT_r, eZ_r, predicts_q_r, hii_r, "nn", 3, edups_r, edupsid_r, 2+1)
+    - {c )-}
+    - V_Y_cl_l = invG_p_l*rdrobust_vce(dT+dZ, s_Y, R_p_l:*W_h_l, res_h_l, eC_l, indC_l)*invG_p_l
+    - V_Y_cl_r = invG_p_r*rdrobust_vce(dT+dZ, s_Y, R_p_r:*W_h_r, res_h_r, eC_r, indC_r)*invG_p_r
+    - V_Y_bc_l = invG_p_l*rdrobust_vce(dT+dZ, s_Y, Q_q_l, res_b_l, eC_l, indC_l)*invG_p_l
+    - V_Y_bc_r = invG_p_r*rdrobust_vce(dT+dZ, s_Y, Q_q_r, res_b_r, eC_r, indC_r)*invG_p_r
+    - V_tau_cl = (`scalepar')^2*factorial(`deriv')^2*(V_Y_cl_l+V_Y_cl_r)[`deriv'+1,`deriv'+1]
+    = V_tau_cl = (1)^2*factorial(0)^2*(V_Y_cl_l+V_Y_cl_r)[0+1,0+1]
+    - V_tau_rb = (`scalepar')^2*factorial(`deriv')^2*(V_Y_bc_l+V_Y_bc_r)[`deriv'+1,`deriv'+1]
+    = V_tau_rb = (1)^2*factorial(0)^2*(V_Y_bc_l+V_Y_bc_r)[0+1,0+1]
+    - se_tau_cl = sqrt(V_tau_cl); se_tau_rb = sqrt(V_tau_rb)
+    - if ("`fuzzy'"!="") {c -(}
+    = if (""!="") {c -(}
+    - V_T_cl_l = invG_p_l*rdrobust_vce(dT+dZ, sV_T, R_p_l:*W_h_l, res_h_l, eC_l, indC_l)*invG_p_l
+    - V_T_cl_r = invG_p_r*rdrobust_vce(dT+dZ, sV_T, R_p_r:*W_h_r, res_h_r, eC_r, indC_r)*invG_p_r
+    - V_T_bc_l = invG_p_l*rdrobust_vce(dT+dZ, sV_T, Q_q_l, res_b_l, eC_l, indC_l)*invG_p_l
+    - V_T_bc_r = invG_p_r*rdrobust_vce(dT+dZ, sV_T, Q_q_r, res_b_r, eC_r, indC_r)*invG_p_r
+    - V_T_cl = factorial(`deriv')^2*(V_T_cl_l+V_T_cl_r)[`deriv'+1,`deriv'+1]
+    = V_T_cl = factorial(0)^2*(V_T_cl_l+V_T_cl_r)[0+1,0+1]
+    - V_T_rb = factorial(`deriv')^2*(V_T_bc_l+V_T_bc_r)[`deriv'+1,`deriv'+1]
+    = V_T_rb = factorial(0)^2*(V_T_bc_l+V_T_bc_r)[0+1,0+1]
+    - se_tau_T_cl = sqrt(V_T_cl); se_tau_T_rb = sqrt(V_T_rb)
+    - {c )-}
+    - st_numscalar("N", N)
+    - st_numscalar("N_l", N_l)
+    - st_numscalar("N_r", N_r)
+    - st_numscalar("x_l_min", x_l_min)
+    - st_numscalar("x_l_max", x_l_max)
+    - st_numscalar("x_r_min", x_r_min)
+    - st_numscalar("x_r_max", x_r_max)
+    - st_numscalar("h_l", h_l)
+    - st_numscalar("h_r", h_r)
+    - st_numscalar("b_l", b_l)
+    - st_numscalar("b_r", b_r)
+    - st_numscalar("quant", -invnormal(abs((1-(`level'/100))/2)))
+    = st_numscalar("quant", -invnormal(abs((1-(95/100))/2)))
+    - st_numscalar("N_h_l", N_h_l); st_numscalar("N_b_l", N_b_l)
+    - st_numscalar("N_h_r", N_h_r); st_numscalar("N_b_r", N_b_r)
+    - st_numscalar("tau_cl", tau_cl); st_numscalar("se_tau_cl", se_tau_cl)
+    - st_numscalar("tau_bc", tau_bc); st_numscalar("se_tau_rb", se_tau_rb)
+    - st_numscalar("tau_Y_cl_r", tau_Y_cl_r); st_numscalar("tau_Y_cl_l", tau_Y_cl_l)
+    - st_numscalar("tau_Y_bc_r", tau_Y_bc_r); st_numscalar("tau_Y_bc_l", tau_Y_bc_l)
+    - st_numscalar("bias_l", bias_l); st_numscalar("bias_r", bias_r)
+    - st_matrix("beta_p_r", beta_p_r[,1]); st_matrix("beta_p_l", beta_p_l[,1])
+    - st_matrix("beta_q_r", beta_q_r); st_matrix("beta_q_l", beta_q_l)
+    - st_numscalar("g_l", g_l); st_numscalar("g_r", g_r)
+    - st_matrix("b", (tau_cl))
+    - st_matrix("V", (V_tau_cl))
+    - st_matrix("V_Y_cl_r", V_Y_cl_r); st_matrix("V_Y_cl_l", V_Y_cl_l)
+    - st_matrix("V_Y_bc_r", V_Y_bc_r); st_matrix("V_Y_bc_l", V_Y_bc_l)
+    - st_numscalar("masspoints_found", masspoints_found)
+    - if ("`all'"~="") {c -(}
+    = if (""~="") {c -(}
+    - st_matrix("b", (tau_cl,tau_bc,tau_bc))
+    - st_matrix("V", (V_tau_cl,0,0 \ 0,V_tau_cl,0 \0,0,V_tau_rb))
+    - {c )-}
+    - if ("`covs'"!="") {c -(}
+    = if (""!="") {c -(}
+    - st_matrix("gamma_p", gamma_p)
+    - {c )-}
+    - if ("`fuzzy'"!="") {c -(}
+    = if (""!="") {c -(}
+    - st_numscalar("tau_T_cl", tau_T_cl); st_numscalar("se_tau_T_cl", se_tau_T_cl)
+    - st_numscalar("tau_T_bc", tau_T_bc); st_numscalar("se_tau_T_rb", se_tau_T_rb)
+    - st_numscalar("tau_T_cl_r", tau_T_cl_r); st_numscalar("tau_T_cl_l", tau_T_cl_l)
+    - st_numscalar("tau_T_bc_r", tau_T_bc_r); st_numscalar("tau_T_bc_l", tau_T_bc_l)
+    - {c )-}
+    - {c )-}
+    {hline 32} end rdrobust {hline}
+    scalar bw_pre = e(hr)
+    qui rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 & post == 1, kernel(uniform)
+    scalar bw_post = e(hr)
+    scalar bw_avg = (bw_pre + bw_post) / 2
+    reg `outcome' i.eligible_w##c.std_weeks##i.post if poblacion_`cohort' == 1 & abs(std_weeks) <= bw_avg, robust
+    regsave 1.eligible_w#1.post using "${c -(}output{c )-}/RIPS_results_diffdisc.dta", `replace' ci level(95) addlabel(outcome, `outcome', cohort, `cohort', runvar, std_weeks)
+    local replace append
+    {c )-}
+    {c )-}
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
 
 end of do-file
-{search r(111), local:r(111);}
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
 
 end of do-file
 
-{search r(111), local:r(111);}
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
 
-{com}. 
+{com}. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/RIPS estimations.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}26 Jun 2025, 15:03:52
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}
