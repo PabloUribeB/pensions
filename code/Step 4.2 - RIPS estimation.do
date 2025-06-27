@@ -91,12 +91,12 @@ foreach cohort in $first_cohorts {
     "Runvar: std_weeks -> (2) Difference in discontinuities"
                 
     qui rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
-        post == 0, kernel(uniform)
+        post == 0, kernel(uniform) masspoints(check)
 
     scalar bw_pre = e(hr)
 
     qui rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
-        post == 1, kernel(uniform)
+        post == 1, kernel(uniform) masspoints(check)
 
     scalar bw_post = e(hr)
 
