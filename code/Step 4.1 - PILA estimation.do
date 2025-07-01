@@ -28,7 +28,7 @@ global outcomes         codigo_pension pension pension_cum colpensiones     ///
 
 capture log close
 
-log	using "${logs}\PILA estimations 3.smcl", replace
+log	using "${logs}\PILA estimations.smcl", replace
 
 
 ****************************************************************************
@@ -352,7 +352,7 @@ gen eligible_d = (std_days > 0)
 ****************************************************************************
 **# 		5. Difference in discontinuities
 ****************************************************************************
-/*
+
 local replace replace
 gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
 
@@ -366,19 +366,25 @@ foreach cohort in $first_cohorts {
             
         dis as err "Cohort: `cohort'; Outcome: `outcome'; "                 ///
         "Runvar: `runvar' -> (3) Difference in discontinuities"
-                    
+                
+        clear results 
+        
         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
             post == 0, kernel(uniform)
 
-        scalar bw_pre = e(hr)
+        scalar bw_pre = e(h_r)
 
         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
             post == 1, kernel(uniform)
 
-        scalar bw_post = e(hr)
+        scalar bw_post = e(h_r)
 
         scalar bw_avg = (bw_pre + bw_post) / 2
 
+        if mi(bw_avg) {
+            scalar bw_avg = 21
+        }
+        
         reg `outcome' i.`elig'##c.`runvar'##i.post if poblacion_`cohort' == 1 &  ///
             abs(`runvar') <= bw_avg, robust
         
@@ -391,11 +397,9 @@ foreach cohort in $first_cohorts {
         local elig eligible_d
         }
     }
-    
-    replace post = (age >= 55)
 }
 
-*/      
+/*      
 ****************************************************************************
 **# 		6. RDD by age
 ****************************************************************************
@@ -562,7 +566,7 @@ foreach cohort in $first_cohorts {
         }
     }
 }
-
+*/
         
 log close
 

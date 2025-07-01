@@ -89,19 +89,25 @@ foreach cohort in $first_cohorts {
             
     dis as err "Cohort: `cohort'; Outcome: `outcome'; "                 ///
     "Runvar: std_weeks -> (2) Difference in discontinuities"
-                
+           
+    clear results 
+    
     cap rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
         post == 0, kernel(uniform) masspoints(check)
 
-    scalar bw_pre = e(hr)
+    scalar bw_pre = e(h_r)
 
     cap rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
         post == 1, kernel(uniform) masspoints(check)
 
-    scalar bw_post = e(hr)
+    scalar bw_post = e(h_r)
 
     scalar bw_avg = (bw_pre + bw_post) / 2
-
+    
+    if mi(bw_avg) {
+        scalar bw_avg = 21
+    }
+    
     reg `outcome' i.eligible_w##c.std_weeks##i.post if                  ///
         poblacion_`cohort' == 1 & abs(std_weeks) <= bw_avg, robust
     
