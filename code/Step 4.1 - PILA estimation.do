@@ -30,109 +30,15 @@ capture log close
 
 log	using "${logs}\PILA estimations.smcl", replace
 
-
-****************************************************************************
-**# 		1. Prepare data
-****************************************************************************
-
-local replace replace
-
-	
-use "${data}\mensual_PILA", clear
-
-* Process raw data to create relevant variables
-quietly{
-    
-    gen poblacion_M50 = 1 if sexomode == 1 & inrange(fechantomode,      ///
-                     date("01/01/1948", "MDY"), date("12/31/1952", "MDY"))
-                     
-    gen poblacion_M54 = 1 if sexomode == 1 & inrange(fechantomode,      ///
-                     date("01/01/1952", "MDY"), date("12/31/1956", "MDY"))
-                     
-    gen poblacion_F55 = 1 if sexomode == 0 & inrange(fechantomode,      ///
-                     date("01/01/1953", "MDY"), date("12/31/1957", "MDY"))
-                     
-    gen poblacion_F59 = 1 if sexomode == 0 & inrange(fechantomode,      ///
-                     date("01/01/1957", "MDY"), date("12/31/1961", "MDY"))
-
-    foreach var of varlist poblacion* {
-        replace `var' = 0 if mi(`var')
-    }
-
-    * Generate cutoff points for each cohort
-    gen     corte = date("07/31/1950", "MDY") if poblacion_M50 == 1
-    replace corte = date("12/31/1954", "MDY") if poblacion_M54 == 1
-    replace corte = date("07/31/1955", "MDY") if poblacion_F55 == 1
-    replace corte = date("12/31/1959", "MDY") if poblacion_F59 == 1
-
-    * Days from cutoff point for each group
-    gen     std_days = datediff(corte, fechantomode, "d") if poblacion_M50 == 1
-    replace std_days = datediff(corte, fechantomode, "d") if poblacion_M54 == 1
-    replace std_days = datediff(corte, fechantomode, "d") if poblacion_F55 == 1
-    replace std_days = datediff(corte, fechantomode, "d") if poblacion_F59 == 1
-    
-    
-    gen fechaweek  = wofd(fechantomode)
-    format %td corte
-    gen corte_week = wofd(corte)
-
-    gen std_weeks  = fechaweek - corte_week // Running variable
-
-    * Replace missing values with zero for wages
-    gen 	pila_salario_r_0 = pila_salario_r
-    replace pila_salario_r_0 = 0 if mi(pila_salario_r)
-
-    * Replace missing values in pension with zero
-    replace pension = 0 if mi(pension)
-	
-    * Dummy for pension fund code
-    gen codigo_pension = (!mi(afp_cod))
-
-    * Dummy for whether they are affiliated to the public fund
-    gen colpensiones = (inlist(afp_cod, "25-14", "25-11" ,"25-8", "ISSFSP"))
-
-    keep codigo_pension pension colpensiones pila_salario_r_0 poblacion*    ///
-    year month std_weeks std_days fecha_pila personabasicaid ibc_pens fechantomode // For efficiency
-    
-    bys personabasicaid: egen ever_colpensiones = max(colpensiones)
-    
-    keep if ever_colpensiones == 1
-    
-    sort personabasicaid fecha_pila
-    
-    * Cumulative pension dummy
-    gen pension_cum = pension
-    bys personabasicaid (fecha_pila): replace pension_cum = pension_cum[_n-1] if pension_cum[_n-1] == 1
-    
-    * Create proxy for pension using ibc_pens
-    tempvar last_ibc tot_mis
-    egen `last_ibc' = lastnm(fecha_pila) if !mi(ibc_pens), by(personabasicaid)
-
-    bys personabasicaid: ereplace `last_ibc' = max(`last_ibc')
-
-    egen `tot_mis' = total(missing(ibc_pens)) if fecha_pila >= `last_ibc',  ///
-    by(personabasicaid)
-
-    gen pension_ibc = (fecha_pila == `last_ibc' & `tot_mis' >= 4)
-
-    gen pension_ibc_cum = pension_ibc
-
-    bys personabasicaid (fecha_pila): replace pension_ibc_cum =     ///
-        pension_ibc_cum[_n-1] if pension_ibc_cum[_n-1] == 1
-        
-    
-    labvars $outcomes "Contribution to any pension fund"        ///
-    "Retirement sheet" "Retirement sheet cumulative"            ///
-    "Contribution to Colpensiones" "Monthly wage (with 0's)"    ///
-    "Retirement (IBC proxy)" "Retirement (IBC proxy) cumulative"
-    
-}
+use if (poblacion_M50 == 1 | poblacion_F55 == 1) using          ///
+       "${data}/Estimation_sample_PILA.dta", clear
 
 /*
 ****************************************************************************
-**# 		2. Year by year RDD
+**# 		1. Year by year RDD
 ****************************************************************************
 
+local replace replace
 forval year = 2009/2020 { // Loop through all years
 
     * First cohorts (M50 & F55) retire in 2010, so only one year before and after
@@ -214,7 +120,7 @@ forval year = 2009/2020 { // Loop through all years
 
 
 ****************************************************************************
-**# 		3. Whole monthly panel regressions (with plots)
+**# 		2. Whole monthly panel regressions (with plots)
 ****************************************************************************
 preserve
 
@@ -327,7 +233,7 @@ foreach cohort in $first_cohorts {
 */
 
 ****************************************************************************
-**# 		4. Collapse at age level
+**# 		3. Collapse at age level
 ****************************************************************************
 *restore
 
@@ -350,7 +256,7 @@ gen eligible_w = (std_weeks > 0)
 gen eligible_d = (std_days > 0)
 
 ****************************************************************************
-**# 		5. Difference in discontinuities
+**# 		4. Difference in discontinuities
 ****************************************************************************
 
 local replace replace
@@ -401,7 +307,7 @@ foreach cohort in $first_cohorts {
 
 /*      
 ****************************************************************************
-**# 		6. RDD by age
+**# 		5. RDD by age
 ****************************************************************************
 
 foreach cohort in $first_cohorts {
@@ -458,7 +364,7 @@ foreach cohort in $first_cohorts {
         
         
 ****************************************************************************
-**# 		7. Whole age panel regressions (with plots)
+**# 		6. Whole age panel regressions (with plots)
 ****************************************************************************
 
 foreach cohort in $first_cohorts {

@@ -75,8 +75,8 @@ quietly{
     keep $outcomes poblacion* age std_weeks eligible_w // For efficiency
     
 }
-	
-   
+
+
 ****************************************************************************
 **#          2. Difference in discontinuities
 ****************************************************************************
