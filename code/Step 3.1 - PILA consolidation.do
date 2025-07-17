@@ -331,6 +331,7 @@ quietly{
     
 }
 
+compress
 save "${data}/Estimation_sample_PILA.dta", replace
 
 log close

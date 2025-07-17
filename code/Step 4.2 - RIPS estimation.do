@@ -72,7 +72,7 @@ quietly{
     "Multi-morbidity index" "Probability of procedures"                     ///
     "Probability of health service" "Probability of ER visit" "Mental diagnosis"
     
-    keep $outcomes poblacion* age std_weeks eligible_w // For efficiency
+    keep $outcomes poblacion* age std_weeks eligible_w personabasicaid // For efficiency
     
 }
 
@@ -85,6 +85,9 @@ gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
 
 foreach cohort in $first_cohorts {
     
+    preserve
+    keep if poblacion_`cohort' == 1
+    
     foreach outcome in $outcomes {
             
     dis as err "Cohort: `cohort'; Outcome: `outcome'; "                 ///
@@ -92,6 +95,7 @@ foreach cohort in $first_cohorts {
            
     clear results 
     
+    /*
     cap rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
         post == 0, kernel(uniform) masspoints(check)
 
@@ -103,13 +107,14 @@ foreach cohort in $first_cohorts {
     scalar bw_post = e(h_r)
 
     scalar bw_avg = (bw_pre + bw_post) / 2
+    */
     
-    if mi(bw_avg) {
+    *if mi(bw_avg) {
         scalar bw_avg = 21
-    }
+    *}
     
     reg `outcome' i.eligible_w##c.std_weeks##i.post if                  ///
-        poblacion_`cohort' == 1 & abs(std_weeks) <= bw_avg, robust
+        poblacion_`cohort' == 1 & abs(std_weeks) <= bw_avg, vce(cluster personabasicaid)
     
     * Save estimation results in dataset
     regsave 1.eligible_w#1.post using "${output}/RIPS_results_diffdisc.dta", ///
@@ -119,6 +124,8 @@ foreach cohort in $first_cohorts {
     local replace append
         
     }
+    
+    restore
 }
 
 ****************************************************************************
@@ -126,6 +133,9 @@ foreach cohort in $first_cohorts {
 ****************************************************************************
 local replace replace
 foreach cohort in $first_cohorts {
+    
+    preserve
+    keep if poblacion_`cohort' == 1
     
     qui sum age if poblacion_`cohort' == 1
     local min = r(min)
@@ -173,6 +183,7 @@ foreach cohort in $first_cohorts {
                 local replace append
         }
     }
+    restore
 }
 
         
