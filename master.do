@@ -42,8 +42,8 @@ global RIPS2        "\\wmedesrv/gamma/rips"
 * Set path to reproducibility package (where ado and code are located)
 if inlist("`c(username)'", "Pablo Uribe", "pu42") {
     
-    global root	    "~\Documents/GitHub/Pensions"
-    global ext_data "C:/Users\\`c(username)'/Documents/GitHub/pensions/Data"
+    global root	    "C:/Users\\`c(username)'/Documents/GitHub/pensions"
+    global ext_data "${root}/Data"
     local  run =    "external"
     
 }

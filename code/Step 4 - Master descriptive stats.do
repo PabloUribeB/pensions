@@ -243,7 +243,7 @@ labvars $all_outcomes                                                           
     "Stress" "Cardiovascular" "Infarct" "Chronic disease" "Mental health diagnosis"
 
 * LaTex table
-texdoc init "${tables}/summary_stats.tex", replace force	
+texdoc init "${tables}/summary_stats.tex", replace force
 
 tex \begin{tabular}{lcccccccc}
 tex \toprule

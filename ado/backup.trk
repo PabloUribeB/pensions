@@ -1,4 +1,4 @@
-* 00000016
+* 00000017
 *! version 1.0.0
 * Do not erase or edit this file
 * It is used by Stata to track the ado and help
@@ -721,4 +721,30 @@ d Distribution-Date: 20220815
 d 
 f r\rdhonest.ado
 f r\rdhonest.sthlp
+e
+S http://fmwww.bc.edu/repec/bocode/m
+N mdesc.pkg
+D 26 Jun 2025
+U 17
+d 'MDESC': module to tabulate prevalence of missing values
+d 
+d  Produces a table with the number of missing values, total number
+d of cases, and percent missing for each variable in varlist. mdesc
+d works with both numeric and character variables.
+d 
+d KW: missing values
+d KW: data management
+d 
+d Requires: Stata version 10
+d 
+d Distribution-Date: 20110825
+d 
+d Author: Rose Anne Medeiros, Department of Sociology, Rice University
+d Support: email rose.a.medeiros@@rice.edu
+d 
+d Author: Dan Blanchette, The Carolina Population Center, UNC-CH
+d Support: email dan_blanchette@@unc.edu
+d 
+f m\mdesc.ado
+f m\mdesc.sthlp
 e
