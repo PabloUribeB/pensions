@@ -75,13 +75,13 @@ qui rddensity std_weeks if poblacion_M50 == 1
 local pvalue = e(pv_q)
 
 texresults3 using "${tables}/numbers.txt", texmacro(pvalMw)            ///
-result(`pvalue') append unit(0) round(3)
+result(`pvalue') append round(3)
 
 qui rddensity std_days if poblacion_M50 == 1
 local pvalue_d = e(pv_q)
 
 texresults3 using "${tables}/numbers.txt", texmacro(pvalMd)            ///
-result(`pvalue_d') append unit(0) round(3)
+result(`pvalue_d') append round(3)
 
 twoway (hist fechantomode if poblacion_M50 == 1, xla(#15, angle(90)     ///
 format("%td")) xtitle(Date of birth)      ///
@@ -112,13 +112,13 @@ qui rddensity std_weeks if poblacion_F55 == 1
 local pvalue = e(pv_q)
 
 texresults3 using "${tables}/numbers.txt", texmacro(pvalFw)            ///
-result(`pvalue') append unit(0) round(3)
+result(`pvalue') append round(3)
 
 qui rddensity std_days if poblacion_F55 == 1
 local pvalue_d = e(pv_q)
 
 texresults3 using "${tables}/numbers.txt", texmacro(pvalFd)            ///
-result(`pvalue_d') append unit(0) round(3)
+result(`pvalue_d') append round(3)
 
 twoway (hist fechantomode if poblacion_F55 == 1, xla(#15, angle(90)     ///
 format("%td")) xtitle(Date of birth)   ///
@@ -172,7 +172,7 @@ foreach cohort in M50 F55 {
             local add ""
         }
         
-        sum `outcome' if poblacion_`cohort' == 1
+        qui sum `outcome' if poblacion_`cohort' == 1
         local m_`outcome'_`cohort'   = r(mean)
         local sd_`outcome'_`cohort'  = r(sd)
         local min_`outcome'_`cohort' = r(min)
@@ -200,7 +200,7 @@ foreach cohort in M50 F55 {
     
     foreach outcome in servicios consultas proced urgencias hospits {
         
-        sum `outcome' if poblacion_`cohort' == 1
+        qui sum `outcome' if poblacion_`cohort' == 1
         local m_`outcome'_`cohort'   = r(mean)
         local sd_`outcome'_`cohort'  = r(sd)
         local min_`outcome'_`cohort' = r(min)
@@ -218,7 +218,7 @@ foreach cohort in M50 F55 {
     
     foreach outcome in $extensive {
         
-        sum `outcome' if poblacion_`cohort' == 1
+        qui sum `outcome' if poblacion_`cohort' == 1
         local m_`outcome'_`cohort'   = r(mean)
         local sd_`outcome'_`cohort'  = r(sd)
         local min_`outcome'_`cohort' = r(min)
