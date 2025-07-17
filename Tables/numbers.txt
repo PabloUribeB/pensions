@@ -1,0 +1,1 @@
+\newcommand{\colpensiones}{$51$}

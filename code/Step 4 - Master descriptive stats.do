@@ -72,15 +72,20 @@ local m50_n = strtrim("`: di %10.0fc r(N)'")
 
 * M50
 qui rddensity std_weeks if poblacion_M50 == 1
-local pvalue: dis %04.3f e(pv_q)
+local pvalue = e(pv_q)
+
+texresults3 using "${tables}/numbers.txt", texmacro(pvalMw)            ///
+result(`pvalue') append unit(0) round(3)
 
 qui rddensity std_days if poblacion_M50 == 1
-local pvalue_d: dis %04.3f e(pv_q)
+local pvalue_d = e(pv_q)
+
+texresults3 using "${tables}/numbers.txt", texmacro(pvalMd)            ///
+result(`pvalue_d') append unit(0) round(3)
 
 twoway (hist fechantomode if poblacion_M50 == 1, xla(#15, angle(90)     ///
-format("%td")) xtitle(Date of birth) title(Men born between 48-52)      ///
-note("Manipulation test p-value weeks: `pvalue'"                        ///
-"Manipulation test p-value days: `pvalue_d'") bin(260) freq),           ///
+format("%td")) xtitle(Date of birth)      ///
+bin(260) freq),           ///
 xline(-3441, noextend lcolor(red) lpattern(solid)) legend(off)
 
 graph export "${graphs}/hist_M50.png", replace
@@ -104,15 +109,20 @@ graph export "${graphs}/hist_M54.png", replace
 
 * F55
 qui rddensity std_weeks if poblacion_F55 == 1
-local pvalue: dis %04.3f e(pv_q)
+local pvalue = e(pv_q)
+
+texresults3 using "${tables}/numbers.txt", texmacro(pvalFw)            ///
+result(`pvalue') append unit(0) round(3)
 
 qui rddensity std_days if poblacion_F55 == 1
-local pvalue_d: dis %04.3f e(pv_q)
+local pvalue_d = e(pv_q)
+
+texresults3 using "${tables}/numbers.txt", texmacro(pvalFd)            ///
+result(`pvalue_d') append unit(0) round(3)
 
 twoway (hist fechantomode if poblacion_F55 == 1, xla(#15, angle(90)     ///
-format("%td")) xtitle(Date of birth) title(Women born between 53-57)    ///
-note("Manipulation test p-value weeks: `pvalue'"                        ///
-"Manipulation test p-value days: `pvalue_d'") bin(260) freq),           ///
+format("%td")) xtitle(Date of birth)   ///
+bin(260) freq),           ///
 xline(-1615, noextend lcolor(red) lpattern(solid)) legend(off)
 
 graph export "${graphs}/hist_F55.png", replace
@@ -144,8 +154,8 @@ graph export "${graphs}/hist_F59.png", replace
 ** PILA
 use "${data}/Estimation_sample_PILA.dta", clear
 
-collapse mean(pila_salario_r_0 ibc_pens) max(pension pension_ibc)   ///
-         firstnm(poblacion*), by(personabasicaid)
+collapse (mean) pila_salario_r_0 ibc_pens (max) pension pension_ibc   ///
+         (firstnm) poblacion*, by(personabasicaid)
 
 rename (pila_salario_r_0 ibc_pens pension_ibc) (wage ibc pension)
 
@@ -180,8 +190,8 @@ foreach cohort in M50 F55 {
 use if (poblacion_M50 == 1 | poblacion_F55 == 1) using              ///
        "${data}/Estimation_sample_RIPS.dta", clear
 
-collapse sum(nro*) max($extensive )   ///
-         firstnm(poblacion*), by(personabasicaid)
+collapse (sum) nro* (max) $extensive   ///
+         (firstnm) poblacion*, by(personabasicaid)
 
 rename (nro_servicios nro_consultas nro_procedimientos nro_urgencias    ///
         nro_Hospitalizacion) (servicios consultas proced urgencias hospits)
