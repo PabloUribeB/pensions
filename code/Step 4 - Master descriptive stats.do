@@ -85,7 +85,7 @@ result(`pvalue_d') append round(3)
 
 twoway (hist fechantomode if poblacion_M50 == 1, xla(#15, angle(90)     ///
 format("%td")) xtitle(Date of birth)      ///
-bin(260) freq),           ///
+bin(260) freq ylabel(, format(%10.0fc))),           ///
 xline(-3441, noextend lcolor(red) lpattern(solid)) legend(off)
 
 graph export "${graphs}/hist_M50.png", replace
@@ -122,7 +122,7 @@ result(`pvalue_d') append round(3)
 
 twoway (hist fechantomode if poblacion_F55 == 1, xla(#15, angle(90)     ///
 format("%td")) xtitle(Date of birth)   ///
-bin(260) freq),           ///
+bin(260) freq ylabel(, format(%10.0fc))),           ///
 xline(-1615, noextend lcolor(red) lpattern(solid)) legend(off)
 
 graph export "${graphs}/hist_F55.png", replace
@@ -152,37 +152,41 @@ graph export "${graphs}/hist_F59.png", replace
 
 
 ** PILA
-use "${data}/Estimation_sample_PILA.dta", clear
+use if (poblacion_M50 == 1 | poblacion_F55 == 1) using "${data}/Estimation_sample_PILA.dta", clear
 
-collapse (mean) pila_salario_r_0 ibc_pens (max) pension pension_ibc   ///
+collapse (mean) pila_salario_r_0 ibc_pens (max) pension_ibc   ///
          (firstnm) poblacion*, by(personabasicaid)
 
 rename (pila_salario_r_0 ibc_pens pension_ibc) (wage ibc pension)
 
+local coh "M"
 foreach cohort in M50 F55 {
     
     foreach outcome in wage ibc pension {
         
         if "`outcome'" == "pension" {
-            local fmt = 2
+            local fmt "3"
             local add "*100"
+            local rounded "round(2)"
         }
         else{
-            local fmt = 0
+            local fmt "0"
             local add ""
+            local rounded ""
         }
         
-        qui sum `outcome' if poblacion_`cohort' == 1
-        local m_`outcome'_`cohort'   = r(mean)
-        local sd_`outcome'_`cohort'  = r(sd)
-        local min_`outcome'_`cohort' = r(min)
-        local max_`outcome'_`cohort' = r(max)
+        sum `outcome' if poblacion_`cohort' == 1
+        local m_`outcome'_`cohort'   : di %13.`fmt'fc r(mean)
+        local sd_`outcome'_`cohort'  : di %13.`fmt'fc r(sd)
+        local min_`outcome'_`cohort' : di %13.`fmt'fc r(min)
+        local max_`outcome'_`cohort' : di %13.`fmt'fc r(max)
         
-        local `outcome'_`cohort' = strtrim("`: di %10.`fmt'fc r(mean)`add''")
+        local `outcome'_`cohort': di %10.`fmt'fc r(mean)`add'
 
-        texresults3 using "${tables}/numbers.txt", texmacro(`outcome'_`cohort')  ///
-        result(``outcome'_`cohort'') append
+        texresults3 using "${tables}/numbers.txt", texmacro(`outcome'`coh')  ///
+        result(``outcome'_`cohort'') append `rounded'
     }
+    local coh "F"
 }
 
 
@@ -190,45 +194,63 @@ foreach cohort in M50 F55 {
 use if (poblacion_M50 == 1 | poblacion_F55 == 1) using              ///
        "${data}/Estimation_sample_RIPS.dta", clear
 
+rename (nro_serviciosHospitalizacion nro_serviciosurgencias             ///
+    nro_serviciosprocedimientos nro_serviciosconsultas)                     ///
+    (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
+    
+egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias         ///
+    nro_procedimientos nro_consultas)
+       
 collapse (sum) nro* (max) $extensive   ///
          (firstnm) poblacion*, by(personabasicaid)
 
 rename (nro_servicios nro_consultas nro_procedimientos nro_urgencias    ///
         nro_Hospitalizacion) (servicios consultas proced urgencias hospits)
-         
+  
+local coh "M"
 foreach cohort in M50 F55 {
     
     foreach outcome in servicios consultas proced urgencias hospits {
         
-        qui sum `outcome' if poblacion_`cohort' == 1
-        local m_`outcome'_`cohort'   = r(mean)
-        local sd_`outcome'_`cohort'  = r(sd)
-        local min_`outcome'_`cohort' = r(min)
-        local max_`outcome'_`cohort' = r(max)
+        if inlist("`outcome'", "urgencias", "hospits") {
+            local rounded "round(2)"
+        }
+        else{
+            local rounded "round(0)"
+        }
         
-        local `outcome'_`cohort' = strtrim("`: di %10.0fc r(mean)'")
+        sum `outcome' if poblacion_`cohort' == 1
+        local m_`outcome'_`cohort'   : di %10.3fc r(mean)
+        local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
+        local min_`outcome'_`cohort' : di %10.3fc r(min)
+        local max_`outcome'_`cohort' : di %10.3fc r(max)
+        
+        local `outcome'_`cohort' = strtrim("`: di r(mean)'")
     
-        texresults3 using "${tables}/numbers.txt", texmacro(`outcome'_`cohort')  ///
-        result(``outcome'_`cohort'') append
+        texresults3 using "${tables}/numbers.txt", texmacro(`outcome'`coh')  ///
+        result(``outcome'_`cohort'') append `rounded'
     }
+    local coh "F"
 }
 
 
+local coh "M"
 foreach cohort in M50 F55 {
     
     foreach outcome in $extensive {
         
-        qui sum `outcome' if poblacion_`cohort' == 1
-        local m_`outcome'_`cohort'   = r(mean)
-        local sd_`outcome'_`cohort'  = r(sd)
-        local min_`outcome'_`cohort' = r(min)
-        local max_`outcome'_`cohort' = r(max)
+        sum `outcome' if poblacion_`cohort' == 1
+        local m_`outcome'_`cohort'   : di %10.3fc r(mean)
+        local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
+        local min_`outcome'_`cohort' : di %10.3fc r(min)
+        local max_`outcome'_`cohort' : di %10.3fc r(max)
         
-        local `outcome'_`cohort' = strtrim("`: di %10.2fc r(mean)*100'")
+        local `outcome'_`cohort' = r(mean)*100
 
-        texresults3 using "${tables}/numbers.txt", texmacro(`outcome'_`cohort')  ///
-        result(``outcome'_`cohort'') append
+        texresults3 using "${tables}/numbers.txt", texmacro(`outcome'`coh')  ///
+        result(``outcome'_`cohort'') append round(2)
     }
+    local coh "F"
 }
 
 gen wage    = .
