@@ -90,17 +90,17 @@ svyset [pw=wtperc] // Set data as survey
 ****************************************************************************
 **#       2. Balance regressions
 ****************************************************************************
-
+/*
 local row=1
 foreach outcome in $covars{
-	
-	svy: reg `outcome' bw i.cohort
-	
-	mat balance[`row',1] = _b[bw]
-	mat balance[`row',2] = _b[bw]  - _se[bw]*1.96
-	mat balance[`row',3] = _b[bw]  + _se[bw]*1.96
-	
-	local row = `row' + 1
+
+    svy: reg `outcome' bw i.cohort
+
+    mat balance[`row',1] = _b[bw]
+    mat balance[`row',2] = _b[bw]  - _se[bw]*1.96
+    mat balance[`row',3] = _b[bw]  + _se[bw]*1.96
+
+    local row = `row' + 1
 }
 
 matsave balance, replace saving path("${tables}")
@@ -121,7 +121,7 @@ note(Joint test p-value: `pvalue')
 		 
 graph export "${graphs}\balance.png", replace
 
-/*		 
+
 ** Using RD specification
 gen above = (std_weeks > 0)
 gen std_weeks2 = std_weeks ^ 2
@@ -184,17 +184,17 @@ compress
 
 local row=1
 foreach outcome in $covars{
-	
-	rdbwselect `outcome' std_weeks, covs(poblacion_F55 poblacion_M50)
-	local h = e(h_mserd)
-	
-	svy: reg `outcome' i.above##c.std_weeks i.cohort if abs(std_weeks) <= `h'
-	
-	mat balanceRD_final[`row',1] = _b[1.above]
-	mat balanceRD_final[`row',2] = _b[1.above]  - _se[1.above]*1.96
-	mat balanceRD_final[`row',3] = _b[1.above]  + _se[1.above]*1.96
-	
-	local row = `row' + 1
+
+    rdbwselect `outcome' std_weeks, covs(poblacion_F55 poblacion_M50)
+    local h = e(h_mserd)
+
+    svy: reg `outcome' i.above##c.std_weeks i.cohort if abs(std_weeks) <= `h'
+
+    mat balanceRD_final[`row',1] = _b[1.above]
+    mat balanceRD_final[`row',2] = _b[1.above]  - _se[1.above]*1.96
+    mat balanceRD_final[`row',3] = _b[1.above]  + _se[1.above]*1.96
+
+    local row = `row' + 1
 }
 
 matsave balanceRD_final, replace saving path("${tables}")
@@ -203,7 +203,7 @@ coefplot matrix(balanceRD_final[,1]),                                       ///
 ci((balanceRD_final[,2] balanceRD_final[,3])) `plot_options'                ///
 groups("Was ill in past year"-"Intensive care" = "{bf:Health}"              ///
 "Works"-"Completed at least high school" = "{bf:Personal}", labs(*0.6))
-		 
+ 
 graph export "${graphs}\balanceRD_final.png", replace
 
 
@@ -211,17 +211,17 @@ graph export "${graphs}\balanceRD_final.png", replace
 
 local row=1
 foreach outcome in $covars{
-	
-	rdbwselect `outcome' std_weeks if poblacion_M50 == 1
-	local h = e(h_mserd)
-	
-	svy: reg `outcome' i.above##c.std_weeks if abs(std_weeks) <= `h' & poblacion_M50 == 1
-	
-	mat balanceRD_final_M50[`row',1] = _b[1.above]
-	mat balanceRD_final_M50[`row',2] = _b[1.above]  - _se[1.above]*1.96
-	mat balanceRD_final_M50[`row',3] = _b[1.above]  + _se[1.above]*1.96
-	
-	local row = `row' + 1
+
+    rdbwselect `outcome' std_weeks if poblacion_M50 == 1
+    local h = e(h_mserd)
+
+    svy: reg `outcome' i.above##c.std_weeks if abs(std_weeks) <= `h' & poblacion_M50 == 1
+
+    mat balanceRD_final_M50[`row',1] = _b[1.above]
+    mat balanceRD_final_M50[`row',2] = _b[1.above]  - _se[1.above]*1.96
+    mat balanceRD_final_M50[`row',3] = _b[1.above]  + _se[1.above]*1.96
+
+    local row = `row' + 1
 }
 
 matsave balanceRD_final_M50, replace saving path("${tables}")
@@ -230,7 +230,7 @@ coefplot matrix(balanceRD_final_M50[,1]),                               ///
 ci((balanceRD_final_M50[,2] balanceRD_final_M50[,3])) `plot_options'    ///
 groups("Was ill in past year"-"Intensive care" = "{bf:Health}"          ///
 "Works"-"Completed at least high school" = "{bf:Personal}", labs(*0.6))
-		 
+
 graph export "${graphs}\balanceRD_final_M50.png", replace
 
 
@@ -239,17 +239,17 @@ graph export "${graphs}\balanceRD_final_M50.png", replace
 
 local row=1
 foreach outcome in $covars{
-	
-	rdbwselect `outcome' std_weeks if poblacion_F55 == 1
-	local h = e(h_mserd)
-	
-	svy: reg `outcome' i.above##c.std_weeks if abs(std_weeks) <= `h' & poblacion_F55 == 1
-	
-	mat balanceRD_final_F55[`row',1] = _b[1.above]
-	mat balanceRD_final_F55[`row',2] = _b[1.above]  - _se[1.above]*1.96
-	mat balanceRD_final_F55[`row',3] = _b[1.above]  + _se[1.above]*1.96
-	
-	local row = `row' + 1
+
+    rdbwselect `outcome' std_weeks if poblacion_F55 == 1
+    local h = e(h_mserd)
+
+    svy: reg `outcome' i.above##c.std_weeks if abs(std_weeks) <= `h' & poblacion_F55 == 1
+
+    mat balanceRD_final_F55[`row',1] = _b[1.above]
+    mat balanceRD_final_F55[`row',2] = _b[1.above]  - _se[1.above]*1.96
+    mat balanceRD_final_F55[`row',3] = _b[1.above]  + _se[1.above]*1.96
+
+    local row = `row' + 1
 }
 
 matsave balanceRD_final_F55, replace saving path("${tables}")
@@ -258,7 +258,7 @@ coefplot matrix(balanceRD_final_F55[,1]),                               ///
 ci((balanceRD_final_F55[,2] balanceRD_final_F55[,3])) `plot_options'    ///
 groups("Was ill in past year"-"Intensive care" = "{bf:Health}"          ///
 "Works"-"Completed at least high school" = "{bf:Personal}", labs(*0.6))
-		 
+
 graph export "${graphs}\balanceRD_final_F55.png", replace
 
 

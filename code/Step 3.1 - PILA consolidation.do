@@ -293,7 +293,7 @@ quietly{
     bys personabasicaid: egen ever_colpensiones = max(colpensiones)
     
     * Get share in Colpensiones
-    sum ever_colpensiones
+    sum ever_colpensiones if poblacion_M50 == 1 | poblacion_F55 == 1
     local colpensiones = r(mean) * 100
     
     texresults3 using "${tables}/numbers.txt", texmacro(colpensiones)   ///
