@@ -24,8 +24,8 @@ clear all
 
 set scheme white_tableau
 
-global extensive service consul proce urg hosp cons_psico estres        ///
-cardiovascular infarct chronic diag_mental
+global extensive service consul proce urg hosp conspsico estres        ///
+cardiovascular infarct chronic diagmental
 
 global all_outcomes wage ibc pension servicios consultas proced urgencias ///
        hospits $extensive
@@ -55,7 +55,7 @@ result(`total_n') append
 
 use "${data}/Master_for_RIPS.dta", clear
 
-count
+count if poblacion_M50 == 1 | poblacion_F55 == 1
 
 local master_n = strtrim("`: di %10.0fc r(N)'")
 
@@ -167,7 +167,7 @@ foreach cohort in M50 F55 {
         if "`outcome'" == "pension" {
             local fmt "3"
             local add "*100"
-            local rounded "round(2)"
+            local rounded "round(1)"
         }
         else{
             local fmt "0"
@@ -178,8 +178,8 @@ foreach cohort in M50 F55 {
         sum `outcome' if poblacion_`cohort' == 1
         local m_`outcome'_`cohort'   : di %13.`fmt'fc r(mean)
         local sd_`outcome'_`cohort'  : di %13.`fmt'fc r(sd)
-        local min_`outcome'_`cohort' : di %13.`fmt'fc r(min)
-        local max_`outcome'_`cohort' : di %13.`fmt'fc r(max)
+        local min_`outcome'_`cohort' : di %13.0fc r(min)
+        local max_`outcome'_`cohort' : di %13.0fc r(max)
         
         local `outcome'_`cohort': di %10.`fmt'fc r(mean)`add'
 
@@ -194,9 +194,10 @@ foreach cohort in M50 F55 {
 use if (poblacion_M50 == 1 | poblacion_F55 == 1) using              ///
        "${data}/Estimation_sample_RIPS.dta", clear
 
-rename (nro_serviciosHospitalizacion nro_serviciosurgencias             ///
-    nro_serviciosprocedimientos nro_serviciosconsultas)                     ///
-    (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
+rename (nro_serviciosHospitalizacion nro_serviciosurgencias                     ///
+    nro_serviciosprocedimientos nro_serviciosconsultas cons_psico diag_mental)  ///
+    (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas         ///
+    conspsico diagmental)
     
 egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias         ///
     nro_procedimientos nro_consultas)
@@ -213,7 +214,7 @@ foreach cohort in M50 F55 {
     foreach outcome in servicios consultas proced urgencias hospits {
         
         if inlist("`outcome'", "urgencias", "hospits") {
-            local rounded "round(2)"
+            local rounded "round(1)"
         }
         else{
             local rounded "round(0)"
@@ -242,13 +243,13 @@ foreach cohort in M50 F55 {
         sum `outcome' if poblacion_`cohort' == 1
         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
-        local min_`outcome'_`cohort' : di %10.3fc r(min)
-        local max_`outcome'_`cohort' : di %10.3fc r(max)
+        local min_`outcome'_`cohort' : di %10.0fc r(min)
+        local max_`outcome'_`cohort' : di %10.0fc r(max)
         
         local `outcome'_`cohort' = r(mean)*100
 
         texresults3 using "${tables}/numbers.txt", texmacro(`outcome'`coh')  ///
-        result(``outcome'_`cohort'') append round(2)
+        result(``outcome'_`cohort'') append round(1)
     }
     local coh "F"
 }
@@ -298,6 +299,9 @@ foreach var of global all_outcomes {
     local ++i
     local ++j
 }
+
+tex \midrule
+tex Observations & \multicolumn{4}{c}{`m50_n'} & \multicolumn{4}{c}{`f55_n'} \\
 
 tex \bottomrule
 tex \end{tabular}
