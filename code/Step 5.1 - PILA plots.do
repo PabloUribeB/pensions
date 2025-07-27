@@ -76,7 +76,7 @@ foreach variable in `outcomes'{
                 xtitle(Date) ylabel(#10, format(%010.`dec'fc) labs(vsmall))         ///
                 subtitle(Cohort: `cohort', size(medsmall))
         
-                graph export "${graphs}/latest/PILA/time\\`variable'_`cohort'_`runvar'_`model'.png", replace
+                graph export "${graphs}/latest/PILA/time/`variable'_`cohort'_`runvar'_`model'.png", replace
         
             }
         }
@@ -129,7 +129,7 @@ foreach variable in `outcomes'{
                 ylabel(#10, format(%010.`dec'fc) labs(vsmall))                      ///
                 subtitle(Cohort: `cohort', size(medsmall))
         
-                graph export "${graphs}/latest/PILA/age\\`variable'_`cohort'_`runvar'_`model'.png", replace
+                graph export "${graphs}/latest/PILA/age/`variable'_`cohort'_`runvar'_`model'.png", replace
         
             }
         }
