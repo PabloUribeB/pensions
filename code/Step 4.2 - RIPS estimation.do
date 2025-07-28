@@ -190,12 +190,13 @@ foreach cohort in $first_cohorts {
 */
 
 ****************************************************************************
-**# 		4. Whole age panel regressions (with plots)
+**#         4. Whole age panel regressions (with plots)
 ****************************************************************************
 
 tab age if poblacion_M50 == 1, gen(ageM50)
 tab age if poblacion_F55 == 1, gen(ageF55)
 
+local replace replace
 foreach cohort in $first_cohorts {
     
     if "`cohort'" == "M50"      local ages "59, 62"
@@ -212,6 +213,9 @@ foreach cohort in $first_cohorts {
         cap noi rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &        ///
             inrange(age, `ages'), vce(cluster personabasicaid) covs(age`cohort'*)
 
+        mat beta = e(tau_bc)            // Store robust beta
+        mat vari = e(se_tau_rb)^2       // Store robust SE
+            
         local HL = e(h_l)
         local HR = e(h_r)
 
@@ -239,10 +243,20 @@ foreach cohort in $first_cohorts {
         }
         
 
+        * Save estimation results in dataset
+        cap noi regsave using "${output}/RIPS_results_pool.dta", `replace'   ///
+        coefmat(beta) varmat(vari) ci level(95)                              ///
+        addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `N', ///
+        method, "rdrobust")
+        
         qui reg `outcome' i.eligible_w##c.std_weeks i.age if             ///
             poblacion_`cohort' == 1 & inrange(std_weeks, -`HL', `HR') &  ///
             inrange(age, `ages'), cluster(personabasicaid)
 
+        cap noi regsave 1.eligible_w using "${output}/RIPS_results_pool.dta", ///
+        append ci level(95) addlabel(outcome, `outcome', cohort, `cohort',    ///
+        bw, `HL', method, "reg")
+            
         local Breg: dis %07.3fc _b[1.eligible_w]
         local Breg: dis strtrim("`Breg'")
 
@@ -286,6 +300,7 @@ foreach cohort in $first_cohorts {
             replace width(1920) height(1080)
 
         local name day
+        local replace append
     }
 }
 

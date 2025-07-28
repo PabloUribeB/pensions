@@ -371,6 +371,7 @@ foreach cohort in $first_cohorts {
 tab age if poblacion_M50 == 1, gen(ageM50)
 tab age if poblacion_F55 == 1, gen(ageF55)
 
+local replace replace
 foreach cohort in $first_cohorts {
     
     if "`cohort'" == "M50"      local ages "59, 62"
@@ -421,11 +422,26 @@ foreach cohort in $first_cohorts {
             if abs(`t') >= 2.576 {
                 local B = "`B'*"
             }
+            
+            if missing(`"`HL'"') {
+            local HL = 21
+            local HR = 21
+            }
 
+
+            * Save estimation results in dataset
+            cap noi regsave using "${output}/PILA_results_pool.dta", `replace'   ///
+            coefmat(beta) varmat(vari) ci level(95)                              ///
+            addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `N', ///
+            method, "rdrobust", runvar, `runvar')
 
             qui reg `outcome' i.`elig'##c.`runvar' i.age if                 ///
                 poblacion_`cohort' == 1 & inrange(`runvar', -`HL', `HR') &  ///
                 inrange(age, `ages'), cluster(personabasicaid)
+
+            cap noi regsave 1.`elig' using "${output}/PILA_results_pool.dta", ///
+            append ci level(95) addlabel(outcome, `outcome', cohort, `cohort',    ///
+            bw, `HL', method, "reg", runvar, `runvar')
 
             local Breg: dis %`pren'.`dec'fc _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
@@ -471,6 +487,7 @@ foreach cohort in $first_cohorts {
 
             local elig eligible_d
             local name day
+            local replace append
         }
     }
 }
