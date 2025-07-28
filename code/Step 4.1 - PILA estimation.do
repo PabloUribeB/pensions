@@ -293,7 +293,7 @@ foreach cohort in $first_cohorts {
         }
         
         reg `outcome' i.`elig'##c.`runvar'##i.post i.age if            ///
-            poblacion_`cohort' == 1 & abs(`runvar') <= bw_avg, vce(hc3)
+            poblacion_`cohort' == 1 & abs(`runvar') <= bw_avg, vce(cluster personabasicaid)
         
         * Save estimation results in dataset
         regsave 1.`elig'#1.post using "${output}/PILA_results_diffdisc.dta",    ///
@@ -439,8 +439,8 @@ foreach cohort in $first_cohorts {
                 poblacion_`cohort' == 1 & inrange(`runvar', -`HL', `HR') &  ///
                 inrange(age, `ages'), cluster(personabasicaid)
 
-            cap noi regsave 1.`elig' using "${output}/PILA_results_pool.dta", ///
-            append ci level(95) addlabel(outcome, `outcome', cohort, `cohort',    ///
+            cap noi regsave 1.`elig' using "${output}/PILA_results_pool.dta",   ///
+            append ci level(95) addlabel(outcome, `outcome', cohort, `cohort',  ///
             bw, `HL', method, "reg", runvar, `runvar')
 
             local Breg: dis %`pren'.`dec'fc _b[1.`elig']
