@@ -20,7 +20,6 @@ version 19
 
 set graphics off
 set scheme white_tableau
-cap mkdir "${graphs}/latest/PILA"
 cap mkdir "${graphs}/latest/PILA/age"
 cap mkdir "${graphs}/latest/PILA/time"
 

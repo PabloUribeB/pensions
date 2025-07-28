@@ -19,7 +19,6 @@ clear all
 
 set graphics off
 set scheme white_tableau
-cap mkdir "${graphs}/latest/RIPS"
 cap mkdir "${graphs}/latest/RIPS/age"
 
 ****************************************************************************

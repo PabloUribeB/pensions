@@ -31,12 +31,14 @@ global first_cohorts M50 F55
 
 global outcomes $extensive pre_MWI $intensive
 
+cap mkdir "${graphs}/latest/RIPS"
+
 set scheme white_tableau
 set graphics off
 
 capture log close
 
-log	using "${logs}/RIPS estimations.smcl", replace
+log	using "${logs}/RIPS estimations panel.smcl", replace
 
 
 ****************************************************************************
@@ -113,7 +115,7 @@ foreach cohort in $first_cohorts {
         scalar bw_avg = 21
     *}
     
-    reg `outcome' i.eligible_w##c.std_weeks##i.post if                  ///
+    reg `outcome' i.eligible_w##c.std_weeks##i.post i.age if             ///
         poblacion_`cohort' == 1 & abs(std_weeks) <= bw_avg, vce(cluster personabasicaid)
     
     * Save estimation results in dataset
@@ -127,7 +129,7 @@ foreach cohort in $first_cohorts {
     
     restore
 }
-
+/*
 ****************************************************************************
 **# 		3. RDD by age
 ****************************************************************************
@@ -177,7 +179,7 @@ foreach cohort in $first_cohorts {
                 cap noi regsave using "${output}/RIPS_results.dta", append      ///
                 coefmat(beta) varmat(vari)                                      ///
                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
-                runvar, std_weeks, model, "rdhonest",                            ///
+                runvar, std_weeks, model, "rdhonest",                           ///
                 ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
                 
                 local replace append
@@ -185,7 +187,109 @@ foreach cohort in $first_cohorts {
     }
     restore
 }
+*/
 
+****************************************************************************
+**# 		4. Whole age panel regressions (with plots)
+****************************************************************************
+
+tab age if poblacion_M50 == 1, gen(ageM50)
+tab age if poblacion_F55 == 1, gen(ageF55)
+
+foreach cohort in $first_cohorts {
+    
+    if "`cohort'" == "M50"      local ages "59, 62"
+    else                        local ages "54, 57"
+    
+    foreach outcome in $outcomes {
         
+        local varlab: variable label `outcome'
+        
+        clear results
+    
+        dis as err "Cohort: `cohort'; Outcome: `outcome' -> (5) Whole age panel RDD"
+    
+        cap noi rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &        ///
+            inrange(age, `ages'), vce(cluster personabasicaid) covs(age`cohort'*)
+
+        local HL = e(h_l)
+        local HR = e(h_r)
+
+        local B: 	dis %07.3fc e(tau_bc)
+        local B: 	dis strtrim("`B'")
+
+        local t = e(tau_bc) / e(se_tau_rb)
+
+        local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
+        local N: 	dis strtrim("`N'")
+
+        if abs(`t') >= 1.645 {
+            local B = "`B'*"
+        }
+        if abs(`t') >= 1.96 {
+            local B = "`B'*"
+        }
+        if abs(`t') >= 2.576 {
+            local B = "`B'*"
+        }
+        
+        if missing(`"`HL'"') {
+            local HL = 21
+            local HR = 21
+        }
+        
+
+        qui reg `outcome' i.eligible_w##c.std_weeks i.age if             ///
+            poblacion_`cohort' == 1 & inrange(std_weeks, -`HL', `HR') &  ///
+            inrange(age, `ages'), cluster(personabasicaid)
+
+        local Breg: dis %07.3fc _b[1.eligible_w]
+        local Breg: dis strtrim("`Breg'")
+
+        local t = _b[1.eligible_w] / _se[1.eligible_w]
+
+        if abs(`t') >= 1.645 {
+            local Breg = "`Breg'*"
+        }
+        if abs(`t') >= 1.96 {
+            local Breg = "`Breg'*"
+        }
+        if abs(`t') >= 2.576 {
+            local Breg = "`Breg'*"
+        }
+
+        local HL: 	dis %7.2f `HL'
+
+        rdplot `outcome' std_weeks if inrange(std_weeks,-`HL',`HR') &       ///
+        inrange(age, `ages'), vce(cluster personabasicaid) p(1)             ///
+        kernel(triangular) h(`HR' `HR') binselect(esmv) covs(age`cohort'*)  ///
+        graph_options(title(`varlab', size(medium) span)                    ///
+        subtitle(Cohort: `cohort'; Weeks around cutoff: `HL', size(small))  ///
+        xtitle(Distance to week of birth's cutoff) ytitle("")               ///
+        legend(rows(1) position(bottom)) ylabel(, format(%07.3fc))          ///
+        note(`""Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'.""'))
+
+        graph export "${graphs}/latest/RIPS/`outcome'_`cohort'_rdplot_ages.png",  ///
+            replace width(1920) height(1080)
+
+
+        binscatterhist `outcome' std_weeks if poblacion_`cohort' == 1 &    ///
+        inrange(std_weeks, -`HL', `HR') & inrange(age, `ages'),            ///
+        cluster(personabasicaid) rd(0) linetype(lfit) absorb(age)          ///
+        title(`varlab', size(medium) span)                                 ///
+        subtitle(Cohort: `cohort'; Weeks around cutoff: `HL', size(small)) ///
+        xtitle(Distance to week of birth's cutoff) ytitle("")              ///
+        ylabel(, format(%07.3fc))                                          ///
+        note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
+
+        graph export "${graphs}/latest/RIPS/`outcome'_`cohort'_bscatter_ages.png", ///
+            replace width(1920) height(1080)
+
+        local name day
+    }
+}
+
+
+
 
 log close

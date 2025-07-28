@@ -25,10 +25,11 @@ global second_cohorts   M54 F59
 global outcomes         codigo_pension pension pension_cum colpensiones     ///
                         pila_salario_r_0 pension_ibc pension_ibc_cum
 
-
+cap mkdir "${graphs}/latest/PILA"
+                        
 capture log close
 
-log	using "${logs}\PILA estimations.smcl", replace
+log	using "${logs}\PILA estimations age.smcl", replace
 
 use if (poblacion_M50 == 1 | poblacion_F55 == 1) using          ///
        "${data}/Estimation_sample_PILA.dta", clear
@@ -276,12 +277,12 @@ foreach cohort in $first_cohorts {
         clear results 
         
         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
-            post == 0, kernel(uniform)
+            post == 0, kernel(uniform) vce(cluster personabasicaid)
 
         scalar bw_pre = e(h_r)
 
         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
-            post == 1, kernel(uniform)
+            post == 1, kernel(uniform) vce(cluster personabasicaid)
 
         scalar bw_post = e(h_r)
 
@@ -291,8 +292,8 @@ foreach cohort in $first_cohorts {
             scalar bw_avg = 21
         }
         
-        reg `outcome' i.`elig'##c.`runvar'##i.post if poblacion_`cohort' == 1 &  ///
-            abs(`runvar') <= bw_avg, robust
+        reg `outcome' i.`elig'##c.`runvar'##i.post i.age if            ///
+            poblacion_`cohort' == 1 & abs(`runvar') <= bw_avg, vce(hc3)
         
         * Save estimation results in dataset
         regsave 1.`elig'#1.post using "${output}/PILA_results_diffdisc.dta",    ///
@@ -305,11 +306,11 @@ foreach cohort in $first_cohorts {
     }
 }
 
-/*      
+    
 ****************************************************************************
 **# 		5. RDD by age
 ****************************************************************************
-
+/*
 foreach cohort in $first_cohorts {
     
     qui sum age if poblacion_`cohort' == 1
@@ -361,11 +362,14 @@ foreach cohort in $first_cohorts {
         }
     }
 }
-        
+*/        
         
 ****************************************************************************
 **# 		6. Whole age panel regressions (with plots)
 ****************************************************************************
+
+tab age if poblacion_M50 == 1, gen(ageM50)
+tab age if poblacion_F55 == 1, gen(ageF55)
 
 foreach cohort in $first_cohorts {
     
@@ -389,11 +393,13 @@ foreach cohort in $first_cohorts {
         local name "week"
         foreach runvar in std_weeks std_days {
         
+            clear results
+        
             dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
             "Runvar: `runvar' -> (5) Whole age panel RDD"
         
-            qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &    ///
-                inrange(age, `ages'), vce(hc3)
+            rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+                inrange(age, `ages'), vce(cluster personabasicaid) covs(age`cohort'*)
 
             local HL = e(h_l)
             local HR = e(h_r)
@@ -417,9 +423,9 @@ foreach cohort in $first_cohorts {
             }
 
 
-            qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
-                inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),          ///
-                vce(hc3)
+            qui reg `outcome' i.`elig'##c.`runvar' i.age if                 ///
+                poblacion_`cohort' == 1 & inrange(`runvar', -`HL', `HR') &  ///
+                inrange(age, `ages'), cluster(personabasicaid)
 
             local Breg: dis %`pren'.`dec'fc _b[1.`elig']
             local Breg: dis strtrim("`Breg'")
@@ -439,32 +445,28 @@ foreach cohort in $first_cohorts {
             local HL: 	dis %7.2f `HL'
 
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR') &         ///
-            inrange(age, `ages'), vce(hc3) p(1) kernel(triangular)              ///
-            h(`HR' `HR') binselect(esmv)                                        ///
+            inrange(age, `ages'), vce(cluster personabasicaid) p(1)             ///
+            kernel(triangular) h(`HR' `HR') binselect(esmv) covs(age`cohort'*)  ///
             graph_options(title(`varlab', size(medium) span)                    ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
             legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
             note(`""Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'.""'))
 
-            scalar b_l = e(J_star_l)
-            scalar b_r = e(J_star_r)
-            scalar b_avg = (b_l + b_r) / 2
-
-            graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_rdplot_ages.png",  ///
+            graph export "${graphs}/latest/PILA/`outcome'_`cohort'_`runvar'_rdplot_ages.png",  ///
                 replace width(1920) height(1080)
 
 
             binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
             inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),              ///
-            vce(robust) rd(0) linetype(lfit)                                    ///
+            cluster(personabasicaid) rd(0) linetype(lfit) absorb(age)           ///
             title(`varlab', size(medium) span)                                  ///
             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            ylabel(, format(%`pren'.`dec'fc))                                      ///
+            ylabel(, format(%`pren'.`dec'fc))                                   ///
             note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
 
-            graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_bscatter_ages.png", ///
+            graph export "${graphs}/latest/PILA/`outcome'_`cohort'_`runvar'_bscatter_ages.png", ///
                 replace width(1920) height(1080)
 
             local elig eligible_d
@@ -472,7 +474,7 @@ foreach cohort in $first_cohorts {
         }
     }
 }
-*/
+
         
 log close
 
