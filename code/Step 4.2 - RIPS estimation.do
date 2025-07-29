@@ -21,7 +21,7 @@ clear all
 
 global cohorts M50 F55 M54 F59
 
-global extensive service consul proce urg hosp cons_psico estres        ///
+global extensive consul proce urg hosp cons_psico estres        ///
 cardiovascular infarct chronic diag_mental
 
 global intensive nro_servicios nro_consultas nro_procedimientos         ///
@@ -224,8 +224,9 @@ foreach cohort in $first_cohorts {
 
         local t = e(tau_bc) / e(se_tau_rb)
 
-        local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
-        local N: 	dis strtrim("`N'")
+        local eff_n = e(N_b_l) + e(N_b_r)
+        local N: dis %10.0fc `eff_n'
+        local N: dis strtrim("`N'")
 
         if abs(`t') >= 1.645 {
             local B = "`B'*"
@@ -244,9 +245,9 @@ foreach cohort in $first_cohorts {
         
 
         * Save estimation results in dataset
-        cap noi regsave using "${output}/RIPS_results_pool.dta", `replace'   ///
-        coefmat(beta) varmat(vari) ci level(95)                              ///
-        addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `N', ///
+        cap noi regsave using "${output}/RIPS_results_pool.dta", `replace'       ///
+        coefmat(beta) varmat(vari) ci level(95)                                  ///
+        addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `eff_n', ///
         method, "rdrobust")
         
         qui reg `outcome' i.eligible_w##c.std_weeks i.age if             ///
@@ -274,7 +275,7 @@ foreach cohort in $first_cohorts {
 
         local HL: 	dis %7.2f `HL'
 
-        rdplot `outcome' std_weeks if inrange(std_weeks,-`HL',`HR') &       ///
+        cap rdplot `outcome' std_weeks if inrange(std_weeks,-`HL',`HR') &   ///
         inrange(age, `ages'), vce(cluster personabasicaid) p(1)             ///
         kernel(triangular) h(`HR' `HR') binselect(esmv) covs(age`cohort'*)  ///
         graph_options(title(`varlab', size(medium) span)                    ///
@@ -283,20 +284,20 @@ foreach cohort in $first_cohorts {
         legend(rows(1) position(bottom)) ylabel(, format(%07.3fc))          ///
         note(`""Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'.""'))
 
-        graph export "${graphs}/latest/RIPS/`outcome'_`cohort'_rdplot_ages.png",  ///
+        cap graph export "${graphs}/latest/RIPS/`outcome'_`cohort'_rdplot_ages.png",  ///
             replace width(1920) height(1080)
 
 
-        binscatterhist `outcome' std_weeks if poblacion_`cohort' == 1 &    ///
-        inrange(std_weeks, -`HL', `HR') & inrange(age, `ages'),            ///
-        cluster(personabasicaid) rd(0) linetype(lfit) absorb(age)          ///
-        title(`varlab', size(medium) span)                                 ///
-        subtitle(Cohort: `cohort'; Weeks around cutoff: `HL', size(small)) ///
-        xtitle(Distance to week of birth's cutoff) ytitle("")              ///
-        ylabel(, format(%07.3fc))                                          ///
+        cap binscatterhist `outcome' std_weeks if poblacion_`cohort' == 1 &  ///
+        inrange(std_weeks, -`HL', `HR') & inrange(age, `ages'),              ///
+        cluster(personabasicaid) rd(0) linetype(lfit) absorb(age)            ///
+        title(`varlab', size(medium) span)                                   ///
+        subtitle(Cohort: `cohort'; Weeks around cutoff: `HL', size(small))   ///
+        xtitle(Distance to week of birth's cutoff) ytitle("")                ///
+        ylabel(, format(%07.3fc))                                            ///
         note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
 
-        graph export "${graphs}/latest/RIPS/`outcome'_`cohort'_bscatter_ages.png", ///
+        cap graph export "${graphs}/latest/RIPS/`outcome'_`cohort'_bscatter_ages.png", ///
             replace width(1920) height(1080)
 
         local name day

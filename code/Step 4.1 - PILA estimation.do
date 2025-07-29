@@ -405,12 +405,13 @@ foreach cohort in $first_cohorts {
             local HL = e(h_l)
             local HR = e(h_r)
 
-            local B: 	dis %`pren'.`dec'fc e(tau_bc)
-            local B: 	dis strtrim("`B'")
+            local B: dis %`pren'.`dec'fc e(tau_bc)
+            local B: dis strtrim("`B'")
 
             local t = e(tau_bc) / e(se_tau_rb)
-
-            local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
+            
+            local eff_n = e(N_b_l) + e(N_b_r)
+            local N: 	dis %10.0fc `eff_n'
             local N: 	dis strtrim("`N'")
 
             if abs(`t') >= 1.645 {
@@ -430,9 +431,9 @@ foreach cohort in $first_cohorts {
 
 
             * Save estimation results in dataset
-            cap noi regsave using "${output}/PILA_results_pool.dta", `replace'   ///
-            coefmat(beta) varmat(vari) ci level(95)                              ///
-            addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `N', ///
+            cap noi regsave using "${output}/PILA_results_pool.dta", `replace'       ///
+            coefmat(beta) varmat(vari) ci level(95)                                  ///
+            addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `eff_n', ///
             method, "rdrobust", runvar, `runvar')
 
             qui reg `outcome' i.`elig'##c.`runvar' i.age if                 ///
