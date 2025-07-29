@@ -259,7 +259,7 @@ gen eligible_d = (std_days > 0)
 ****************************************************************************
 **# 		4. Difference in discontinuities
 ****************************************************************************
-
+/*
 local replace replace
 gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
 
@@ -310,7 +310,7 @@ foreach cohort in $first_cohorts {
 ****************************************************************************
 **# 		5. RDD by age
 ****************************************************************************
-/*
+
 foreach cohort in $first_cohorts {
     
     qui sum age if poblacion_`cohort' == 1
@@ -374,8 +374,8 @@ tab age if poblacion_F55 == 1, gen(ageF55)
 local replace replace
 foreach cohort in $first_cohorts {
     
-    if "`cohort'" == "M50"      local ages "59, 62"
-    else                        local ages "54, 57"
+    if "`cohort'" == "M50"      local ages "60, 62"
+    else                        local ages "55, 57"
     
     foreach outcome in $outcomes {
         
@@ -402,6 +402,9 @@ foreach cohort in $first_cohorts {
             rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
                 inrange(age, `ages'), vce(cluster personabasicaid) covs(age`cohort'*)
 
+            mat beta = e(tau_bc)            // Store robust beta
+            mat vari = e(se_tau_rb)^2       // Store robust SE
+                
             local HL = e(h_l)
             local HR = e(h_r)
 
@@ -431,7 +434,7 @@ foreach cohort in $first_cohorts {
 
 
             * Save estimation results in dataset
-            cap noi regsave using "${output}/PILA_results_pool.dta", `replace'       ///
+            regsave using "${output}/PILA_results_pool.dta", `replace'               ///
             coefmat(beta) varmat(vari) ci level(95)                                  ///
             addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `eff_n', ///
             method, "rdrobust", runvar, `runvar')
