@@ -224,7 +224,7 @@ foreach cohort in $first_cohorts {
 
         local t = e(tau_bc) / e(se_tau_rb)
 
-        local eff_n = e(N_b_l) + e(N_b_r)
+        local eff_n = e(N_h_l) + e(N_h_r)
         local N: dis %10.0fc `eff_n'
         local N: dis strtrim("`N'")
 

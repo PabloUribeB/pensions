@@ -167,7 +167,7 @@ foreach cohort in $first_cohorts {
 
             local t = e(tau_bc) / e(se_tau_rb)
 
-            local N: 	dis %10.0fc e(N_b_l) + e(N_b_r)
+            local N: 	dis %10.0fc e(N_h_l) + e(N_h_r)
             local N: 	dis strtrim("`N'")
 
             if abs(`t') >= 1.645 {
@@ -413,7 +413,7 @@ foreach cohort in $first_cohorts {
 
             local t = e(tau_bc) / e(se_tau_rb)
             
-            local eff_n = e(N_b_l) + e(N_b_r)
+            local eff_n = e(N_h_l) + e(N_h_r)
             local N: 	dis %10.0fc `eff_n'
             local N: 	dis strtrim("`N'")
 
