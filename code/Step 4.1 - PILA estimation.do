@@ -26,212 +26,15 @@ global outcomes         codigo_pension pension pension_cum colpensiones     ///
                         pila_salario_r_0 pension_ibc pension_ibc_cum
 
 cap mkdir "${graphs}/latest/PILA"
+cap mkdir "${graphs}/latest/PILA/placebo"
                         
 capture log close
 
-log	using "${logs}\PILA estimations age.smcl", replace
+log	using "${logs}\PILA estimations.smcl", replace
 
 use if (poblacion_M50 == 1 | poblacion_F55 == 1) using          ///
        "${data}/Estimation_sample_PILA.dta", clear
 
-/*
-****************************************************************************
-**# 		1. Year by year RDD
-****************************************************************************
-
-local replace replace
-forval year = 2009/2020 { // Loop through all years
-
-    * First cohorts (M50 & F55) retire in 2010, so only one year before and after
-    if inrange(`year', 2009, 2011) {
-        
-        foreach cohort in $first_cohorts {
-        
-            foreach outcome in $outcomes {
-                
-                forval month = 1/12 {
-                    
-                    foreach runvar in std_weeks std_days {
-                        
-                    dis as err "Cohort: `cohort'; Outcome: `outcome'; Date: "        ///
-                    "`year'-`month'; Runvar: `runvar' -> (1) Year by year RDD"
-                    
-                    cap mat drop beta vari
-                    
-                    ** RDRobust estimation
-                    cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & ///
-                    fecha_pila == ym(`year',`month'), vce(hc3)
-
-                    cap noi mat beta = e(tau_bc)            // Store robust beta
-                    cap noi mat vari = e(se_tau_rb)^2       // Store robust SE
-
-                    * Save estimation results in dataset
-                    cap noi regsave using "${output}/PILA_results.dta", `replace'   ///
-                    coefmat(beta) varmat(vari) ci level(95)                         ///
-                    addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
-                    month, `month', runvar, `runvar', model, "rdrobust")
-                    
-                    ** RDHonest estimation
-                    cap noi rdhonest `outcome' `runvar' if poblacion_`cohort' == 1 & ///
-                    fecha_pila == ym(`year',`month')
-                    
-                    cap noi mat beta = e(est)            // Store robust beta
-                    cap noi mat vari = e(se)^2           // Store robust SE
-                    local li95       = e(TCiL)
-                    local ui95       = e(TCiU)
-                    local M          = e(M)
-                    
-                    cap noi regsave using "${output}/PILA_results.dta", append      ///
-                    coefmat(beta) varmat(vari)                                      ///
-                    addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
-                    month, `month', runvar, `runvar', model, "rdhonest",            ///
-                    ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
-                    
-                    
-                    
-                    local replace append
-                    }
-                }
-            }
-        }
-    }
-	
-    * Second cohorts (M54 & F59) retire in Dec. 2014, so 6 years pre and 6 post.
-    * This loop happens for all years in the loop (2009/2020)
-    /*foreach cohort in $second_cohorts{
-        
-        foreach outcome in $outcomes{
-            
-            forval month = 1/12{
-                
-                rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
-                fecha_pila == ym(`year',`month'), vce(cluster std_weeks)
-
-                mat beta = e(tau_bc)				// Store robust beta
-                mat vari = e(se_tau_rb)^2			// Store robust SE
-
-            * Save estimation results in dataset
-            regsave using "${output}/PILA_results.dta", append coefmat(beta)    ///
-            varmat(vari) ci level(95) addlabel(outcome, `outcome', cohort, 	    ///
-            `cohort', year, `year', month, `month')
-            }
-        }
-    }*/
-}
-
-
-****************************************************************************
-**# 		2. Whole monthly panel regressions (with plots)
-****************************************************************************
-preserve
-
-keep if inrange(year, 2009, 2011)
-
-
-gen eligible_w = (std_weeks > 0)
-gen eligible_d = (std_days > 0)
-
-
-*** Whole monthly panel regressions
-
-foreach cohort in $first_cohorts {
-    
-    foreach outcome in $outcomes {
-        
-        local varlab: variable label `outcome'
-        
-        if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
-            local dec = 0
-            local pren "10"
-        }
-        else {
-            local dec = 3
-            local pren "07"
-        }
-        
-        local elig eligible_w
-        local name "week"
-        foreach runvar in std_weeks std_days {
-            
-            dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
-            "Runvar: `runvar' -> (2) Whole monthly panel RDD"
-            
-            qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1,     ///
-                vce(hc3)
-
-            local HL = e(h_l)
-            local HR = e(h_r)
-
-            local B: 	dis %`pren'.`dec'fc e(tau_bc)
-            local B: 	dis strtrim("`B'")
-
-            local t = e(tau_bc) / e(se_tau_rb)
-
-            local N: 	dis %10.0fc e(N_h_l) + e(N_h_r)
-            local N: 	dis strtrim("`N'")
-
-            if abs(`t') >= 1.645 {
-                local B = "`B'*"
-            }
-            if abs(`t') >= 1.96 {
-                local B = "`B'*"
-            }
-            if abs(`t') >= 2.576 {
-                local B = "`B'*"
-            }
-
-
-            qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
-                inrange(`runvar', -`HL', `HR'), vce(hc3)
-
-            local Breg: dis %`pren'.`dec'fc _b[1.`elig']
-            local Breg: dis strtrim("`Breg'")
-
-            local t = _b[1.`elig'] / _se[1.`elig']
-
-            if abs(`t') >= 1.645 {
-                local Breg = "`Breg'*"
-            }
-            if abs(`t') >= 1.96 {
-                local Breg = "`Breg'*"
-            }
-            if abs(`t') >= 2.576 {
-                local Breg = "`Breg'*"
-            }
-
-			local HL: 	dis %7.2f `HL'
-			
-            rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR'),          ///
-            vce(hc3) p(1) kernel(triangular) h(`HR' `HR') 	                    ///
-            binselect(esmv)	graph_options(title(`varlab', size(medium) span)    ///
-            subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
-            xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
-            note(`""Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'.""'))
-
-			
-            graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_rdplot.png",   ///
-                replace width(1920) height(1080)
-
-
-            binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
-            inrange(`runvar', -`HL', `HR'), vce(robust)                         ///
-            rd(0) linetype(lfit) title(`varlab', size(medium) span)             ///
-            subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
-            xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            ylabel(, format(%`pren'.`dec'fc))                                   ///
-            note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
-
-            graph export "${graphs}\new\\`outcome'_`cohort'_`runvar'_bscatter.png", ///
-                replace width(1920) height(1080)
-
-            local elig eligible_d
-            local name day
-        }
-    }
-}
-
-*/
 
 ****************************************************************************
 **# 		3. Collapse at age level
@@ -259,7 +62,7 @@ gen eligible_d = (std_days > 0)
 ****************************************************************************
 **# 		4. Difference in discontinuities
 ****************************************************************************
-/*
+
 local replace replace
 gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
 
@@ -269,28 +72,13 @@ foreach cohort in $first_cohorts {
         
         local elig eligible_w
         
-        foreach runvar in std_weeks std_days {
+        foreach runvar in std_weeks {
             
         dis as err "Cohort: `cohort'; Outcome: `outcome'; "                 ///
         "Runvar: `runvar' -> (3) Difference in discontinuities"
                 
         clear results 
-        
-        qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
-            post == 0, kernel(uniform) vce(cluster personabasicaid)
-
-        scalar bw_pre = e(h_r)
-
-        qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
-            post == 1, kernel(uniform) vce(cluster personabasicaid)
-
-        scalar bw_post = e(h_r)
-
-        scalar bw_avg = (bw_pre + bw_post) / 2
-
-        if mi(bw_avg) {
-            scalar bw_avg = 21
-        }
+        scalar bw_avg = 21
         
         reg `outcome' i.`elig'##c.`runvar'##i.post i.age if            ///
             poblacion_`cohort' == 1 & abs(`runvar') <= bw_avg, vce(cluster personabasicaid)
@@ -315,11 +103,11 @@ foreach cohort in $first_cohorts {
     
     qui sum age if poblacion_`cohort' == 1
     local min = r(min) + 1
-    local max = r(max) - 1
+    local max = r(max) - 7
     
     foreach outcome in $outcomes {
         
-        foreach runvar in std_weeks std_days {
+        foreach runvar in std_weeks {
             
             forval age = `min'/`max'{
                 
@@ -331,14 +119,17 @@ foreach cohort in $first_cohorts {
                 cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1  ///
                 & age == `age', vce(hc3) masspoints(check)
 
-                mat beta = e(tau_bc)            // Store robust beta
-                mat vari = e(se_tau_rb)^2       // Store robust SE
+                mat beta = e(tau_cl)            // Store robust beta
+                mat vari = e(se_tau_cl)^2       // Store robust SE
 
+                local betarb = e(tau_bc)
+                local serb   = e(se_tau_rb)
+                
                 * Save estimation results in dataset
                 cap noi regsave using "${output}/PILA_results.dta", append      ///
                 coefmat(beta) varmat(vari) ci level(95)                         ///
                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
-                runvar, `runvar', model, "rdrobust")
+                runvar, `runvar', model, "rdrobust", coef_rb, `betarb', se_rb, `serb')
                 
 				clear results
                 
@@ -362,7 +153,7 @@ foreach cohort in $first_cohorts {
         }
     }
 }
-*/        
+     
         
 ****************************************************************************
 **# 		6. Whole age panel regressions (with plots)
@@ -378,9 +169,7 @@ foreach cohort in $first_cohorts {
     else                        local ages "55, 57"
     
     foreach outcome in $outcomes {
-        
-        local varlab: variable label `outcome'
-        
+                
         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
             local dec = 0
             local pren "10"
@@ -392,52 +181,37 @@ foreach cohort in $first_cohorts {
         
         local elig eligible_w
         local name "week"
-        foreach runvar in std_weeks std_days {
+        foreach runvar in std_weeks {
         
             clear results
         
             dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
             "Runvar: `runvar' -> (5) Whole age panel RDD"
         
+            qui sum `outcome' if poblacion_`cohort' == 1 & inrange(age, `ages') ///
+                & inrange(std_weeks, -21, -1)
+            
+            local c_mean = r(mean)
+        
             rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
-                inrange(age, `ages'), vce(cluster personabasicaid) covs(age`cohort'*)
+                inrange(age, `ages'), vce(cluster personabasicaid) covs(age`cohort'*) h(21)
 
-            mat beta = e(tau_bc)            // Store robust beta
-            mat vari = e(se_tau_rb)^2       // Store robust SE
-                
-            local HL = e(h_l)
-            local HR = e(h_r)
-
-            local B: dis %`pren'.`dec'fc e(tau_bc)
-            local B: dis strtrim("`B'")
-
-            local t = e(tau_bc) / e(se_tau_rb)
+            mat beta = e(tau_cl)            // Store robust beta
+            mat vari = e(se_tau_cl)^2       // Store robust SE
             
-            local eff_n = e(N_h_l) + e(N_h_r)
-            local N: 	dis %10.0fc `eff_n'
-            local N: 	dis strtrim("`N'")
-
-            if abs(`t') >= 1.645 {
-                local B = "`B'*"
-            }
-            if abs(`t') >= 1.96 {
-                local B = "`B'*"
-            }
-            if abs(`t') >= 2.576 {
-                local B = "`B'*"
-            }
+            local betarb = e(tau_bc)
+            local serb   = e(se_tau_rb)
+            local eff_n  = e(N_h_l) + e(N_h_r)
             
-            if missing(`"`HL'"') {
             local HL = 21
             local HR = 21
-            }
-
-
+           
             * Save estimation results in dataset
             regsave using "${output}/PILA_results_pool.dta", `replace'               ///
             coefmat(beta) varmat(vari) ci level(95)                                  ///
             addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `eff_n', ///
-            method, "rdrobust", runvar, `runvar')
+            method, "rdrobust", runvar, `runvar', c_mean, `c_mean',                  ///
+            coef_rb, `betarb', se_rb, `serb')
 
             qui reg `outcome' i.`elig'##c.`runvar' i.age if                 ///
                 poblacion_`cohort' == 1 & inrange(`runvar', -`HL', `HR') &  ///
@@ -445,57 +219,96 @@ foreach cohort in $first_cohorts {
 
             cap noi regsave 1.`elig' using "${output}/PILA_results_pool.dta",   ///
             append ci level(95) addlabel(outcome, `outcome', cohort, `cohort',  ///
-            bw, `HL', method, "reg", runvar, `runvar')
-
-            local Breg: dis %`pren'.`dec'fc _b[1.`elig']
-            local Breg: dis strtrim("`Breg'")
-
-            local t = _b[1.`elig'] / _se[1.`elig']
-
-            if abs(`t') >= 1.645 {
-                local Breg = "`Breg'*"
-            }
-            if abs(`t') >= 1.96 {
-                local Breg = "`Breg'*"
-            }
-            if abs(`t') >= 2.576 {
-                local Breg = "`Breg'*"
-            }
-
-            local HL: 	dis %7.2f `HL'
+            bw, `HL', method, "reg", runvar, `runvar', c_mean, `c_mean')
 
             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR') &         ///
             inrange(age, `ages'), vce(cluster personabasicaid) p(1)             ///
-            kernel(triangular) h(`HR' `HR') binselect(esmv) covs(age`cohort'*)  ///
-            graph_options(title(`varlab', size(medium) span)                    ///
-            subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
-            xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
-            note(`""Rdrobust {&beta}: `B'. Standard RDD {&beta}: `Breg'. Effective number of observations: `N'.""'))
+            kernel(triangular) h(`HL') binselect(esmv) covs(age`cohort'*)       ///
+            graph_options(xtitle(Distance to `name' of birth's cutoff)          ///
+            ytitle("") legend(off) ylabel(, format(%`pren'.`dec'fc)))
 
             graph export "${graphs}/latest/PILA/`outcome'_`cohort'_`runvar'_rdplot_ages.png",  ///
                 replace width(1920) height(1080)
 
-
-            binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
-            inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),              ///
-            cluster(personabasicaid) rd(0) linetype(lfit) absorb(age)           ///
-            title(`varlab', size(medium) span)                                  ///
-            subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
-            xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
-            ylabel(, format(%`pren'.`dec'fc))                                   ///
-            note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
-
-            graph export "${graphs}/latest/PILA/`outcome'_`cohort'_`runvar'_bscatter_ages.png", ///
-                replace width(1920) height(1080)
-
-            local elig eligible_d
-            local name day
             local replace append
         }
     }
 }
 
+
+
+*** Placebo
+foreach cohort in $first_cohorts {
+    
+    if "`cohort'" == "M50"      local ages "58, 59"
+    else                        local ages "53, 54"
+    
+    foreach outcome in $outcomes {
+                
+        if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {
+            local dec = 0
+            local pren "10"
+        }
+        else {
+            local dec = 3
+            local pren "07"
+        }
+        
+        local elig eligible_w
+        local name "week"
+        foreach runvar in std_weeks {
+        
+            clear results
+        
+            dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
+            "Runvar: `runvar' -> (5) Whole age panel RDD"
+        
+            rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+                inrange(age, `ages'), vce(cluster personabasicaid) covs(age`cohort'*) h(21)
+
+            mat beta = e(tau_cl)            // Store robust beta
+            mat vari = e(se_tau_cl)^2       // Store robust SE
+            
+            local betarb = e(tau_bc)
+            local serb   = e(se_tau_rb)
+            local eff_n = e(N_h_l) + e(N_h_r)
+            
+            local HL = 21
+            local HR = 21
+            
+            qui sum `outcome' if poblacion_`cohort' == 1 & inrange(age, `ages') ///
+                & inrange(std_weeks, -21, -1)
+            
+            local c_mean = r(mean)
+
+
+            * Save estimation results in dataset
+            regsave using "${output}/PILA_results_pool.dta", `replace'               ///
+            coefmat(beta) varmat(vari) ci level(95)                                  ///
+            addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `eff_n', ///
+            method, "rdrobust", runvar, `runvar', c_mean, `c_mean',                  ///
+            coef_rb, `betarb', se_rb, `serb', placebo, "yes")
+
+            qui reg `outcome' i.`elig'##c.`runvar' i.age if                 ///
+                poblacion_`cohort' == 1 & inrange(`runvar', -`HL', `HR') &  ///
+                inrange(age, `ages'), cluster(personabasicaid)
+
+            cap noi regsave 1.`elig' using "${output}/PILA_results_pool.dta",   ///
+            append ci level(95) addlabel(outcome, `outcome', cohort, `cohort',  ///
+            bw, `HL', method, "reg", runvar, `runvar', c_mean, `c_mean', placebo, "yes")
+
+            rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR') &         ///
+            inrange(age, `ages'), vce(cluster personabasicaid) p(1)             ///
+            kernel(triangular) h(`HL') binselect(esmv) covs(age`cohort'*)       ///
+            graph_options(xtitle(Distance to `name' of birth's cutoff)          ///
+            ytitle("") legend(off) ylabel(, format(%`pren'.`dec'fc)))
+
+            graph export "${graphs}/latest/PILA/placebo/`outcome'_`cohort'_`runvar'_rdplot_ages.png",  ///
+                replace width(1920) height(1080)
+
+        }
+    }
+}
         
 log close
 
