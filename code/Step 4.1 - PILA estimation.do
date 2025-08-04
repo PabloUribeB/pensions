@@ -133,6 +133,7 @@ foreach cohort in $first_cohorts {
                 
 				clear results
                 
+                /*
                 ** RDHonest estimation
                 cap noi rdhonest `outcome' `runvar' if poblacion_`cohort' == 1 & ///
                 age == `age'
@@ -148,7 +149,7 @@ foreach cohort in $first_cohorts {
                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
                 runvar, `runvar', model, "rdhonest",                            ///
                 ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
-                
+                */
             }
         }
     }
