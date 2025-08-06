@@ -27,6 +27,11 @@ cap mkdir "${graphs}/latest/RIPS/age"
 
 use "${output}\RIPS_results.dta", clear
 
+** Might be temporary, fix eventually
+append using "${output}/RIPS_results_rdhonest.dta", gen(o)
+drop if o == 1 & (model == "rdrobust" | runvar == "std_days")
+drop o
+
 encode outcome, gen(en_outcome)
 label def labout 1 "Cardiovascular" 2 "Chronic disease"                     ///
 3 "Consultation with psychologist" 4 "Probability of consultation"          ///
@@ -42,8 +47,8 @@ label val en_outcome labout
 **#              2. Plot age-level results
 ****************************************************************************
 
-drop if (cohort == "F55" & inlist(age, 52, 66)) |       ///
-        (cohort == "M50" & inlist(age, 57, 71))
+drop if (cohort == "F55" & inlist(age, 52, 66)) |                   ///
+        (cohort == "M50" & inlist(age, 57, 71)) | mi(coef) | coef == 0
 
 
 levelsof outcome, local(outcomes)

@@ -98,7 +98,7 @@ foreach cohort in $first_cohorts {
 ****************************************************************************
 **# 		5. RDD by age
 ****************************************************************************
-
+local replace replace
 foreach cohort in $first_cohorts {
     
     qui sum age if poblacion_`cohort' == 1
@@ -126,7 +126,7 @@ foreach cohort in $first_cohorts {
                 local serb   = e(se_tau_rb)
                 
                 * Save estimation results in dataset
-                cap noi regsave using "${output}/PILA_results.dta", append      ///
+                cap noi regsave using "${output}/PILA_results.dta", `replace'      ///
                 coefmat(beta) varmat(vari) ci level(95)                         ///
                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
                 runvar, `runvar', model, "rdrobust", coef_rb, `betarb', se_rb, `serb')
@@ -150,6 +150,7 @@ foreach cohort in $first_cohorts {
                 runvar, `runvar', model, "rdhonest",                            ///
                 ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
                 */
+                local replace append
             }
         }
     }

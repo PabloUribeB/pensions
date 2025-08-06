@@ -29,8 +29,14 @@ cap mkdir "${graphs}/latest/PILA/time"
 
 use "${output}/PILA_results.dta", clear
 
-gen date = ym(year, month)
-format date %tm
+** Might be temporary, fix eventually
+append using "${output}/PILA_results_rdhonest.dta", gen(o)
+drop if o == 1 & (model == "rdrobust" | !mi(year) | runvar == "std_days")
+drop if mi(coef_rb) & o == 0
+drop o year month
+
+*gen date = ym(year, month)
+*format date %tm
 
 encode outcome, gen(en_outcome)
 label def labout 1 "Contributes to any pension fund"                ///
@@ -44,7 +50,7 @@ label val en_outcome labout
 ****************************************************************************
 **#              2. Plot PILA-year-level results
 ****************************************************************************
-
+/*
 levelsof outcome, local(outcomes)
 local outcome = 1
 foreach variable in `outcomes'{
@@ -83,7 +89,7 @@ foreach variable in `outcomes'{
     local ++outcome
 }
 
-
+*/
 
 ****************************************************************************
 **#              3. Plot age-level results
@@ -109,13 +115,13 @@ foreach variable in `outcomes'{
     
     foreach cohort in M50 F55{
         
-        qui sum age if cohort == "`cohort'"
-        scalar min = r(min)
-        scalar max = r(max)
-        
-        foreach runvar in std_weeks std_days {
+        foreach runvar in std_weeks {
             
             foreach model in rdrobust rdhonest {
+                
+                qui sum age if cohort == "`cohort'" & model == "`model'"
+                scalar min = r(min)
+                scalar max = r(max)
                 
                 tw (rspike ci_lower ci_upper age, lcolor(ebblue) lp(solid))         ///
                 (scatter coef age, mcolor(ebblue))                                  ///
@@ -148,14 +154,14 @@ encode outcome, gen(en_outcome)
 
 foreach cohort in M50 F55 {
 
-    foreach runvar in std_days std_weeks {
+    foreach runvar in std_weeks {
         
         tw (bar coef en_outcome, barwidth(0.7))                                 ///
         (rcap ci_lower ci_upper en_outcome)                                     ///
         if cohort == "`cohort'" & outcome != "pila_salario_r_0" &               ///
         runvar == "`runvar'",                                                   ///
         legend(position(bottom) rows(1) order(1 "Point estimate"                ///
-        2 "95% confidence interval"))                                           ///
+        2 "95% confidence interval")) ylabel(,format(%010.3fc))                 ///
         yline(0, lpattern(solid) lcolor(black)) xtitle(Variable)                ///
         subtitle(Cohort `cohort'; Runvar: `runvar')                             ///
         xlabel(1 `""Contributes to" "any pension fund""'                        ///
@@ -179,8 +185,8 @@ tw (bar coef counter, barwidth(0.7))                                        ///
 (rcap ci_lower ci_upper counter),                                           ///
 legend(position(bottom) rows(1) order(1 "Point estimate"                    ///
 2 "95% confidence interval"))                                               ///
-yline(0, lpattern(solid) lcolor(black)) xline(2.5, lpattern(solid))         ///
-xlabel(1 "Women (days)" 2 "Men (days)" 3 "Women (weeks)" 4 "Men (weeks)")   ///
+yline(0, lpattern(solid) lcolor(black))                                     ///
+xlabel(1 "Women (weeks)" 2 "Men (weeks)")                                   ///
 ylabel(#8, format(%10.0fc)) xtitle("") ytitle(Real monthly wage in COP)
 
 graph export "${graphs}/latest/PILA/DiffD_wages.png", replace
