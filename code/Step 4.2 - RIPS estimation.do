@@ -185,6 +185,8 @@ foreach cohort in $first_cohorts {
 tab age if poblacion_M50 == 1, gen(ageM50)
 tab age if poblacion_F55 == 1, gen(ageF55)
 
+drop if std_weeks == 0
+
 local replace replace
 foreach restriction in 0 1 2 {
     
