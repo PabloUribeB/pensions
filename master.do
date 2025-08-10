@@ -51,6 +51,7 @@ if inlist("`c(username)'", "Pablo Uribe", "pu42") {
 else if "`c(username)'" == "cpossosu" {
 
     global root	 "\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions"
+
     local  run = "banrep"
 
 }
