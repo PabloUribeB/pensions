@@ -1,4 +1,4 @@
-* 00000013
+* 00000019
 *! version 1.0.0
 * Do not erase or edit this file
 * It is used by Stata to track the ado and help
@@ -626,4 +626,186 @@ f r\reghdfe3.sthlp
 f r\reghdfe5.sthlp
 f r\reghdfe.mata
 f r\reghdfe_programming.sthlp
+e
+S http://fmwww.bc.edu/repec/bocode/a
+N addplot.pkg
+D 24 Dec 2024
+U 14
+d 'ADDPLOT': module to add twoway plot objects to an existing twoway graph
+d 
+d   addplot adds twoway plot objects to an existing twoway graph.
+d This is useful if you want to add additional objects such as
+d titles or extra data points to a twoway graph after it has been
+d created. Most of what addplot can do, can also be done by
+d rerunning the original graph command including additional options
+d or plot statements. addplot, however, might be useful if you have
+d to modify a graph for which you cannot rerun the original
+d command, for example, because you only have the graph file but
+d not the data that were used to create the graph. Furthermore,
+d addplot can do certain things that would be difficult to achieve
+d in a single graph command (e.g. customizing individual subgraphs
+d within a by-graph). addplot also provides a substitute for some
+d of the functionality of the graph editor.
+d 
+d KW: graphics
+d KW: graph editing
+d 
+d Requires: Stata version 9
+d 
+d Distribution-Date: 20210818
+d 
+d Author: Ben Jann, University of Bern
+d Support: email jann@@soz.unibe.ch
+d 
+f a\addplot.ado
+f a\addplot.hlp
+e
+S http://fmwww.bc.edu/repec/bocode/s
+N statapush.pkg
+D 19 Feb 2025
+U 15
+d 'STATAPUSH': module to send push notifications to mobile device
+d 
+d  statapush is a simple Stata module for sending push
+d notifications. It is designed to be used when you have an
+d analysis that will take a long time to process; the module will
+d let you know your code has finished running (or if an error is
+d produced) via an alert on your mobile device. It was inspired by
+d the R package pushoverr.
+d 
+d KW: push notifications
+d KW: batch
+d 
+d Requires: Stata version 12.1 and curl (preinstalled on Mac OSX, Linux)
+d 
+d Distribution-Date: 20160612
+d 
+d Author: William L. Schpero, Yale University
+d Support: email william.schpero@@yale.edu
+d 
+d Author: Vikram Jambulapati, MIT
+d Support: email vikjam@@mit.edu
+d 
+f s\statapush.ado
+f s\statapushpref.ado
+f s\statapushconfig.ado
+f s\statapush.sthlp
+e
+S https://raw.githubusercontent.com/tbarmstr/RDHonest-vStata/master
+N rdhonest.pkg
+D  2 Jun 2025
+U 16
+d RDHONEST: Honest and nearly optimal confidence intervals in RD designs based on local linear regression
+d 
+d Authors:
+d - Timothy Armstrong. University of Southern California
+d - Michal Kolesar. Princeton University
+d - Yugen Chen. University of Southern California
+d - Sai Zhang. University of Southern California
+d - Kwok-Hao Lee. Princeton University
+d 
+d Support:
+d - https://github.com/tbarmstr/RDHonest-vStata/issues
+d 
+d For R version of this package, see :
+d https://github.com/kolesarm/RDHonest
+d 
+d KW: regression discontinuity
+d KW: nonparametric inference
+d KW: finite-sample inference
+d KW: efficiency bounds
+d 
+d Requires: Stata version 14
+d 
+d Distribution-Date: 20220815
+d 
+f r\rdhonest.ado
+f r\rdhonest.sthlp
+e
+S http://fmwww.bc.edu/repec/bocode/m
+N mdesc.pkg
+D 26 Jun 2025
+U 17
+d 'MDESC': module to tabulate prevalence of missing values
+d 
+d  Produces a table with the number of missing values, total number
+d of cases, and percent missing for each variable in varlist. mdesc
+d works with both numeric and character variables.
+d 
+d KW: missing values
+d KW: data management
+d 
+d Requires: Stata version 10
+d 
+d Distribution-Date: 20110825
+d 
+d Author: Rose Anne Medeiros, Department of Sociology, Rice University
+d Support: email rose.a.medeiros@@rice.edu
+d 
+d Author: Dan Blanchette, The Carolina Population Center, UNC-CH
+d Support: email dan_blanchette@@unc.edu
+d 
+f m\mdesc.ado
+f m\mdesc.sthlp
+e
+S http://fmwww.bc.edu/repec/bocode/t
+N texdoc.pkg
+D 17 Jul 2025
+U 18
+d 'TEXDOC': module to create a LaTeX document including Stata output
+d 
+d  texdoc provides tools to create a LaTeX document  from within
+d Stata in a weaving fashion. This is especially  useful if you
+d want to produce a LaTeX document that contains  Stata output,
+d such as, e.g., a Stata Journal article or  solutions to
+d statistics homework assignments.
+d 
+d KW: LaTeX
+d KW: weaving
+d KW: Stata output
+d KW: Stata log
+d KW: reproducible research
+d 
+d Requires: Stata version 10 and sjlatex from http://www.stata-journal.com/production
+d 
+d Distribution-Date: 20180418
+d 
+d Author: Ben Jann, University of Bern
+d Support: email jann@@soz.unibe.ch
+d 
+f t\texdoc.ado
+f t\texdoc.sthlp
+f t\tex.ado
+e
+S http://fmwww.bc.edu/repec/bocode/f
+N fre.pkg
+D  6 Aug 2025
+U 19
+d 'FRE': module to display one-way frequency table
+d 
+d   fre displays, for each specified variable, a univariate
+d frequency table containing counts, percent, and cumulative
+d percent. Variables may be string or numeric. Labels, in full
+d length, and values are printed. By default, fre only tabulates
+d the smallest and largest 10 values (along with all missing
+d values), but this can be changed. Furthermore,  values with zero
+d observed frequency may be included in the  tables. The default
+d for fre is to display the frequency  tables in the results
+d window. Alternatively, the tables may be written to a file on
+d disk, either tab-delimited or  LaTeX-formatted.
+d 
+d KW: data management
+d KW: frequencies
+d KW: frequency table
+d KW: tabulation
+d 
+d Requires: Stata version 9.2
+d 
+d Distribution-Date: 20210531
+d 
+d Author: Ben Jann, University of Bern
+d Support: email jann@@soz.unibe.ch
+d 
+f f\fre.ado
+f f\fre.hlp
 e

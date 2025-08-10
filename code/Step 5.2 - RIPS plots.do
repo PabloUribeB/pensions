@@ -1,85 +1,156 @@
 /*************************************************************************
  *************************************************************************			       	
-				RIPS results plots
-			 
+               RIPS results plots
+
 1) Created by: Pablo Uribe
-			   DIME - World Bank
-			   puribebotero@worldbank.org
-				
-2) Date: May 21, 2024
+               Yale University
+               p.uribe@yale.edu
+
+2) Date: July 9, 2025
 
 3) Objective: Plot the health results
-
-4) Output:	- `variable'_`cohort'_`bw'_age.png
 *************************************************************************
-*************************************************************************/	
+*************************************************************************/		
 clear all
 
 ****************************************************************************
 *		Global directory, parameters and assumptions:
 ****************************************************************************
 
-global cohorts M50 M54 F55 F59
-
 set graphics off
-
+set scheme white_tableau
+cap mkdir "${graphs}/latest/RIPS/age"
 
 ****************************************************************************
-**#                 1. Plot results
+**#              1. Call data and set labels
 ****************************************************************************
 
 use "${output}\RIPS_results.dta", clear
 
+** Might be temporary, fix eventually
+append using "${output}/RIPS_results_rdhonest.dta", gen(o)
+drop if o == 1 & (model == "rdrobust" | runvar == "std_days")
+drop o
+
 encode outcome, gen(en_outcome)
-label def labout 1 "Cardiovascular" 2 "Chronic disease" 					///
-3 "Consultation with psychologist" 4 "Probability of consultation" 			///
-5 "Mental diagnosis" 6 "Stress" 7 "Probability of hospitalization" 			///
-8 "Infarct" 9 "Number of hospitalizations" 	10 "Number of consultations" 	///
-11 "Number of procedures" 12 "Number of services" 13 "Number of ER visits" 	///
-14 "Multi-morbidity index" 15 "Probability of procedures" 					///
+label def labout 1 "Cardiovascular" 2 "Chronic disease"                     ///
+3 "Consultation with psychologist" 4 "Probability of consultation"          ///
+5 "Mental diagnosis" 6 "Stress" 7 "Probability of hospitalization"          ///
+8 "Infarct" 9 "Number of hospitalizations" 10 "Number of consultations"     ///
+11 "Number of procedures" 12 "Number of services" 13 "Number of ER visits"  ///
+14 "Multi-morbidity index" 15 "Probability of procedures"                   ///
 16 "Probability of health service" 17 "Probability of ER visit"
 
 label val en_outcome labout
 
-gen coef_plus = coef + control
+****************************************************************************
+**#              2. Plot age-level results
+****************************************************************************
 
-gen li_plus = ci_lower + control
-gen hi_plus = ci_upper + control
+drop if (cohort == "F55" & inlist(age, 52, 66)) |                   ///
+        (cohort == "M50" & inlist(age, 57, 71)) | mi(coef) | coef == 0
+
 
 levelsof outcome, local(outcomes)
 local outcome = 1
 foreach variable in `outcomes'{
-	
-	if inrange(`outcome', 9, 13){
-		local dec = 2
-	}
-	else{
-		local dec = 3
-	}
-	
-	local vallab : label (en_outcome) `outcome'
-	
-	foreach cohort of global cohorts{
-		
-		foreach bw in 11 22{
-			qui sum age if cohort == "`cohort'"
-			local min = r(min)
-			local max = r(max)
-			
-			tw (connected control age, color(gray) lpattern(dash)) 				///
-			(rcap li_plus hi_plus age, lcolor(ebblue) lp(solid)) 				///
-			(connected coef_plus age, color(ebblue)) 							///
-			if (cohort == "`cohort'" & outcome == "`variable'" & bw == `bw'),	///
-			legend(position(bottom) rows(1) order(3 "Mean + Point estimate" 	///
-			1 "Control's mean" 2 "95% Confidence interval")) 					///
-			ytitle(Point estimate) xlabel(`min'(1)`max') xtitle(Age)			///
-			ylabel(#10, format(%010.`dec'fc) labs(vsmall)) 						///
-			title(`vallab', size(medium)) 										///
-			subtitle(Cohort: `cohort'; Bandwidth: `bw' weeks, size(medsmall))
-			
-			graph export "${graphs}\age\\`variable'_`cohort'_`bw'_age.png", replace
-		}
-	}
-	
-	local ++outcome
+
+    local vallab : label (en_outcome) `outcome'
+    scalar cut = 59.5
+    
+    foreach cohort in M50 F55{
+            
+        foreach model in rdrobust rdhonest {
+            
+            local ranges
+            
+            qui sum age if cohort == "`cohort'" & outcome == "`variable'"
+            scalar min = r(min)
+            scalar max = r(max)
+            
+            qui sum ci_upper if cohort == "`cohort'" & outcome == "`variable'"
+            
+            if substr("`variable'", 1, 3) == "nro" & r(max) < 0 {
+                
+                local ymax = 1 
+                qui sum ci_lower if cohort == "`cohort'" & outcome == "`variable'"
+                local ymin = round(r(min))
+                local ranges "yscale(range(`ymin' `ymax'))"
+                
+            }
+            
+            else if substr("`variable'", 1, 3) != "nro" & r(max) < 0 {
+                
+                local ymax = 0.05 
+                qui sum ci_lower if cohort == "`cohort'" & outcome == "`variable'"
+                local ymin = round(r(min), .01)
+                local ranges "yscale(range(`ymin' `ymax'))"
+                
+            }
+            
+            tw (rspike ci_lower ci_upper age, lcolor(ebblue) lp(solid))         ///
+            (scatter coef age, mcolor(ebblue))                                  ///
+            if (cohort == "`cohort'" & outcome == "`variable'" &                ///
+            model == "`model'" & !mi(age)),                                     ///
+            legend(position(bottom) rows(1) order(2 "Point estimate"            ///
+            1 "95% confidence interval")) xline(`=cut', lcolor(gs7))            ///
+            yline(0, lp(solid)) ytitle(`vallab')                                ///
+            xlabel(`=min'(1)`=max') xtitle(Age)                                 ///
+            ylabel(#10, format(%010.3fc) labs(vsmall)) `ranges'                 ///
+            subtitle(Cohort: `cohort', size(medsmall))
+    
+            graph export "${graphs}/latest/RIPS/age/`variable'_`cohort'_`model'.png", replace
+    
+        }
+        scalar cut = 54.5
+    }
+    local ++outcome
 }
+
+
+****************************************************************************
+**#              3. Difference-in-discontinuities plots
+****************************************************************************
+
+use "${output}/RIPS_results_diffdisc.dta", clear
+
+encode outcome, gen(en_outcome)
+
+gen extensive = (substr(outcome, 1, 3) != "nro")
+
+bysort cohort extensive: gen counter = _n
+
+foreach cohort in M50 F55 {
+        
+    * Extensive margin
+    tw (bar coef counter, barwidth(0.7))                                    ///
+    (rcap ci_lower ci_upper counter)                                        ///
+    if cohort == "`cohort'" & substr(outcome, 1, 3) != "nro",               ///
+    legend(position(bottom) rows(1) order(1 "Point estimate"                ///
+    2 "95% confidence interval"))                                           ///
+    yline(0, lpattern(solid) lcolor(black)) xtitle(Variable)                ///
+    subtitle(Cohort `cohort')                                               ///
+    xlabel(1 "Cardiovascular" 2 `""Chronic" "disease""'                     ///
+    3 `""Consultation" "with" "psychologist""'                                ///
+    4 `""Probability" "of consultation""' 5 `""Mental" "diagnosis""'        ///
+    6 "Stress" 7 `""Probability" "of hospitalization""' 8 "Infarct"         ///
+    9 `""Probability" "of procedures""' 10  `""Probability" "of ER visit""', labs(vsmall))
+    
+    graph export "${graphs}/latest/RIPS/DiffD_`cohort'_ext.png", replace
+    
+    
+    * Intensive margin
+    tw (bar coef counter, barwidth(0.7))                                 ///
+    (rcap ci_lower ci_upper counter)                                     ///
+    if cohort == "`cohort'" & substr(outcome, 1, 3) == "nro",               ///
+    legend(position(bottom) rows(1) order(1 "Point estimate"                ///
+    2 "95% confidence interval"))                                           ///
+    yline(0, lpattern(solid) lcolor(black)) xtitle(Variable)                ///
+    subtitle(Cohort `cohort')                                               ///
+    xlabel(1 "Hospitalizations" 2 "Consultations" 3 "Procedures"            ///
+    4 "Services" 5 "ER visits")
+    
+    graph export "${graphs}/latest/RIPS/DiffD_`cohort'_int.png", replace
+
+}
+

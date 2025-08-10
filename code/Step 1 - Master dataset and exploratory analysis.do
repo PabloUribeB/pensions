@@ -41,7 +41,7 @@ gen poblacion_F55 = 1 if sexomode == 0 & inrange(fechantomode,      ///
 gen poblacion_F59 = 1 if sexomode == 0 & inrange(fechantomode,      ///
                          date("01/01/1957", "MDY"), date("12/31/1961", "MDY"))
 
-keep if !mi(poblacion_M50) | !mi(poblacion_F55)
+keep if !mi(poblacion_M50) | !mi(poblacion_M54) | !mi(poblacion_F55) | !mi(poblacion_F59)
 
 destring yearmode, replace
 
@@ -55,23 +55,26 @@ gen weekday = dow(fechantomode)
 gen month   = month(fechantomode)
 gen week    = week(fechantomode)
 
-/* Days from cutoff point for each group
-gen std_days = datediff(-3441,fechantomode,"d") if poblacion == "M50"
-replace std_days = datediff(-2101,fechantomode,"d") if poblacion == "M54"
-replace std_days = datediff(-1615,fechantomode,"d") if poblacion == "F55"
-replace std_days = datediff(-275,fechantomode,"d") if poblacion == "F59"
-*/
 
+* Cutoff points
 gen     corte = date("07/31/1950", "MDY") if poblacion_M50 == 1
 replace corte = date("12/31/1954", "MDY") if poblacion_M54 == 1
 replace corte = date("07/31/1955", "MDY") if poblacion_F55 == 1
 replace corte = date("12/31/1959", "MDY") if poblacion_F59 == 1
+
+
+* Days from cutoff point for each group
+gen     std_days = datediff(corte, fechantomode, "d") if poblacion_M50 == 1
+replace std_days = datediff(corte, fechantomode, "d") if poblacion_M54 == 1
+replace std_days = datediff(corte, fechantomode, "d") if poblacion_F55 == 1
+replace std_days = datediff(corte, fechantomode, "d") if poblacion_F59 == 1
 
 gen fechaweek  = wofd(fechantomode)
 format %td corte
 gen corte_week = wofd(corte)
 
 gen std_weeks = fechaweek - corte_week
+
 
 compress
 save "${data}\Master_sample.dta", replace

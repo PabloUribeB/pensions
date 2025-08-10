@@ -1,0 +1,367 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Logs/Summary stats.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}18 Jul 2025, 13:12:41
+{txt}
+{com}. 
+{txt}end of do-file
+
+{com}. do "C:\Users\cpossosu\AppData\Local\Temp\STD2610_000000.tmp"
+{txt}
+{com}. 
+. ** PILA
+. use if (poblacion_M50 == 1 | poblacion_F55 == 1) using "${c -(}data{c )-}/Estimation_sample_PILA.dta", clear
+{txt}
+{com}. 
+. collapse (mean) pila_salario_r_0 ibc_pens (max) pension_ibc   ///
+>          (firstnm) poblacion*, by(personabasicaid)
+{res}{txt}
+{com}. 
+. rename (pila_salario_r_0 ibc_pens pension_ibc) (wage ibc pension)
+{res}{txt}
+{com}. 
+. local coh "M"
+{txt}
+{com}. foreach cohort in M50 F55 {c -(}
+{txt}  2{com}.     
+.     foreach outcome in wage ibc pension {c -(}
+{txt}  3{com}.         
+.         if "`outcome'" == "pension" {c -(}
+{txt}  4{com}.             local fmt "3"
+{txt}  5{com}.             local add "*100"
+{txt}  6{com}.             local rounded "round(2)"
+{txt}  7{com}.         {c )-}
+{txt}  8{com}.         else{c -(}
+{txt}  9{com}.             local fmt "0"
+{txt} 10{com}.             local add ""
+{txt} 11{com}.             local rounded ""
+{txt} 12{com}.         {c )-}
+{txt} 13{com}.         
+.         sum `outcome' if poblacion_`cohort' == 1
+{txt} 14{com}.         local m_`outcome'_`cohort'   : di %13.`fmt'fc r(mean)
+{txt} 15{com}.         local sd_`outcome'_`cohort'  : di %13.`fmt'fc r(sd)
+{txt} 16{com}.         local min_`outcome'_`cohort' : di %13.`fmt'fc r(min)
+{txt} 17{com}.         local max_`outcome'_`cohort' : di %13.`fmt'fc r(max)
+{txt} 18{com}.         
+.         local `outcome'_`cohort': di %10.`fmt'fc r(mean)`add'
+{txt} 19{com}. 
+.         texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(`outcome'`coh')  ///
+>         result(``outcome'_`cohort'') append `rounded'
+{txt} 20{com}.     {c )-}
+{txt} 21{com}.     local coh "F"
+{txt} 22{com}. {c )-}
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 8}wage {c |}{res}    165,312    971475.7     2542931          0   2.91e+08
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}ibc {c |}{res}    165,304     1100660     1646118          0   4.35e+07
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}pension {c |}{res}    165,312    .8132985    .3896729          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 8}wage {c |}{res}    160,738     1039433     1943726          0   7.18e+07
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}ibc {c |}{res}    160,738     1204826     1534788          0   5.13e+07
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}pension {c |}{res}    160,738    .7345929    .4415511          0          1
+{txt}
+{com}. 
+. 
+. ** RIPS
+. use if (poblacion_M50 == 1 | poblacion_F55 == 1) using              ///
+>        "${c -(}data{c )-}/Estimation_sample_RIPS.dta", clear
+{txt}
+{com}. 
+. rename (nro_serviciosHospitalizacion nro_serviciosurgencias             ///
+>     nro_serviciosprocedimientos nro_serviciosconsultas)                     ///
+>     (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
+{res}{txt}
+{com}.     
+. egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias         ///
+>     nro_procedimientos nro_consultas)
+{txt}
+{com}.        
+. collapse (sum) nro* (max) $extensive   ///
+>          (firstnm) poblacion*, by(personabasicaid)
+{res}{txt}
+{com}. 
+. rename (nro_servicios nro_consultas nro_procedimientos nro_urgencias    ///
+>         nro_Hospitalizacion) (servicios consultas proced urgencias hospits)
+{res}{txt}
+{com}.   
+. local coh "M"
+{txt}
+{com}. foreach cohort in M50 F55 {c -(}
+{txt}  2{com}.     
+.     foreach outcome in servicios consultas proced urgencias hospits {c -(}
+{txt}  3{com}.         
+.         if inlist("`outcome'", "urgencias", "hospits") {c -(}
+{txt}  4{com}.             local rounded "round(2)"
+{txt}  5{com}.         {c )-}
+{txt}  6{com}.         else{c -(}
+{txt}  7{com}.             local rounded "round(0)"
+{txt}  8{com}.         {c )-}
+{txt}  9{com}.         
+.         sum `outcome' if poblacion_`cohort' == 1
+{txt} 10{com}.         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
+{txt} 11{com}.         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
+{txt} 12{com}.         local min_`outcome'_`cohort' : di %10.3fc r(min)
+{txt} 13{com}.         local max_`outcome'_`cohort' : di %10.3fc r(max)
+{txt} 14{com}.         
+.         local `outcome'_`cohort' = strtrim("`: di r(mean)'")
+{txt} 15{com}.     
+.         texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(`outcome'`coh')  ///
+>         result(``outcome'_`cohort'') append `rounded'
+{txt} 16{com}.     {c )-}
+{txt} 17{com}.     local coh "F"
+{txt} 18{com}. {c )-}
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 3}servicios {c |}{res}    158,648    118.2084     126.554          1       4189
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 3}consultas {c |}{res}    158,648     40.5234    40.91812          0       1554
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 6}proced {c |}{res}    158,648    75.79748    95.01357          0       3106
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 3}urgencias {c |}{res}    158,648    1.302853    2.659625          0        102
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}hospits {c |}{res}    158,648    .5846654    1.572571          0         87
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 3}servicios {c |}{res}    156,460    139.9723    127.7673          1       2517
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 3}consultas {c |}{res}    156,460    52.61601    46.66012          0       1893
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 6}proced {c |}{res}    156,460    85.66452    90.15212          0       2111
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 3}urgencias {c |}{res}    156,460    1.271597     2.72467          0        197
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}hospits {c |}{res}    156,460    .4202032    1.385312          0         75
+{txt}
+{com}. 
+. 
+. local coh "M"
+{txt}
+{com}. foreach cohort in M50 F55 {c -(}
+{txt}  2{com}.     
+.     foreach outcome in $extensive {c -(}
+{txt}  3{com}.         
+.         sum `outcome' if poblacion_`cohort' == 1
+{txt}  4{com}.         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
+{txt}  5{com}.         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
+{txt}  6{com}.         local min_`outcome'_`cohort' : di %10.3fc r(min)
+{txt}  7{com}.         local max_`outcome'_`cohort' : di %10.3fc r(max)
+{txt}  8{com}.         
+.         local `outcome'_`cohort' = r(mean)
+{txt}  9{com}. 
+.         texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(`outcome'`coh')  ///
+>         result(``outcome'_`cohort'') append round(2)
+{txt} 10{com}.     {c )-}
+{txt} 11{com}.     local coh "F"
+{txt} 12{com}. {c )-}
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}service {c |}{res}    158,648           1           0          1          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 6}consul {c |}{res}    158,648    .9876015    .1106565          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 7}proce {c |}{res}    158,648     .969322    .1724443          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}urg {c |}{res}    158,648    .4568542    .4981365          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 8}hosp {c |}{res}    158,648    .2791967    .4486058          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cons_psico {c |}{res}    158,648    .1356462    .3424136          0          1
+{txt}"\cons_psicoM" may not be a valid LaTeX macro name
+
+    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 6}estres {c |}{res}    158,648     .102718    .3035911          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+cardiovasc~r {c |}{res}    158,648    .0597927    .2371032          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}infarct {c |}{res}    158,648    .1471749    .3542813          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}chronic {c |}{res}    158,648    .8423365    .3644263          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 1}diag_mental {c |}{res}    158,648    .1662422    .3722991          0          1
+{txt}"\diag_mentalM" may not be a valid LaTeX macro name
+
+    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}service {c |}{res}    156,460           1           0          1          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 6}consul {c |}{res}    156,460    .9914803    .0919087          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 7}proce {c |}{res}    156,460    .9846287     .123025          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}urg {c |}{res}    156,460    .4436405     .496815          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 8}hosp {c |}{res}    156,460    .2068516    .4050495          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cons_psico {c |}{res}    156,460    .1751438    .3800913          0          1
+{txt}"\cons_psicoF" may not be a valid LaTeX macro name
+
+    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 6}estres {c |}{res}    156,460    .2405855    .4274404          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+cardiovasc~r {c |}{res}    156,460    .0246389    .1550225          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}infarct {c |}{res}    156,460     .074396    .2624151          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 5}chronic {c |}{res}    156,460    .9124888    .2825836          0          1
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 1}diag_mental {c |}{res}    156,460    .2749073     .446469          0          1
+{txt}"\diag_mentalF" may not be a valid LaTeX macro name
+
+{com}. 
+. gen wage    = .
+{txt}(315,108 missing values generated)
+
+{com}. gen ibc     = .
+{txt}(315,108 missing values generated)
+
+{com}. gen pension = .
+{txt}(315,108 missing values generated)
+
+{com}. 
+. labvars $all_outcomes                                                            ///
+>     "Monthly real wage" "Pension contribution" "Pension proxy"                   ///
+>     "Number of services" "Number of consultations" "Number of procedures"        ///
+>     "Number of ER visits" "Number of hospitalizations" "Any service" "Consulted" ///
+>     "Procedures" "Visited ER" "Hospitalized" "Mental health consultation"        ///
+>     "Stress" "Cardiovascular" "Infarct" "Chronic disease" "Mental health diagnosis"
+{txt}
+{com}. 
+. * LaTex table
+. texdoc init "${c -(}tables{c )-}/summary_stats.tex", replace force
+{res}{txt}(texdoc output file is \\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex)
+{res}{txt}
+{com}. 
+. tex \begin{c -(}tabular{c )-}{c -(}lcccccccc{c )-}
+{res}{txt}
+{com}. tex \toprule
+{res}{txt}
+{com}. 
+. tex & \multicolumn{c -(}4{c )-}{c -(}c{c )-}{c -(}M50{c )-} & \multicolumn{c -(}4{c )-}{c -(}c{c )-}{c -(}F55{c )-} \\
+{res}{txt}
+{com}. tex \cmidrule(l){c -(}2-5{c )-} \cmidrule(l){c -(}6-9{c )-}
+{res}{txt}
+{com}. 
+. tex & Mean & SD & Min & Max & Mean & SD & Min & Max \\
+{res}{txt}
+{com}. tex \midrule
+{res}{txt}
+{com}. 
+. 
+. 
+. local i = 1
+{txt}
+{com}. local j = 1
+{txt}
+{com}. foreach var of global all_outcomes {c -(}
+{txt}  2{com}.     
+.     local w: variable label `var'
+{txt}  3{com}.     
+.     if `i' == 1       local panel "tex \multicolumn{c -(}9{c )-}{c -(}l{c )-}{c -(}\textit{c -(}Panel A: Labor market{c )-}{c )-} \\"
+{txt}  4{com}.     else if `i' == 4  local panel "tex \multicolumn{c -(}9{c )-}{c -(}l{c )-}{c -(}\textit{c -(}Panel B: Health{c )-}{c )-} \\"
+{txt}  5{com}.     else              local panel
+{txt}  6{com}. 
+.     if `j' == 3       local space "\addlinespace"
+{txt}  7{com}.     else              local space
+{txt}  8{com}.     
+.     
+.     `panel'
+{txt}  9{com}.     tex `w' & `m_`var'_M50' & `sd_`var'_M50' & `min_`var'_M50' & `max_`var'_M50' & `m_`var'_F55' & `sd_`var'_F55' & `min_`var'_F55' & `max_`var'_F55' \\ `space'
+{txt} 10{com}. 
+.     local ++i
+{txt} 11{com}.     local ++j
+{txt} 12{com}. {c )-}
+{res}{txt}
+{com}. 
+. tex \bottomrule
+{res}{txt}
+{com}. tex \end{c -(}tabular{c )-}
+{res}{txt}
+{com}. texdoc close
+{txt}(texdoc output written to {browse `"\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex"':\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex})
+{res}{txt}
+{com}. 
+. 
+. 
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Logs/Summary stats.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}18 Jul 2025, 13:14:09
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

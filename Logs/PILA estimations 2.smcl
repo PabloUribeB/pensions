@@ -1,0 +1,1622 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}Z:\Christian Posso\_banrep_research\proyectos\pensions\Logs\PILA estimations 2.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}10 Jun 2025, 15:59:54
+{txt}
+{com}. 
+. 
+. ****************************************************************************
+. **#             1. Prepare data
+. ****************************************************************************
+. 
+. local replace replace
+{txt}
+{com}. 
+.         
+. use "${c -(}data{c )-}\mensual_PILA", clear
+{txt}
+{com}. 
+. * Process raw data to create relevant variables
+. quietly{c -(}
+{txt}
+{com}. 
+. /*
+> ****************************************************************************
+> **#             2. Year by year RDD
+> ****************************************************************************
+> 
+> forval year = 2009/2020 {c -(} // Loop through all years
+> 
+>     * First cohorts (M50 & F55) retire in 2010, so only one year before and after
+>     if inrange(`year', 2009, 2011) {c -(}
+>         
+>         foreach cohort in $first_cohorts {c -(}
+>         
+>             foreach outcome in $outcomes {c -(}
+>                 
+>                 forval month = 1/12 {c -(}
+>                     
+>                     foreach runvar in std_weeks std_days {c -(}
+>                         
+>                     dis as err "Cohort: `cohort'; Outcome: `outcome'; Date: "        ///
+>                     "`year'-`month'; Runvar: `runvar' -> (1) Year by year RDD"
+>                     
+>                     cap mat drop beta vari
+>                     
+>                     ** RDRobust estimation
+>                     cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & ///
+>                     fecha_pila == ym(`year',`month'), vce(hc3)
+> 
+>                     cap noi mat beta = e(tau_bc)            // Store robust beta
+>                     cap noi mat vari = e(se_tau_rb)^2       // Store robust SE
+> 
+>                     * Save estimation results in dataset
+>                     cap noi regsave using "${c -(}output{c )-}/PILA_results.dta", `replace'   ///
+>                     coefmat(beta) varmat(vari) ci level(95)                         ///
+>                     addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
+>                     month, `month', runvar, `runvar', model, "rdrobust")
+>                     
+>                     ** RDHonest estimation
+>                     cap noi rdhonest `outcome' `runvar' if poblacion_`cohort' == 1 & ///
+>                     fecha_pila == ym(`year',`month')
+>                     
+>                     cap noi mat beta = e(est)            // Store robust beta
+>                     cap noi mat vari = e(se)^2           // Store robust SE
+>                     local li95       = e(TCiL)
+>                     local ui95       = e(TCiU)
+>                     local M          = e(M)
+>                     
+>                     cap noi regsave using "${c -(}output{c )-}/PILA_results.dta", append      ///
+>                     coefmat(beta) varmat(vari)                                      ///
+>                     addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
+>                     month, `month', runvar, `runvar', model, "rdhonest",            ///
+>                     ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
+>                     
+>                     
+>                     
+>                     local replace append
+>                     {c )-}
+>                 {c )-}
+>             {c )-}
+>         {c )-}
+>     {c )-}
+>         
+>     * Second cohorts (M54 & F59) retire in Dec. 2014, so 6 years pre and 6 post.
+>     * This loop happens for all years in the loop (2009/2020)
+>     /*foreach cohort in $second_cohorts{c -(}
+>         
+>         foreach outcome in $outcomes{c -(}
+>             
+>             forval month = 1/12{c -(}
+>                 
+>                 rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
+>                 fecha_pila == ym(`year',`month'), vce(cluster std_weeks)
+> 
+>                 mat beta = e(tau_bc)                            // Store robust beta
+>                 mat vari = e(se_tau_rb)^2                       // Store robust SE
+> 
+>             * Save estimation results in dataset
+>             regsave using "${c -(}output{c )-}/PILA_results.dta", append coefmat(beta)    ///
+>             varmat(vari) ci level(95) addlabel(outcome, `outcome', cohort,          ///
+>             `cohort', year, `year', month, `month')
+>             {c )-}
+>         {c )-}
+>     {c )-}*/
+> {c )-}
+> 
+> 
+> ****************************************************************************
+> **#             3. Whole monthly panel regressions (with plots)
+> ****************************************************************************
+> preserve
+> 
+> keep if inrange(year, 2009, 2011)
+> 
+> 
+> gen eligible_w = (std_weeks > 0)
+> gen eligible_d = (std_days > 0)
+> 
+> 
+> *** Whole monthly panel regressions
+> 
+> foreach cohort in $first_cohorts {c -(}
+>     
+>     foreach outcome in $outcomes {c -(}
+>         
+>         local varlab: variable label `outcome'
+>         
+>         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {c -(}
+>             local dec = 0
+>             local pren "10"
+>         {c )-}
+>         else {c -(}
+>             local dec = 3
+>             local pren "07"
+>         {c )-}
+>         
+>         local elig eligible_w
+>         local name "week"
+>         foreach runvar in std_weeks std_days {c -(}
+>             
+>             dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
+>             "Runvar: `runvar' -> (2) Whole monthly panel RDD"
+>             
+>             qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1,     ///
+>                 vce(hc3)
+> 
+>             local HL = e(h_l)
+>             local HR = e(h_r)
+> 
+>             local B:    dis %`pren'.`dec'fc e(tau_bc)
+>             local B:    dis strtrim("`B'")
+> 
+>             local t = e(tau_bc) / e(se_tau_rb)
+> 
+>             local N:    dis %10.0fc e(N_b_l) + e(N_b_r)
+>             local N:    dis strtrim("`N'")
+> 
+>             if abs(`t') >= 1.645 {c -(}
+>                 local B = "`B'*"
+>             {c )-}
+>             if abs(`t') >= 1.96 {c -(}
+>                 local B = "`B'*"
+>             {c )-}
+>             if abs(`t') >= 2.576 {c -(}
+>                 local B = "`B'*"
+>             {c )-}
+> 
+> 
+>             qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
+>                 inrange(`runvar', -`HL', `HR'), vce(hc3)
+> 
+>             local Breg: dis %`pren'.`dec'fc _b[1.`elig']
+>             local Breg: dis strtrim("`Breg'")
+> 
+>             local t = _b[1.`elig'] / _se[1.`elig']
+> 
+>             if abs(`t') >= 1.645 {c -(}
+>                 local Breg = "`Breg'*"
+>             {c )-}
+>             if abs(`t') >= 1.96 {c -(}
+>                 local Breg = "`Breg'*"
+>             {c )-}
+>             if abs(`t') >= 2.576 {c -(}
+>                 local Breg = "`Breg'*"
+>             {c )-}
+> 
+>                         local HL:       dis %7.2f `HL'
+>                         
+>             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR'),          ///
+>             vce(hc3) p(1) kernel(triangular) h(`HR' `HR')                           ///
+>             binselect(esmv)     graph_options(title(`varlab', size(medium) span)    ///
+>             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
+>             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
+>             legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
+>             note(`""Rdrobust {c -(}&beta{c )-}: `B'. Standard RDD {c -(}&beta{c )-}: `Breg'. Effective number of observations: `N'.""'))
+> 
+>                         
+>             graph export "${c -(}graphs{c )-}\new\\`outcome'_`cohort'_`runvar'_rdplot.png",   ///
+>                 replace width(1920) height(1080)
+> 
+> 
+>             binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
+>             inrange(`runvar', -`HL', `HR'), vce(robust)                         ///
+>             rd(0) linetype(lfit) title(`varlab', size(medium) span)             ///
+>             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
+>             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
+>             ylabel(, format(%`pren'.`dec'fc))                                   ///
+>             note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
+> 
+>             graph export "${c -(}graphs{c )-}\new\\`outcome'_`cohort'_`runvar'_bscatter.png", ///
+>                 replace width(1920) height(1080)
+> 
+>             local elig eligible_d
+>             local name day
+>         {c )-}
+>     {c )-}
+> {c )-}
+> 
+> */
+. 
+. ****************************************************************************
+. **#             4. Collapse at age level
+. ****************************************************************************
+. *restore
+. 
+. tempvar dia_pila
+{txt}
+{com}. gen `dia_pila' = dofm(fecha_pila + 1) - 1
+{txt}
+{com}. format %td `dia_pila'
+{txt}
+{com}. 
+. gen age = age(fechantomode, `dia_pila')
+{txt}
+{com}. 
+.                         
+. 
+. collapse (firstnm) poblacion* std_weeks std_days                    ///
+>          (mean) pila_salario_r_0                                    ///
+>          (max) pension codigo_pension pension_cum colpensiones      ///
+>          pension_ibc pension_ibc_cum, by(personabasicaid age)
+{res}{txt}
+{com}. 
+. sort personabasicaid age
+{txt}
+{com}. 
+. gen eligible_w = (std_weeks > 0)
+{txt}
+{com}. gen eligible_d = (std_days > 0)
+{txt}
+{com}. 
+. ****************************************************************************
+. **#             5. Difference in discontinuities
+. ****************************************************************************
+. 
+. local replace replace
+{txt}
+{com}. gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
+{txt}
+{com}. 
+. foreach cohort in $first_cohorts {c -(}
+{txt}  2{com}.     
+.     foreach outcome in $outcomes {c -(}
+{txt}  3{com}.         
+.         local elig eligible_w
+{txt}  4{com}.         
+.         foreach runvar in std_weeks std_days {c -(}
+{txt}  5{com}.             
+.         dis as err "Cohort: `cohort'; Outcome: `outcome'; "                 ///
+>         "Runvar: `runvar' -> (3) Difference in discontinuities"
+{txt}  6{com}.                     
+.         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+>             post == 0, kernel(uniform)
+{txt}  7{com}. 
+.         scalar bw_pre = e(hr)
+{txt}  8{com}. 
+.         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+>             post == 1, kernel(uniform)
+{txt}  9{com}. 
+.         scalar bw_post = e(hr)
+{txt} 10{com}. 
+.         scalar bw_avg = (bw_pre + bw_post) / 2
+{txt} 11{com}. 
+.         reg `outcome' i.`elig'##c.`runvar'##i.post if poblacion_`cohort' == 1 &  ///
+>             abs(`runvar') <= bw_avg, robust
+{txt} 12{com}.         
+.         * Save estimation results in dataset
+.         regsave 1.`elig'#1.post using "${c -(}output{c )-}/PILA_results_diffdisc.dta",    ///
+>         `replace' ci level(95) addlabel(outcome, `outcome', cohort, `cohort',   ///
+>         runvar, `runvar')
+{txt} 13{com}.         
+.         local replace append
+{txt} 14{com}.         local elig eligible_d
+{txt} 15{com}.         {c )-}
+{txt} 16{com}.     {c )-}
+{txt} 17{com}.     
+.     replace post = (age >= 55)
+{txt} 18{com}. {c )-}
+{err}Cohort: M50; Outcome: codigo_pension; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res} 39528.58
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.1144
+                                                {txt}Root MSE          =    {res} .45277
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}codigo_pen~n{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2}-2.06e-06{col 26}{space 2} .0034827{col 37}{space 1}   -0.00{col 46}{space 3}1.000{col 54}{space 4}-.0068281{col 67}{space 3} .0068239
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} .0002405{col 26}{space 2} .0000199{col 37}{space 1}   12.10{col 46}{space 3}0.000{col 54}{space 4} .0002016{col 67}{space 3} .0002794
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0004478{col 26}{space 2} .0000616{col 37}{space 1}   -7.27{col 46}{space 3}0.000{col 54}{space 4}-.0005685{col 67}{space 3} -.000327
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-.4665009{col 26}{space 2}  .002386{col 37}{space 1} -195.52{col 46}{space 3}0.000{col 54}{space 4}-.4711773{col 67}{space 3}-.4618244
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0285644{col 26}{space 2} .0037939{col 37}{space 1}    7.53{col 46}{space 3}0.000{col 54}{space 4} .0211284{col 67}{space 3} .0360004
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0005539{col 26}{space 2} .0000218{col 37}{space 1}  -25.37{col 46}{space 3}0.000{col 54}{space 4}-.0005967{col 67}{space 3}-.0005111
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0005358{col 26}{space 2} .0000685{col 37}{space 1}    7.82{col 46}{space 3}0.000{col 54}{space 4} .0004015{col 67}{space 3} .0006701
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .7304382{col 26}{space 2} .0022295{col 37}{space 1}  327.62{col 46}{space 3}0.000{col 54}{space 4} .7260684{col 67}{space 3}  .734808
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 4 2}
+(file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res} 39526.53
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.1144
+                                                {txt}Root MSE          =    {res} .45277
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}codigo_pen~n{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2}-.0002569{col 26}{space 2} .0034718{col 37}{space 1}   -0.07{col 46}{space 3}0.941{col 54}{space 4}-.0070614{col 67}{space 3} .0065477
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} .0000342{col 26}{space 2} 2.84e-06{col 37}{space 1}   12.06{col 46}{space 3}0.000{col 54}{space 4} .0000287{col 67}{space 3} .0000398
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000632{col 26}{space 2} 8.67e-06{col 37}{space 1}   -7.29{col 46}{space 3}0.000{col 54}{space 4}-.0000802{col 67}{space 3}-.0000462
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-.4665979{col 26}{space 2} .0024071{col 37}{space 1} -193.84{col 46}{space 3}0.000{col 54}{space 4}-.4713157{col 67}{space 3}-.4618801
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0282377{col 26}{space 2} .0037787{col 37}{space 1}    7.47{col 46}{space 3}0.000{col 54}{space 4} .0208316{col 67}{space 3} .0356439
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000787{col 26}{space 2} 3.12e-06{col 37}{space 1}  -25.26{col 46}{space 3}0.000{col 54}{space 4}-.0000848{col 67}{space 3}-.0000726
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0000775{col 26}{space 2} 9.64e-06{col 37}{space 1}    8.04{col 46}{space 3}0.000{col 54}{space 4} .0000586{col 67}{space 3} .0000964
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .7305397{col 26}{space 2} .0022504{col 37}{space 1}  324.62{col 46}{space 3}0.000{col 54}{space 4}  .726129{col 67}{space 3} .7349505
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res}    92.65
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0002
+                                                {txt}Root MSE          =    {res} .08949
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}     pension{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} .0001043{col 26}{space 2} .0006275{col 37}{space 1}    0.17{col 46}{space 3}0.868{col 54}{space 4}-.0011257{col 67}{space 3} .0013343
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} .0000105{col 26}{space 2} 3.20e-06{col 37}{space 1}    3.28{col 46}{space 3}0.001{col 54}{space 4} 4.21e-06{col 67}{space 3} .0000168
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-5.41e-06{col 26}{space 2} .0000116{col 37}{space 1}   -0.46{col 46}{space 3}0.642{col 54}{space 4}-.0000282{col 67}{space 3} .0000174
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0013035{col 26}{space 2} .0004111{col 37}{space 1}    3.17{col 46}{space 3}0.002{col 54}{space 4} .0004977{col 67}{space 3} .0021092
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0019506{col 26}{space 2} .0007014{col 37}{space 1}    2.78{col 46}{space 3}0.005{col 54}{space 4} .0005759{col 67}{space 3} .0033253
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000216{col 26}{space 2} 3.72e-06{col 37}{space 1}   -5.82{col 46}{space 3}0.000{col 54}{space 4}-.0000289{col 67}{space 3}-.0000144
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0000127{col 26}{space 2} .0000132{col 37}{space 1}    0.96{col 46}{space 3}0.335{col 54}{space 4}-.0000132{col 67}{space 3} .0000386
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0060889{col 26}{space 2}  .000372{col 37}{space 1}   16.37{col 46}{space 3}0.000{col 54}{space 4} .0053598{col 67}{space 3} .0068179
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res}    93.06
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0002
+                                                {txt}Root MSE          =    {res} .08949
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}     pension{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2} .0003294{col 26}{space 2} .0006255{col 37}{space 1}    0.53{col 46}{space 3}0.598{col 54}{space 4}-.0008965{col 67}{space 3} .0015554
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} 1.37e-06{col 26}{space 2} 4.53e-07{col 37}{space 1}    3.03{col 46}{space 3}0.002{col 54}{space 4} 4.86e-07{col 67}{space 3} 2.26e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-1.01e-06{col 26}{space 2} 1.64e-06{col 37}{space 1}   -0.61{col 46}{space 3}0.540{col 54}{space 4}-4.23e-06{col 67}{space 3} 2.21e-06
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0013537{col 26}{space 2} .0004114{col 37}{space 1}    3.29{col 46}{space 3}0.001{col 54}{space 4} .0005475{col 67}{space 3}   .00216
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0017491{col 26}{space 2} .0006983{col 37}{space 1}    2.50{col 46}{space 3}0.012{col 54}{space 4} .0003805{col 67}{space 3} .0031178
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-3.03e-06{col 26}{space 2} 5.28e-07{col 37}{space 1}   -5.74{col 46}{space 3}0.000{col 54}{space 4}-4.07e-06{col 67}{space 3}-2.00e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 2.20e-06{col 26}{space 2} 1.86e-06{col 37}{space 1}    1.18{col 46}{space 3}0.239{col 54}{space 4}-1.46e-06{col 67}{space 3} 5.85e-06
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0059906{col 26}{space 2} .0003719{col 37}{space 1}   16.11{col 46}{space 3}0.000{col 54}{space 4} .0052617{col 67}{space 3} .0067195
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res} 13921.99
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0143
+                                                {txt}Root MSE          =    {res} .25753
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} pension_cum{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} .0007959{col 26}{space 2} .0006738{col 37}{space 1}    1.18{col 46}{space 3}0.237{col 54}{space 4}-.0005247{col 67}{space 3} .0021165
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2}-.0000106{col 26}{space 2} 3.47e-06{col 37}{space 1}   -3.05{col 46}{space 3}0.002{col 54}{space 4}-.0000174{col 67}{space 3}-3.79e-06
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0000374{col 26}{space 2} .0000129{col 37}{space 1}    2.89{col 46}{space 3}0.004{col 54}{space 4} .0000121{col 67}{space 3} .0000627
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0770943{col 26}{space 2} .0006651{col 37}{space 1}  115.92{col 46}{space 3}0.000{col 54}{space 4} .0757908{col 67}{space 3} .0783978
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0146856{col 26}{space 2} .0011869{col 37}{space 1}   12.37{col 46}{space 3}0.000{col 54}{space 4} .0123593{col 67}{space 3} .0170118
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0000266{col 26}{space 2} 6.70e-06{col 37}{space 1}    3.98{col 46}{space 3}0.000{col 54}{space 4} .0000135{col 67}{space 3} .0000398
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0000907{col 26}{space 2} .0000235{col 37}{space 1}   -3.86{col 46}{space 3}0.000{col 54}{space 4}-.0001367{col 67}{space 3}-.0000447
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0061273{col 26}{space 2} .0003859{col 37}{space 1}   15.88{col 46}{space 3}0.000{col 54}{space 4} .0053709{col 67}{space 3} .0068838
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res} 13927.64
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0143
+                                                {txt}Root MSE          =    {res} .25752
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} pension_cum{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2}  .001049{col 26}{space 2} .0006705{col 37}{space 1}    1.56{col 46}{space 3}0.118{col 54}{space 4}-.0002651{col 67}{space 3} .0023631
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2}-1.64e-06{col 26}{space 2} 4.92e-07{col 37}{space 1}   -3.33{col 46}{space 3}0.001{col 54}{space 4}-2.60e-06{col 67}{space 3}-6.73e-07
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} 5.05e-06{col 26}{space 2} 1.82e-06{col 37}{space 1}    2.77{col 46}{space 3}0.006{col 54}{space 4} 1.47e-06{col 67}{space 3} 8.62e-06
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0764986{col 26}{space 2} .0006662{col 37}{space 1}  114.82{col 46}{space 3}0.000{col 54}{space 4} .0751929{col 67}{space 3} .0778044
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0154485{col 26}{space 2} .0011786{col 37}{space 1}   13.11{col 46}{space 3}0.000{col 54}{space 4} .0131384{col 67}{space 3} .0177586
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} 2.90e-06{col 26}{space 2} 9.53e-07{col 37}{space 1}    3.04{col 46}{space 3}0.002{col 54}{space 4} 1.03e-06{col 67}{space 3} 4.77e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0000124{col 26}{space 2} 3.30e-06{col 37}{space 1}   -3.76{col 46}{space 3}0.000{col 54}{space 4}-.0000189{col 67}{space 3}-5.95e-06
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0060109{col 26}{space 2} .0003855{col 37}{space 1}   15.59{col 46}{space 3}0.000{col 54}{space 4} .0052553{col 67}{space 3} .0067665
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: colpensiones; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res} 33910.38
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.1078
+                                                {txt}Root MSE          =    {res}  .4458
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}colpensiones{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} -.006764{col 26}{space 2}   .00363{col 37}{space 1}   -1.86{col 46}{space 3}0.062{col 54}{space 4}-.0138786{col 67}{space 3} .0003506
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} .0003541{col 26}{space 2} .0000206{col 37}{space 1}   17.15{col 46}{space 3}0.000{col 54}{space 4} .0003137{col 67}{space 3} .0003946
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0005994{col 26}{space 2} .0000643{col 37}{space 1}   -9.32{col 46}{space 3}0.000{col 54}{space 4}-.0007255{col 67}{space 3}-.0004733
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-.4596604{col 26}{space 2} .0024569{col 37}{space 1} -187.09{col 46}{space 3}0.000{col 54}{space 4}-.4644758{col 67}{space 3}-.4548451
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0372224{col 26}{space 2} .0039129{col 37}{space 1}    9.51{col 46}{space 3}0.000{col 54}{space 4} .0295533{col 67}{space 3} .0448915
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0006984{col 26}{space 2} .0000224{col 37}{space 1}  -31.13{col 46}{space 3}0.000{col 54}{space 4}-.0007423{col 67}{space 3}-.0006544
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0008036{col 26}{space 2} .0000706{col 37}{space 1}   11.38{col 46}{space 3}0.000{col 54}{space 4} .0006652{col 67}{space 3} .0009421
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .6949449{col 26}{space 2} .0023153{col 37}{space 1}  300.15{col 46}{space 3}0.000{col 54}{space 4} .6904069{col 67}{space 3} .6994829
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: colpensiones; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res} 33909.64
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.1078
+                                                {txt}Root MSE          =    {res}  .4458
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}colpensiones{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2}-.0065299{col 26}{space 2} .0036176{col 37}{space 1}   -1.81{col 46}{space 3}0.071{col 54}{space 4}-.0136202{col 67}{space 3} .0005604
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} .0000502{col 26}{space 2} 2.95e-06{col 37}{space 1}   17.02{col 46}{space 3}0.000{col 54}{space 4} .0000444{col 67}{space 3}  .000056
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000855{col 26}{space 2} 9.05e-06{col 37}{space 1}   -9.45{col 46}{space 3}0.000{col 54}{space 4}-.0001033{col 67}{space 3}-.0000678
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-.4597122{col 26}{space 2}  .002479{col 37}{space 1} -185.44{col 46}{space 3}0.000{col 54}{space 4} -.464571{col 67}{space 3}-.4548534
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0365274{col 26}{space 2} .0038966{col 37}{space 1}    9.37{col 46}{space 3}0.000{col 54}{space 4} .0288902{col 67}{space 3} .0441645
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000992{col 26}{space 2} 3.20e-06{col 37}{space 1}  -30.97{col 46}{space 3}0.000{col 54}{space 4}-.0001055{col 67}{space 3}-.0000929
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0001163{col 26}{space 2} 9.94e-06{col 37}{space 1}   11.70{col 46}{space 3}0.000{col 54}{space 4} .0000968{col 67}{space 3} .0001358
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .6949176{col 26}{space 2} .0023374{col 37}{space 1}  297.31{col 46}{space 3}0.000{col 54}{space 4} .6903365{col 67}{space 3} .6994988
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pila_salario_r_0; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res}  2243.87
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0097
+                                                {txt}Root MSE          =    {res} 3.2e+06
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}pila_salar~0{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2}-27863.42{col 26}{space 2} 32555.26{col 37}{space 1}   -0.86{col 46}{space 3}0.392{col 54}{space 4}-91670.59{col 67}{space 3} 35943.75
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} 1190.773{col 26}{space 2} 205.6683{col 37}{space 1}    5.79{col 46}{space 3}0.000{col 54}{space 4}   787.67{col 67}{space 3} 1593.875
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-2339.492{col 26}{space 2} 510.1959{col 37}{space 1}   -4.59{col 46}{space 3}0.000{col 54}{space 4}-3339.458{col 67}{space 3}-1339.526
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-981131.3{col 26}{space 2} 24948.38{col 37}{space 1}  -39.33{col 46}{space 3}0.000{col 54}{space 4} -1030029{col 67}{space 3}-932233.4
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 92793.54{col 26}{space 2} 33978.72{col 37}{space 1}    2.73{col 46}{space 3}0.006{col 54}{space 4} 26196.43{col 67}{space 3} 159390.6
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-1915.137{col 26}{space 2} 215.3137{col 37}{space 1}   -8.89{col 46}{space 3}0.000{col 54}{space 4}-2337.145{col 67}{space 3} -1493.13
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 3441.762{col 26}{space 2} 545.5115{col 37}{space 1}    6.31{col 46}{space 3}0.000{col 54}{space 4} 2372.578{col 67}{space 3} 4510.945
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}  1744812{col 26}{space 2} 24197.06{col 37}{space 1}   72.11{col 46}{space 3}0.000{col 54}{space 4}  1697386{col 67}{space 3}  1792237
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pila_salario_r_0; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res}  2246.82
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0097
+                                                {txt}Root MSE          =    {res} 3.2e+06
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}pila_salar~0{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2}-18536.33{col 26}{space 2} 32665.49{col 37}{space 1}   -0.57{col 46}{space 3}0.570{col 54}{space 4}-82559.55{col 67}{space 3} 45486.88
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} 164.9629{col 26}{space 2} 29.52791{col 37}{space 1}    5.59{col 46}{space 3}0.000{col 54}{space 4} 107.0892{col 67}{space 3} 222.8366
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-344.5423{col 26}{space 2} 71.99872{col 37}{space 1}   -4.79{col 46}{space 3}0.000{col 54}{space 4}-485.6573{col 67}{space 3}-203.4273
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-980613.6{col 26}{space 2} 25293.48{col 37}{space 1}  -38.77{col 46}{space 3}0.000{col 54}{space 4} -1030188{col 67}{space 3}-931039.2
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 89953.48{col 26}{space 2} 34075.23{col 37}{space 1}    2.64{col 46}{space 3}0.008{col 54}{space 4} 23167.22{col 67}{space 3} 156739.8
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-271.8187{col 26}{space 2} 30.89353{col 37}{space 1}   -8.80{col 46}{space 3}0.000{col 54}{space 4}-332.3689{col 67}{space 3}-211.2684
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 494.3865{col 26}{space 2} 76.97323{col 37}{space 1}    6.42{col 46}{space 3}0.000{col 54}{space 4} 343.5216{col 67}{space 3} 645.2513
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}  1741406{col 26}{space 2} 24545.63{col 37}{space 1}   70.95{col 46}{space 3}0.000{col 54}{space 4}  1693297{col 67}{space 3}  1789514
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_ibc; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res}   662.46
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0016
+                                                {txt}Root MSE          =    {res} .24275
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} pension_ibc{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} .0001505{col 26}{space 2} .0016125{col 37}{space 1}    0.09{col 46}{space 3}0.926{col 54}{space 4}  -.00301{col 67}{space 3} .0033109
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} 5.17e-07{col 26}{space 2} 8.64e-06{col 37}{space 1}    0.06{col 46}{space 3}0.952{col 54}{space 4}-.0000164{col 67}{space 3} .0000175
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0001291{col 26}{space 2}   .00003{col 37}{space 1}    4.31{col 46}{space 3}0.000{col 54}{space 4} .0000704{col 67}{space 3} .0001879
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0274061{col 26}{space 2} .0010887{col 37}{space 1}   25.17{col 46}{space 3}0.000{col 54}{space 4} .0252724{col 67}{space 3} .0295399
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0001982{col 26}{space 2} .0018162{col 37}{space 1}   -0.11{col 46}{space 3}0.913{col 54}{space 4}-.0037579{col 67}{space 3} .0033615
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-1.21e-07{col 26}{space 2}   .00001{col 37}{space 1}   -0.01{col 46}{space 3}0.990{col 54}{space 4}-.0000197{col 67}{space 3} .0000195
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0001428{col 26}{space 2} .0000342{col 37}{space 1}   -4.17{col 46}{space 3}0.000{col 54}{space 4}-.0002099{col 67}{space 3}-.0000757
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0402809{col 26}{space 2} .0009769{col 37}{space 1}   41.24{col 46}{space 3}0.000{col 54}{space 4} .0383663{col 67}{space 3} .0421955
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_ibc; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     =  {res}   662.43
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0016
+                                                {txt}Root MSE          =    {res} .24275
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} pension_ibc{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2} .0001572{col 26}{space 2} .0016034{col 37}{space 1}    0.10{col 46}{space 3}0.922{col 54}{space 4}-.0029855{col 67}{space 3} .0032998
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} 3.20e-08{col 26}{space 2} 1.23e-06{col 37}{space 1}    0.03{col 46}{space 3}0.979{col 54}{space 4}-2.39e-06{col 67}{space 3} 2.45e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0000184{col 26}{space 2} 4.21e-06{col 37}{space 1}    4.37{col 46}{space 3}0.000{col 54}{space 4} .0000101{col 67}{space 3} .0000266
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0274319{col 26}{space 2} .0010978{col 37}{space 1}   24.99{col 46}{space 3}0.000{col 54}{space 4} .0252803{col 67}{space 3} .0295835
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0002191{col 26}{space 2} .0018051{col 37}{space 1}   -0.12{col 46}{space 3}0.903{col 54}{space 4} -.003757{col 67}{space 3} .0033188
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} 1.12e-08{col 26}{space 2} 1.43e-06{col 37}{space 1}    0.01{col 46}{space 3}0.994{col 54}{space 4}-2.79e-06{col 67}{space 3} 2.81e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0000203{col 26}{space 2} 4.81e-06{col 37}{space 1}   -4.21{col 46}{space 3}0.000{col 54}{space 4}-.0000297{col 67}{space 3}-.0000108
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0402496{col 26}{space 2} .0009857{col 37}{space 1}   40.83{col 46}{space 3}0.000{col 54}{space 4} .0383176{col 67}{space 3} .0421816
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_ibc_cum; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     >  {res} 99999.00
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.1411
+                                                {txt}Root MSE          =    {res} .46283
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}pension_ib~m{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} .0065409{col 26}{space 2} .0018619{col 37}{space 1}    3.51{col 46}{space 3}0.000{col 54}{space 4} .0028917{col 67}{space 3} .0101901
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2}-.0003168{col 26}{space 2} .0000102{col 37}{space 1}  -31.03{col 46}{space 3}0.000{col 54}{space 4}-.0003369{col 67}{space 3}-.0002968
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0009107{col 26}{space 2} .0000367{col 37}{space 1}   24.83{col 46}{space 3}0.000{col 54}{space 4} .0008388{col 67}{space 3} .0009826
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .5377191{col 26}{space 2} .0014299{col 37}{space 1}  376.04{col 46}{space 3}0.000{col 54}{space 4} .5349165{col 67}{space 3} .5405218
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0304219{col 26}{space 2} .0024904{col 37}{space 1}  -12.22{col 46}{space 3}0.000{col 54}{space 4} -.035303{col 67}{space 3}-.0255408
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}  .000603{col 26}{space 2} .0000142{col 37}{space 1}   42.37{col 46}{space 3}0.000{col 54}{space 4} .0005751{col 67}{space 3} .0006309
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0006678{col 26}{space 2} .0000493{col 37}{space 1}  -13.55{col 46}{space 3}0.000{col 54}{space 4}-.0007644{col 67}{space 3}-.0005712
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0427528{col 26}{space 2} .0010766{col 37}{space 1}   39.71{col 46}{space 3}0.000{col 54}{space 4} .0406428{col 67}{space 3} .0448629
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: M50; Outcome: pension_ibc_cum; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,134,414
+                                                {txt}F(7, 2134406)     >  {res} 99999.00
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.1411
+                                                {txt}Root MSE          =    {res} .46283
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}pension_ib~m{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2} .0067189{col 26}{space 2} .0018475{col 37}{space 1}    3.64{col 46}{space 3}0.000{col 54}{space 4} .0030979{col 67}{space 3} .0103399
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2}-.0000452{col 26}{space 2} 1.46e-06{col 37}{space 1}  -31.09{col 46}{space 3}0.000{col 54}{space 4}-.0000481{col 67}{space 3}-.0000424
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0001296{col 26}{space 2} 5.15e-06{col 37}{space 1}   25.18{col 46}{space 3}0.000{col 54}{space 4} .0001195{col 67}{space 3} .0001397
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .5381303{col 26}{space 2} .0014392{col 37}{space 1}  373.92{col 46}{space 3}0.000{col 54}{space 4} .5353096{col 67}{space 3}  .540951
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0312059{col 26}{space 2} .0024707{col 37}{space 1}  -12.63{col 46}{space 3}0.000{col 54}{space 4}-.0360483{col 67}{space 3}-.0263635
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}  .000086{col 26}{space 2} 2.03e-06{col 37}{space 1}   42.39{col 46}{space 3}0.000{col 54}{space 4}  .000082{col 67}{space 3}   .00009
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0000942{col 26}{space 2} 6.92e-06{col 37}{space 1}  -13.62{col 46}{space 3}0.000{col 54}{space 4}-.0001078{col 67}{space 3}-.0000806
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0425058{col 26}{space 2} .0010847{col 37}{space 1}   39.19{col 46}{space 3}0.000{col 54}{space 4} .0403799{col 67}{space 3} .0446318
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+(4,060,589 real changes made)
+{err}Cohort: F55; Outcome: codigo_pension; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res} 37302.18
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0985
+                                                {txt}Root MSE          =    {res} .46897
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}codigo_pen~n{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} -.021801{col 26}{space 2} .0032595{col 37}{space 1}   -6.69{col 46}{space 3}0.000{col 54}{space 4}-.0281894{col 67}{space 3}-.0154125
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} .0005051{col 26}{space 2} .0000188{col 37}{space 1}   26.92{col 46}{space 3}0.000{col 54}{space 4} .0004683{col 67}{space 3} .0005419
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0009314{col 26}{space 2}  .000059{col 37}{space 1}  -15.80{col 46}{space 3}0.000{col 54}{space 4} -.001047{col 67}{space 3}-.0008158
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-.5071641{col 26}{space 2} .0022414{col 37}{space 1} -226.27{col 46}{space 3}0.000{col 54}{space 4}-.5115571{col 67}{space 3}-.5027711
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0758419{col 26}{space 2} .0036221{col 37}{space 1}   20.94{col 46}{space 3}0.000{col 54}{space 4} .0687427{col 67}{space 3} .0829411
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0011857{col 26}{space 2} .0000211{col 37}{space 1}  -56.21{col 46}{space 3}0.000{col 54}{space 4}-.0012271{col 67}{space 3}-.0011444
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0019261{col 26}{space 2} .0000672{col 37}{space 1}   28.68{col 46}{space 3}0.000{col 54}{space 4} .0017945{col 67}{space 3} .0020578
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .7997884{col 26}{space 2} .0020574{col 37}{space 1}  388.74{col 46}{space 3}0.000{col 54}{space 4}  .795756{col 67}{space 3} .8038208
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str14}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: codigo_pension; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res} 37305.41
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0985
+                                                {txt}Root MSE          =    {res} .46897
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}codigo_pen~n{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2}-.0221035{col 26}{space 2} .0032462{col 37}{space 1}   -6.81{col 46}{space 3}0.000{col 54}{space 4}-.0284659{col 67}{space 3} -.015741
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} .0000722{col 26}{space 2} 2.68e-06{col 37}{space 1}   26.93{col 46}{space 3}0.000{col 54}{space 4}  .000067{col 67}{space 3} .0000775
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} -.000133{col 26}{space 2} 8.29e-06{col 37}{space 1}  -16.04{col 46}{space 3}0.000{col 54}{space 4}-.0001493{col 67}{space 3}-.0001168
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} -.507814{col 26}{space 2} .0022605{col 37}{space 1} -224.64{col 46}{space 3}0.000{col 54}{space 4}-.5122446{col 67}{space 3}-.5033834
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0751999{col 26}{space 2}  .003604{col 37}{space 1}   20.87{col 46}{space 3}0.000{col 54}{space 4} .0681362{col 67}{space 3} .0822637
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0001694{col 26}{space 2} 3.01e-06{col 37}{space 1}  -56.19{col 46}{space 3}0.000{col 54}{space 4}-.0001753{col 67}{space 3}-.0001635
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}  .000278{col 26}{space 2} 9.44e-06{col 37}{space 1}   29.44{col 46}{space 3}0.000{col 54}{space 4} .0002595{col 67}{space 3} .0002965
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .8002209{col 26}{space 2} .0020761{col 37}{space 1}  385.44{col 46}{space 3}0.000{col 54}{space 4} .7961518{col 67}{space 3}   .80429
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str14}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pension; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res}   292.94
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0005
+                                                {txt}Root MSE          =    {res} .09219
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}     pension{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} .0000984{col 26}{space 2} .0005871{col 37}{space 1}    0.17{col 46}{space 3}0.867{col 54}{space 4}-.0010523{col 67}{space 3} .0012491
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} .0000199{col 26}{space 2} 2.92e-06{col 37}{space 1}    6.82{col 46}{space 3}0.000{col 54}{space 4} .0000142{col 67}{space 3} .0000257
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} -.000044{col 26}{space 2} .0000106{col 37}{space 1}   -4.15{col 46}{space 3}0.000{col 54}{space 4}-.0000648{col 67}{space 3}-.0000232
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0030182{col 26}{space 2} .0003967{col 37}{space 1}    7.61{col 46}{space 3}0.000{col 54}{space 4} .0022407{col 67}{space 3} .0037958
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0007956{col 26}{space 2} .0006725{col 37}{space 1}    1.18{col 46}{space 3}0.237{col 54}{space 4}-.0005225{col 67}{space 3} .0021137
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000257{col 26}{space 2} 3.56e-06{col 37}{space 1}   -7.20{col 46}{space 3}0.000{col 54}{space 4}-.0000326{col 67}{space 3}-.0000187
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0000628{col 26}{space 2} .0000125{col 37}{space 1}    5.01{col 46}{space 3}0.000{col 54}{space 4} .0000382{col 67}{space 3} .0000874
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}  .005749{col 26}{space 2} .0003496{col 37}{space 1}   16.44{col 46}{space 3}0.000{col 54}{space 4} .0050638{col 67}{space 3} .0064343
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pension; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res}   292.82
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0005
+                                                {txt}Root MSE          =    {res} .09219
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}     pension{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2} .0003529{col 26}{space 2} .0005855{col 37}{space 1}    0.60{col 46}{space 3}0.547{col 54}{space 4}-.0007947{col 67}{space 3} .0015005
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} 2.70e-06{col 26}{space 2} 4.13e-07{col 37}{space 1}    6.54{col 46}{space 3}0.000{col 54}{space 4} 1.89e-06{col 67}{space 3} 3.51e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-6.50e-06{col 26}{space 2} 1.50e-06{col 37}{space 1}   -4.33{col 46}{space 3}0.000{col 54}{space 4}-9.44e-06{col 67}{space 3}-3.56e-06
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0030944{col 26}{space 2} .0003964{col 37}{space 1}    7.81{col 46}{space 3}0.000{col 54}{space 4} .0023175{col 67}{space 3} .0038712
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0005733{col 26}{space 2} .0006698{col 37}{space 1}    0.86{col 46}{space 3}0.392{col 54}{space 4}-.0007396{col 67}{space 3} .0018862
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-3.57e-06{col 26}{space 2} 5.06e-07{col 37}{space 1}   -7.06{col 46}{space 3}0.000{col 54}{space 4}-4.56e-06{col 67}{space 3}-2.58e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 9.24e-06{col 26}{space 2} 1.77e-06{col 37}{space 1}    5.22{col 46}{space 3}0.000{col 54}{space 4} 5.77e-06{col 67}{space 3} .0000127
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0056372{col 26}{space 2} .0003486{col 37}{space 1}   16.17{col 46}{space 3}0.000{col 54}{space 4} .0049539{col 67}{space 3} .0063206
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pension_cum; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res} 17104.74
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0160
+                                                {txt}Root MSE          =    {res} .26421
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} pension_cum{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} .0004908{col 26}{space 2} .0006195{col 37}{space 1}    0.79{col 46}{space 3}0.428{col 54}{space 4}-.0007234{col 67}{space 3}  .001705
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} 8.75e-06{col 26}{space 2} 3.10e-06{col 37}{space 1}    2.82{col 46}{space 3}0.005{col 54}{space 4} 2.67e-06{col 67}{space 3} .0000148
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000183{col 26}{space 2} .0000116{col 37}{space 1}   -1.59{col 46}{space 3}0.113{col 54}{space 4} -.000041{col 67}{space 3} 4.32e-06
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0929449{col 26}{space 2} .0006752{col 37}{space 1}  137.65{col 46}{space 3}0.000{col 54}{space 4} .0916214{col 67}{space 3} .0942683
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0005023{col 26}{space 2}  .001178{col 37}{space 1}   -0.43{col 46}{space 3}0.670{col 54}{space 4}-.0028111{col 67}{space 3} .0018065
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0001128{col 26}{space 2} 6.77e-06{col 37}{space 1}   16.65{col 46}{space 3}0.000{col 54}{space 4} .0000995{col 67}{space 3} .0001261
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0000832{col 26}{space 2} .0000233{col 37}{space 1}   -3.57{col 46}{space 3}0.000{col 54}{space 4}-.0001289{col 67}{space 3}-.0000375
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0058219{col 26}{space 2}  .000359{col 37}{space 1}   16.22{col 46}{space 3}0.000{col 54}{space 4} .0051183{col 67}{space 3} .0065254
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pension_cum; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res} 17105.18
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0159
+                                                {txt}Root MSE          =    {res} .26421
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} pension_cum{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2} .0007189{col 26}{space 2} .0006167{col 37}{space 1}    1.17{col 46}{space 3}0.244{col 54}{space 4}-.0004898{col 67}{space 3} .0019276
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} 1.12e-06{col 26}{space 2} 4.40e-07{col 37}{space 1}    2.54{col 46}{space 3}0.011{col 54}{space 4} 2.55e-07{col 67}{space 3} 1.98e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-2.81e-06{col 26}{space 2} 1.63e-06{col 37}{space 1}   -1.72{col 46}{space 3}0.086{col 54}{space 4}-6.00e-06{col 67}{space 3} 3.92e-07
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0926478{col 26}{space 2} .0006773{col 37}{space 1}  136.79{col 46}{space 3}0.000{col 54}{space 4} .0913202{col 67}{space 3} .0939753
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}  .000017{col 26}{space 2} .0011701{col 37}{space 1}    0.01{col 46}{space 3}0.988{col 54}{space 4}-.0022763{col 67}{space 3} .0023103
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0000156{col 26}{space 2} 9.66e-07{col 37}{space 1}   16.13{col 46}{space 3}0.000{col 54}{space 4} .0000137{col 67}{space 3} .0000175
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0000121{col 26}{space 2} 3.28e-06{col 37}{space 1}   -3.67{col 46}{space 3}0.000{col 54}{space 4}-.0000185{col 67}{space 3}-5.62e-06
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0057135{col 26}{space 2} .0003584{col 37}{space 1}   15.94{col 46}{space 3}0.000{col 54}{space 4} .0050112{col 67}{space 3} .0064159
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: colpensiones; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res} 31904.71
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0920
+                                                {txt}Root MSE          =    {res} .46606
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}colpensiones{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2}-.0263316{col 26}{space 2} .0034363{col 37}{space 1}   -7.66{col 46}{space 3}0.000{col 54}{space 4}-.0330666{col 67}{space 3}-.0195967
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} .0005907{col 26}{space 2} .0000197{col 37}{space 1}   29.94{col 46}{space 3}0.000{col 54}{space 4} .0005521{col 67}{space 3} .0006294
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0010688{col 26}{space 2} .0000621{col 37}{space 1}  -17.22{col 46}{space 3}0.000{col 54}{space 4}-.0011904{col 67}{space 3}-.0009471
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-.4984759{col 26}{space 2} .0023372{col 37}{space 1} -213.28{col 46}{space 3}0.000{col 54}{space 4}-.5030567{col 67}{space 3} -.493895
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0830331{col 26}{space 2} .0037709{col 37}{space 1}   22.02{col 46}{space 3}0.000{col 54}{space 4} .0756423{col 67}{space 3} .0904239
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0012822{col 26}{space 2} .0000219{col 37}{space 1}  -58.57{col 46}{space 3}0.000{col 54}{space 4}-.0013251{col 67}{space 3}-.0012393
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0020934{col 26}{space 2} .0000697{col 37}{space 1}   30.04{col 46}{space 3}0.000{col 54}{space 4} .0019568{col 67}{space 3}   .00223
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .7664879{col 26}{space 2} .0021689{col 37}{space 1}  353.40{col 46}{space 3}0.000{col 54}{space 4}  .762237{col 67}{space 3} .7707389
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: colpensiones; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res} 31909.51
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0920
+                                                {txt}Root MSE          =    {res} .46606
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}colpensiones{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2}-.0268075{col 26}{space 2} .0034224{col 37}{space 1}   -7.83{col 46}{space 3}0.000{col 54}{space 4}-.0335152{col 67}{space 3}-.0200997
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} .0000846{col 26}{space 2} 2.82e-06{col 37}{space 1}   29.98{col 46}{space 3}0.000{col 54}{space 4}  .000079{col 67}{space 3} .0000901
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0001526{col 26}{space 2} 8.73e-06{col 37}{space 1}  -17.48{col 46}{space 3}0.000{col 54}{space 4}-.0001697{col 67}{space 3}-.0001355
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-.4993297{col 26}{space 2} .0023572{col 37}{space 1} -211.83{col 46}{space 3}0.000{col 54}{space 4}-.5039498{col 67}{space 3}-.4947096
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0826006{col 26}{space 2} .0037524{col 37}{space 1}   22.01{col 46}{space 3}0.000{col 54}{space 4}  .075246{col 67}{space 3} .0899551
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0001833{col 26}{space 2} 3.13e-06{col 37}{space 1}  -58.61{col 46}{space 3}0.000{col 54}{space 4}-.0001895{col 67}{space 3}-.0001772
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}  .000302{col 26}{space 2} 9.80e-06{col 37}{space 1}   30.82{col 46}{space 3}0.000{col 54}{space 4} .0002828{col 67}{space 3} .0003212
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .7670674{col 26}{space 2} .0021885{col 37}{space 1}  350.49{col 46}{space 3}0.000{col 54}{space 4} .7627779{col 67}{space 3} .7713569
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pila_salario_r_0; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res}  2935.52
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0114
+                                                {txt}Root MSE          =    {res} 2.4e+06
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}pila_salar~0{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} -93636.3{col 26}{space 2} 21708.56{col 37}{space 1}   -4.31{col 46}{space 3}0.000{col 54}{space 4}-136184.3{col 67}{space 3}-51088.28
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2}  1758.08{col 26}{space 2} 120.8455{col 37}{space 1}   14.55{col 46}{space 3}0.000{col 54}{space 4} 1521.227{col 67}{space 3} 1994.933
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-2677.292{col 26}{space 2} 379.5064{col 37}{space 1}   -7.05{col 46}{space 3}0.000{col 54}{space 4}-3421.111{col 67}{space 3}-1933.473
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-936719.2{col 26}{space 2}    14572{col 37}{space 1}  -64.28{col 46}{space 3}0.000{col 54}{space 4}-965279.9{col 67}{space 3}-908158.6
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 174650.9{col 26}{space 2} 23104.84{col 37}{space 1}    7.56{col 46}{space 3}0.000{col 54}{space 4} 129366.3{col 67}{space 3} 219935.6
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} -2862.39{col 26}{space 2} 130.3569{col 37}{space 1}  -21.96{col 46}{space 3}0.000{col 54}{space 4}-3117.885{col 67}{space 3}-2606.895
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}  4761.95{col 26}{space 2} 411.7006{col 37}{space 1}   11.57{col 46}{space 3}0.000{col 54}{space 4} 3955.031{col 67}{space 3} 5568.869
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}  1760917{col 26}{space 2} 13821.04{col 37}{space 1}  127.41{col 46}{space 3}0.000{col 54}{space 4}  1733828{col 67}{space 3}  1788005
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pila_salario_r_0; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res}  2937.96
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0114
+                                                {txt}Root MSE          =    {res} 2.4e+06
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}pila_salar~0{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2}-82987.73{col 26}{space 2} 21694.14{col 37}{space 1}   -3.83{col 46}{space 3}0.000{col 54}{space 4}-125507.5{col 67}{space 3}-40467.98
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} 246.0056{col 26}{space 2} 17.19075{col 37}{space 1}   14.31{col 46}{space 3}0.000{col 54}{space 4} 212.3124{col 67}{space 3} 279.6989
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-397.0739{col 26}{space 2} 53.75327{col 37}{space 1}   -7.39{col 46}{space 3}0.000{col 54}{space 4}-502.4284{col 67}{space 3}-291.7193
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2}-934583.6{col 26}{space 2} 14615.99{col 37}{space 1}  -63.94{col 46}{space 3}0.000{col 54}{space 4}-963230.4{col 67}{space 3}-905936.8
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 164535.6{col 26}{space 2} 23077.86{col 37}{space 1}    7.13{col 46}{space 3}0.000{col 54}{space 4} 119303.8{col 67}{space 3} 209767.4
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-404.5647{col 26}{space 2} 18.54829{col 37}{space 1}  -21.81{col 46}{space 3}0.000{col 54}{space 4}-440.9187{col 67}{space 3}-368.2107
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} 696.0961{col 26}{space 2} 58.27681{col 37}{space 1}   11.94{col 46}{space 3}0.000{col 54}{space 4} 581.8756{col 67}{space 3} 810.3166
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}  1757735{col 26}{space 2} 13862.81{col 37}{space 1}  126.80{col 46}{space 3}0.000{col 54}{space 4}  1730565{col 67}{space 3}  1784906
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pension_ibc; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res}  1117.09
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0025
+                                                {txt}Root MSE          =    {res} .23132
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} pension_ibc{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2} .0051508{col 26}{space 2} .0014491{col 37}{space 1}    3.55{col 46}{space 3}0.000{col 54}{space 4} .0023106{col 67}{space 3}  .007991
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2} .0000154{col 26}{space 2} 7.64e-06{col 37}{space 1}    2.02{col 46}{space 3}0.043{col 54}{space 4} 4.72e-07{col 67}{space 3} .0000304
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000735{col 26}{space 2} .0000266{col 37}{space 1}   -2.77{col 46}{space 3}0.006{col 54}{space 4}-.0001256{col 67}{space 3}-.0000215
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0304862{col 26}{space 2} .0009804{col 37}{space 1}   31.10{col 46}{space 3}0.000{col 54}{space 4} .0285646{col 67}{space 3} .0324078
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} -.006672{col 26}{space 2} .0016548{col 37}{space 1}   -4.03{col 46}{space 3}0.000{col 54}{space 4}-.0099155{col 67}{space 3}-.0034286
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-.0000147{col 26}{space 2} 9.10e-06{col 37}{space 1}   -1.62{col 46}{space 3}0.105{col 54}{space 4}-.0000326{col 67}{space 3} 3.10e-06
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}  .000096{col 26}{space 2}  .000031{col 37}{space 1}    3.09{col 46}{space 3}0.002{col 54}{space 4} .0000352{col 67}{space 3} .0001568
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0319522{col 26}{space 2} .0008636{col 37}{space 1}   37.00{col 46}{space 3}0.000{col 54}{space 4} .0302597{col 67}{space 3} .0336448
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pension_ibc; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     =  {res}  1116.59
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.0025
+                                                {txt}Root MSE          =    {res} .23132
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} pension_ibc{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2} .0048817{col 26}{space 2} .0014388{col 37}{space 1}    3.39{col 46}{space 3}0.001{col 54}{space 4} .0020616{col 67}{space 3} .0077018
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2} 2.20e-06{col 26}{space 2} 1.09e-06{col 37}{space 1}    2.02{col 46}{space 3}0.044{col 54}{space 4} 6.24e-08{col 67}{space 3} 4.35e-06
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-9.73e-06{col 26}{space 2} 3.72e-06{col 37}{space 1}   -2.61{col 46}{space 3}0.009{col 54}{space 4} -.000017{col 67}{space 3}-2.43e-06
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .0304781{col 26}{space 2} .0009892{col 37}{space 1}   30.81{col 46}{space 3}0.000{col 54}{space 4} .0285394{col 67}{space 3} .0324168
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0064214{col 26}{space 2} .0016429{col 37}{space 1}   -3.91{col 46}{space 3}0.000{col 54}{space 4}-.0096414{col 67}{space 3}-.0032014
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}-2.10e-06{col 26}{space 2} 1.30e-06{col 37}{space 1}   -1.62{col 46}{space 3}0.106{col 54}{space 4}-4.65e-06{col 67}{space 3} 4.49e-07
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2} .0000129{col 26}{space 2} 4.35e-06{col 37}{space 1}    2.97{col 46}{space 3}0.003{col 54}{space 4} 4.41e-06{col 67}{space 3} .0000215
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0319686{col 26}{space 2}  .000872{col 37}{space 1}   36.66{col 46}{space 3}0.000{col 54}{space 4} .0302595{col 67}{space 3} .0336777
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pension_ibc_cum; Runvar: std_weeks -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     >  {res} 99999.00
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.1355
+                                                {txt}Root MSE          =    {res} .46233
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}pension_ib~m{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_w {c |}{col 14}{res}{space 2}  .013795{col 26}{space 2}  .001655{col 37}{space 1}    8.34{col 46}{space 3}0.000{col 54}{space 4} .0105514{col 67}{space 3} .0170387
+{txt}{space 3}std_weeks {c |}{col 14}{res}{space 2}-.0002219{col 26}{space 2} 8.99e-06{col 37}{space 1}  -24.69{col 46}{space 3}0.000{col 54}{space 4}-.0002395{col 67}{space 3}-.0002043
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0004139{col 26}{space 2} .0000321{col 37}{space 1}   12.89{col 46}{space 3}0.000{col 54}{space 4} .0003509{col 67}{space 3} .0004768
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .5545311{col 26}{space 2} .0013332{col 37}{space 1}  415.95{col 46}{space 3}0.000{col 54}{space 4} .5519181{col 67}{space 3} .5571441
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0699835{col 26}{space 2} .0023445{col 37}{space 1}  -29.85{col 46}{space 3}0.000{col 54}{space 4}-.0745786{col 67}{space 3}-.0653885
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0008771{col 26}{space 2} .0000135{col 37}{space 1}   64.88{col 46}{space 3}0.000{col 54}{space 4} .0008506{col 67}{space 3} .0009036
+{txt}{space 12} {c |}
+{space 2}eligible_w#{c |}
+{space 8}post#{c |}
+{space 1}c.std_weeks {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0011457{col 26}{space 2} .0000464{col 37}{space 1}  -24.68{col 46}{space 3}0.000{col 54}{space 4}-.0012367{col 67}{space 3}-.0010547
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} .0326022{col 26}{space 2}   .00094{col 37}{space 1}   34.68{col 46}{space 3}0.000{col 54}{space 4} .0307599{col 67}{space 3} .0344445
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+{err}Cohort: F55; Outcome: pension_ibc_cum; Runvar: std_days -> (3) Difference in discontinuities
+
+{txt}Linear regression                               Number of obs     = {res} 2,075,941
+                                                {txt}F(7, 2075933)     >  {res} 99999.00
+                                                {txt}Prob > F          = {res}    0.0000
+                                                {txt}R-squared         = {res}    0.1356
+                                                {txt}Root MSE          =    {res} .46232
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}pension_ib~m{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+1.eligible_d {c |}{col 14}{res}{space 2} .0135298{col 26}{space 2} .0016398{col 37}{space 1}    8.25{col 46}{space 3}0.000{col 54}{space 4} .0103159{col 67}{space 3} .0167437
+{txt}{space 4}std_days {c |}{col 14}{res}{space 2}-.0000317{col 26}{space 2} 1.28e-06{col 37}{space 1}  -24.68{col 46}{space 3}0.000{col 54}{space 4}-.0000342{col 67}{space 3}-.0000292
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2}   .00006{col 26}{space 2} 4.50e-06{col 37}{space 1}   13.33{col 46}{space 3}0.000{col 54}{space 4} .0000511{col 67}{space 3} .0000688
+{txt}{space 12} {c |}
+{space 6}1.post {c |}{col 14}{res}{space 2} .5554517{col 26}{space 2} .0013423{col 37}{space 1}  413.79{col 46}{space 3}0.000{col 54}{space 4} .5528208{col 67}{space 3} .5580826
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0707357{col 26}{space 2}  .002324{col 37}{space 1}  -30.44{col 46}{space 3}0.000{col 54}{space 4}-.0752906{col 67}{space 3}-.0661808
+{txt}{space 12} {c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0001259{col 26}{space 2} 1.93e-06{col 37}{space 1}   65.24{col 46}{space 3}0.000{col 54}{space 4} .0001221{col 67}{space 3} .0001297
+{txt}{space 12} {c |}
+{space 2}eligible_d#{c |}
+{space 8}post#{c |}
+{space 2}c.std_days {c |}
+{space 8}1 1  {c |}{col 14}{res}{space 2}-.0001645{col 26}{space 2} 6.51e-06{col 37}{space 1}  -25.25{col 46}{space 3}0.000{col 54}{space 4}-.0001772{col 67}{space 3}-.0001517
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}  .032476{col 26}{space 2} .0009479{col 37}{space 1}   34.26{col 46}{space 3}0.000{col 54}{space 4} .0306182{col 67}{space 3} .0343339
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:\Christian Posso\_banrep_research\proyectos\pensions\Output/PILA_results_diffdisc.dta{rm}
+saved
+{p_end}
+(0 real changes made)
+
+{com}. 
+.       
+. ****************************************************************************
+. **#             6. RDD by age
+. ****************************************************************************
+.         
+. qui sum age if poblacion_`cohort' == 1
+{err}poblacion_ ambiguous abbreviation
+{txt}{search r(111), local:r(111);}
+
+end of do-file
+{search r(111), local:r(111);}
+{com}.     *do "${c -(}do_files{c )-}\Step 4.2 - RIPS estimation.do"
+.     
+. {c )-}
+{txt}{search r(111), local:r(111);}
+
+end of do-file
+
+{search r(111), local:r(111);}
+
+{com}. 

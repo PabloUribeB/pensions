@@ -21,7 +21,9 @@ clear all
 **#         1. Create RIPS variables
 ****************************************************************************
 
-use if inrange(std_weeks, -22, 22) using "${data}\Merge_individual_RIPS.dta", clear
+use "${data}/Merge_individual_RIPS.dta", clear
+
+merge m:1 personabasicaid using "${data}/Master_for_RIPS.dta", nogen keep(3)
 
 drop diag_prin_ingre fecha_ingreso cod_diag_prin fecha_consul
 
@@ -174,15 +176,21 @@ foreach var of varlist nro_serviciosHospitalizacion-cons_mental {
 	replace `var' = 0 if mi(`var')
 }
 
+foreach var of varlist poblacion* {
+    bys personabasicaid: ereplace `var' = max(`var')
+}
+
+drop _fillin
+
 compress
-save "${data}\personabasicaid_age_RIPS.dta", replace	
+save "${data}/personabasicaid_age_RIPS.dta", replace	
 
 
 
 ********************************************************************************
 **#      Merge with Chronic diseases to get comorbidity index weights      
 ********************************************************************************
-use "${urgencias}\Crosswalk_chronic_diseases", clear
+use "${chronic}/Crosswalk_chronic_diseases", clear
 
 gen diag_prin = substr(icd10cm, 1, 4)
 keep diag_prin organ_system no_diagnosis diagnosis MWI_weight
@@ -197,7 +205,7 @@ tempfile temp_chronic_diseases
 save `temp_chronic_diseases', replace
 
 
-use if inrange(std_weeks, -22, 22) using "${data}\Merge_individual_RIPS.dta", clear
+use "${data}/Merge_individual_RIPS.dta", clear
 
 drop diag_prin_ingre cod_diag_prin
 
@@ -291,7 +299,7 @@ tempfile temp_MWI_chronic
 save `temp_MWI_chronic', replace
 
 * Paste the index and chronic variables to master balanced
-use "$data\personabasicaid_age_RIPS.dta", clear
+use "$data/personabasicaid_age_RIPS.dta", clear
 
 merge 1:1 personabasicaid age using `temp_MWI_chronic', keep(1 3) nogen
 
@@ -341,13 +349,19 @@ replace be25_chronic = 0 if mi(be25_chronic) & mi(pre_MWI) == 0
 
 drop cohort median_MWI abso_mwi
 
-keep if (inrange(age, 59, 71) & poblacion_M50 == 1) | 			///
-		(inrange(age, 54, 66) & poblacion_F55 == 1) | 			///
-		(inrange(age, 55, 67) & poblacion_M54 == 1) | 			///
-		(inrange(age, 50, 62) & poblacion_F59 == 1)
+keep if (inrange(age, 59, 71) & poblacion_M50 == 1) |           ///
+        (inrange(age, 54, 66) & poblacion_F55 == 1) |           ///
+        (inrange(age, 55, 67) & poblacion_M54 == 1) |           ///
+        (inrange(age, 50, 62) & poblacion_F59 == 1)
 
 compress
 
-save "${data}\Estimation_sample_RIPS.dta", replace
+save "${data}/Estimation_sample_RIPS.dta", replace
 
-erase "${data}\personabasicaid_age_RIPS.dta"
+erase "${data}/personabasicaid_age_RIPS.dta"
+
+
+mdesc poblacion* age
+
+tab age if poblacion_M50 == 1, m
+tab age if poblacion_F55 == 1, m

@@ -1,0 +1,3404 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs\PILA estimations age.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}29 Jul 2025, 15:53:49
+{txt}
+{com}. 
+. use if (poblacion_M50 == 1 | poblacion_F55 == 1) using          ///
+>        "${c -(}data{c )-}/Estimation_sample_PILA.dta", clear
+{txt}
+{com}. 
+. /*
+> ****************************************************************************
+> **#             1. Year by year RDD
+> ****************************************************************************
+> 
+> local replace replace
+> forval year = 2009/2020 {c -(} // Loop through all years
+> 
+>     * First cohorts (M50 & F55) retire in 2010, so only one year before and after
+>     if inrange(`year', 2009, 2011) {c -(}
+>         
+>         foreach cohort in $first_cohorts {c -(}
+>         
+>             foreach outcome in $outcomes {c -(}
+>                 
+>                 forval month = 1/12 {c -(}
+>                     
+>                     foreach runvar in std_weeks std_days {c -(}
+>                         
+>                     dis as err "Cohort: `cohort'; Outcome: `outcome'; Date: "        ///
+>                     "`year'-`month'; Runvar: `runvar' -> (1) Year by year RDD"
+>                     
+>                     cap mat drop beta vari
+>                     
+>                     ** RDRobust estimation
+>                     cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 & ///
+>                     fecha_pila == ym(`year',`month'), vce(hc3)
+> 
+>                     cap noi mat beta = e(tau_bc)            // Store robust beta
+>                     cap noi mat vari = e(se_tau_rb)^2       // Store robust SE
+> 
+>                     * Save estimation results in dataset
+>                     cap noi regsave using "${c -(}output{c )-}/PILA_results.dta", `replace'   ///
+>                     coefmat(beta) varmat(vari) ci level(95)                         ///
+>                     addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
+>                     month, `month', runvar, `runvar', model, "rdrobust")
+>                     
+>                     ** RDHonest estimation
+>                     cap noi rdhonest `outcome' `runvar' if poblacion_`cohort' == 1 & ///
+>                     fecha_pila == ym(`year',`month')
+>                     
+>                     cap noi mat beta = e(est)            // Store robust beta
+>                     cap noi mat vari = e(se)^2           // Store robust SE
+>                     local li95       = e(TCiL)
+>                     local ui95       = e(TCiU)
+>                     local M          = e(M)
+>                     
+>                     cap noi regsave using "${c -(}output{c )-}/PILA_results.dta", append      ///
+>                     coefmat(beta) varmat(vari)                                      ///
+>                     addlabel(outcome, `outcome', cohort, `cohort', year, `year',    ///
+>                     month, `month', runvar, `runvar', model, "rdhonest",            ///
+>                     ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
+>                     
+>                     
+>                     
+>                     local replace append
+>                     {c )-}
+>                 {c )-}
+>             {c )-}
+>         {c )-}
+>     {c )-}
+>         
+>     * Second cohorts (M54 & F59) retire in Dec. 2014, so 6 years pre and 6 post.
+>     * This loop happens for all years in the loop (2009/2020)
+>     /*foreach cohort in $second_cohorts{c -(}
+>         
+>         foreach outcome in $outcomes{c -(}
+>             
+>             forval month = 1/12{c -(}
+>                 
+>                 rdrobust `outcome' std_weeks if poblacion_`cohort' == 1 &       ///
+>                 fecha_pila == ym(`year',`month'), vce(cluster std_weeks)
+> 
+>                 mat beta = e(tau_bc)                            // Store robust beta
+>                 mat vari = e(se_tau_rb)^2                       // Store robust SE
+> 
+>             * Save estimation results in dataset
+>             regsave using "${c -(}output{c )-}/PILA_results.dta", append coefmat(beta)    ///
+>             varmat(vari) ci level(95) addlabel(outcome, `outcome', cohort,          ///
+>             `cohort', year, `year', month, `month')
+>             {c )-}
+>         {c )-}
+>     {c )-}*/
+> {c )-}
+> 
+> 
+> ****************************************************************************
+> **#             2. Whole monthly panel regressions (with plots)
+> ****************************************************************************
+> preserve
+> 
+> keep if inrange(year, 2009, 2011)
+> 
+> 
+> gen eligible_w = (std_weeks > 0)
+> gen eligible_d = (std_days > 0)
+> 
+> 
+> *** Whole monthly panel regressions
+> 
+> foreach cohort in $first_cohorts {c -(}
+>     
+>     foreach outcome in $outcomes {c -(}
+>         
+>         local varlab: variable label `outcome'
+>         
+>         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {c -(}
+>             local dec = 0
+>             local pren "10"
+>         {c )-}
+>         else {c -(}
+>             local dec = 3
+>             local pren "07"
+>         {c )-}
+>         
+>         local elig eligible_w
+>         local name "week"
+>         foreach runvar in std_weeks std_days {c -(}
+>             
+>             dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
+>             "Runvar: `runvar' -> (2) Whole monthly panel RDD"
+>             
+>             qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1,     ///
+>                 vce(hc3)
+> 
+>             local HL = e(h_l)
+>             local HR = e(h_r)
+> 
+>             local B:    dis %`pren'.`dec'fc e(tau_bc)
+>             local B:    dis strtrim("`B'")
+> 
+>             local t = e(tau_bc) / e(se_tau_rb)
+> 
+>             local N:    dis %10.0fc e(N_b_l) + e(N_b_r)
+>             local N:    dis strtrim("`N'")
+> 
+>             if abs(`t') >= 1.645 {c -(}
+>                 local B = "`B'*"
+>             {c )-}
+>             if abs(`t') >= 1.96 {c -(}
+>                 local B = "`B'*"
+>             {c )-}
+>             if abs(`t') >= 2.576 {c -(}
+>                 local B = "`B'*"
+>             {c )-}
+> 
+> 
+>             qui reg `outcome' i.`elig'##c.`runvar' if poblacion_`cohort' == 1 & ///
+>                 inrange(`runvar', -`HL', `HR'), vce(hc3)
+> 
+>             local Breg: dis %`pren'.`dec'fc _b[1.`elig']
+>             local Breg: dis strtrim("`Breg'")
+> 
+>             local t = _b[1.`elig'] / _se[1.`elig']
+> 
+>             if abs(`t') >= 1.645 {c -(}
+>                 local Breg = "`Breg'*"
+>             {c )-}
+>             if abs(`t') >= 1.96 {c -(}
+>                 local Breg = "`Breg'*"
+>             {c )-}
+>             if abs(`t') >= 2.576 {c -(}
+>                 local Breg = "`Breg'*"
+>             {c )-}
+> 
+>                         local HL:       dis %7.2f `HL'
+>                         
+>             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR'),          ///
+>             vce(hc3) p(1) kernel(triangular) h(`HR' `HR')                           ///
+>             binselect(esmv)     graph_options(title(`varlab', size(medium) span)    ///
+>             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
+>             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
+>             legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
+>             note(`""Rdrobust {c -(}&beta{c )-}: `B'. Standard RDD {c -(}&beta{c )-}: `Breg'. Effective number of observations: `N'.""'))
+> 
+>                         
+>             graph export "${c -(}graphs{c )-}\new\\`outcome'_`cohort'_`runvar'_rdplot.png",   ///
+>                 replace width(1920) height(1080)
+> 
+> 
+>             binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
+>             inrange(`runvar', -`HL', `HR'), vce(robust)                         ///
+>             rd(0) linetype(lfit) title(`varlab', size(medium) span)             ///
+>             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
+>             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
+>             ylabel(, format(%`pren'.`dec'fc))                                   ///
+>             note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
+> 
+>             graph export "${c -(}graphs{c )-}\new\\`outcome'_`cohort'_`runvar'_bscatter.png", ///
+>                 replace width(1920) height(1080)
+> 
+>             local elig eligible_d
+>             local name day
+>         {c )-}
+>     {c )-}
+> {c )-}
+> 
+> */
+. 
+. ****************************************************************************
+. **#             3. Collapse at age level
+. ****************************************************************************
+. *restore
+. 
+. tempvar dia_pila
+{txt}
+{com}. gen `dia_pila' = dofm(fecha_pila + 1) - 1
+{txt}
+{com}. format %td `dia_pila'
+{txt}
+{com}. 
+. gen age = age(fechantomode, `dia_pila')
+{txt}
+{com}. 
+.                         
+. 
+. collapse (firstnm) poblacion* std_weeks std_days                    ///
+>          (mean) pila_salario_r_0                                    ///
+>          (max) pension codigo_pension pension_cum colpensiones      ///
+>          pension_ibc pension_ibc_cum, by(personabasicaid age)
+{res}{txt}
+{com}. 
+. sort personabasicaid age
+{txt}
+{com}. 
+. gen eligible_w = (std_weeks > 0)
+{txt}
+{com}. gen eligible_d = (std_days > 0)
+{txt}
+{com}. 
+. ****************************************************************************
+. **#             4. Difference in discontinuities
+. ****************************************************************************
+. /*
+> local replace replace
+> gen post = (age >= 60 & poblacion_M50 == 1) | (age >= 55 & poblacion_F55 == 1)
+> 
+> foreach cohort in $first_cohorts {c -(}
+>     
+>     foreach outcome in $outcomes {c -(}
+>         
+>         local elig eligible_w
+>         
+>         foreach runvar in std_weeks std_days {c -(}
+>             
+>         dis as err "Cohort: `cohort'; Outcome: `outcome'; "                 ///
+>         "Runvar: `runvar' -> (3) Difference in discontinuities"
+>                 
+>         clear results 
+>         
+>         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+>             post == 0, kernel(uniform) vce(cluster personabasicaid)
+> 
+>         scalar bw_pre = e(h_r)
+> 
+>         qui rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+>             post == 1, kernel(uniform) vce(cluster personabasicaid)
+> 
+>         scalar bw_post = e(h_r)
+> 
+>         scalar bw_avg = (bw_pre + bw_post) / 2
+> 
+>         if mi(bw_avg) {c -(}
+>             scalar bw_avg = 21
+>         {c )-}
+>         
+>         reg `outcome' i.`elig'##c.`runvar'##i.post i.age if            ///
+>             poblacion_`cohort' == 1 & abs(`runvar') <= bw_avg, vce(cluster personabasicaid)
+>         
+>         * Save estimation results in dataset
+>         regsave 1.`elig'#1.post using "${c -(}output{c )-}/PILA_results_diffdisc.dta",    ///
+>         `replace' ci level(95) addlabel(outcome, `outcome', cohort, `cohort',   ///
+>         runvar, `runvar')
+>         
+>         local replace append
+>         local elig eligible_d
+>         {c )-}
+>     {c )-}
+> {c )-}
+> 
+>     
+> ****************************************************************************
+> **#             5. RDD by age
+> ****************************************************************************
+> 
+> foreach cohort in $first_cohorts {c -(}
+>     
+>     qui sum age if poblacion_`cohort' == 1
+>     local min = r(min) + 1
+>     local max = r(max) - 1
+>     
+>     foreach outcome in $outcomes {c -(}
+>         
+>         foreach runvar in std_weeks std_days {c -(}
+>             
+>             forval age = `min'/`max'{c -(}
+>                 
+>                 dis as err "Cohort: `cohort'; Outcome: `outcome'; Age: "    ///
+>                 "`age'; Runvar: `runvar' -> (4) Age by age RDD"
+>                 
+>                                 clear results
+>                                 
+>                 cap noi rdrobust `outcome' `runvar' if poblacion_`cohort' == 1  ///
+>                 & age == `age', vce(hc3) masspoints(check)
+> 
+>                 mat beta = e(tau_bc)            // Store robust beta
+>                 mat vari = e(se_tau_rb)^2       // Store robust SE
+> 
+>                 * Save estimation results in dataset
+>                 cap noi regsave using "${c -(}output{c )-}/PILA_results.dta", append      ///
+>                 coefmat(beta) varmat(vari) ci level(95)                         ///
+>                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
+>                 runvar, `runvar', model, "rdrobust")
+>                 
+>                                 clear results
+>                 
+>                 ** RDHonest estimation
+>                 cap noi rdhonest `outcome' `runvar' if poblacion_`cohort' == 1 & ///
+>                 age == `age'
+>                 
+>                 cap noi mat beta = e(est)            // Store robust beta
+>                 cap noi mat vari = e(se)^2           // Store robust SE
+>                 local li95       = e(TCiL)
+>                 local ui95       = e(TCiU)
+>                 local M          = e(M)
+>                 
+>                 cap noi regsave using "${c -(}output{c )-}/PILA_results.dta", append      ///
+>                 coefmat(beta) varmat(vari)                                      ///
+>                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
+>                 runvar, `runvar', model, "rdhonest",                            ///
+>                 ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
+>                 
+>             {c )-}
+>         {c )-}
+>     {c )-}
+> {c )-}
+> */        
+.         
+. ****************************************************************************
+. **#             6. Whole age panel regressions (with plots)
+. ****************************************************************************
+. 
+. tab age if poblacion_M50 == 1, gen(ageM50)
+
+        {txt}age {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+         56 {c |}{res}     41,121        1.93        1.93
+{txt}         57 {c |}{res}     81,068        3.80        5.72
+{txt}         58 {c |}{res}    115,303        5.40       11.13
+{txt}         59 {c |}{res}    144,065        6.75       17.88
+{txt}         60 {c |}{res}    163,760        7.67       25.55
+{txt}         61 {c |}{res}    165,312        7.75       33.29
+{txt}         62 {c |}{res}    165,312        7.75       41.04
+{txt}         63 {c |}{res}    165,312        7.75       48.78
+{txt}         64 {c |}{res}    165,312        7.75       56.53
+{txt}         65 {c |}{res}    165,312        7.75       64.27
+{txt}         66 {c |}{res}    165,312        7.75       72.02
+{txt}         67 {c |}{res}    165,312        7.75       79.76
+{txt}         68 {c |}{res}    165,312        7.75       87.51
+{txt}         69 {c |}{res}    120,110        5.63       93.14
+{txt}         70 {c |}{res}     80,694        3.78       96.92
+{txt}         71 {c |}{res}     46,987        2.20       99.12
+{txt}         72 {c |}{res}     18,810        0.88      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}  2,134,414      100.00
+{txt}
+{com}. tab age if poblacion_F55 == 1, gen(ageF55)
+
+        {txt}age {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+         51 {c |}{res}     38,376        1.85        1.85
+{txt}         52 {c |}{res}     76,219        3.67        5.52
+{txt}         53 {c |}{res}    110,671        5.33       10.85
+{txt}         54 {c |}{res}    140,328        6.76       17.61
+{txt}         55 {c |}{res}    159,299        7.67       25.28
+{txt}         56 {c |}{res}    160,738        7.74       33.03
+{txt}         57 {c |}{res}    160,738        7.74       40.77
+{txt}         58 {c |}{res}    160,738        7.74       48.51
+{txt}         59 {c |}{res}    160,738        7.74       56.26
+{txt}         60 {c |}{res}    160,738        7.74       64.00
+{txt}         61 {c |}{res}    160,738        7.74       71.74
+{txt}         62 {c |}{res}    160,738        7.74       79.48
+{txt}         63 {c |}{res}    160,738        7.74       87.23
+{txt}         64 {c |}{res}    118,747        5.72       92.95
+{txt}         65 {c |}{res}     81,149        3.91       96.86
+{txt}         66 {c |}{res}     47,159        2.27       99.13
+{txt}         67 {c |}{res}     18,089        0.87      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}  2,075,941      100.00
+{txt}
+{com}. 
+. local replace replace
+{txt}
+{com}. foreach cohort in $first_cohorts {c -(}
+{txt}  2{com}.     
+.     if "`cohort'" == "M50"      local ages "60, 62"
+{txt}  3{com}.     else                        local ages "55, 57"
+{txt}  4{com}.     
+.     foreach outcome in $outcomes {c -(}
+{txt}  5{com}.         
+.         local varlab: variable label `outcome'
+{txt}  6{com}.         
+.         if inlist("`outcome'", "pila_salario_r", "pila_salario_r_0") {c -(}
+{txt}  7{com}.             local dec = 0
+{txt}  8{com}.             local pren "10"
+{txt}  9{com}.         {c )-}
+{txt} 10{com}.         else {c -(}
+{txt} 11{com}.             local dec = 3
+{txt} 12{com}.             local pren "07"
+{txt} 13{com}.         {c )-}
+{txt} 14{com}.         
+.         local elig eligible_w
+{txt} 15{com}.         local name "week"
+{txt} 16{com}.         foreach runvar in std_weeks std_days {c -(}
+{txt} 17{com}.         
+.             clear results
+{txt} 18{com}.         
+.             dis as err "Cohort: `cohort'; Outcome: `outcome'; "             ///
+>             "Runvar: `runvar' -> (5) Whole age panel RDD"
+{txt} 19{com}.         
+.             rdrobust `outcome' `runvar' if poblacion_`cohort' == 1 &        ///
+>                 inrange(age, `ages'), vce(cluster personabasicaid) covs(age`cohort'*)
+{txt} 20{com}. 
+.             mat beta = e(tau_bc)            // Store robust beta
+{txt} 21{com}.             mat vari = e(se_tau_rb)^2       // Store robust SE
+{txt} 22{com}.                 
+.             local HL = e(h_l)
+{txt} 23{com}.             local HR = e(h_r)
+{txt} 24{com}. 
+.             local B: dis %`pren'.`dec'fc e(tau_bc)
+{txt} 25{com}.             local B: dis strtrim("`B'")
+{txt} 26{com}. 
+.             local t = e(tau_bc) / e(se_tau_rb)
+{txt} 27{com}.             
+.             local eff_n = e(N_b_l) + e(N_b_r)
+{txt} 28{com}.             local N:    dis %10.0fc `eff_n'
+{txt} 29{com}.             local N:    dis strtrim("`N'")
+{txt} 30{com}. 
+.             if abs(`t') >= 1.645 {c -(}
+{txt} 31{com}.                 local B = "`B'*"
+{txt} 32{com}.             {c )-}
+{txt} 33{com}.             if abs(`t') >= 1.96 {c -(}
+{txt} 34{com}.                 local B = "`B'*"
+{txt} 35{com}.             {c )-}
+{txt} 36{com}.             if abs(`t') >= 2.576 {c -(}
+{txt} 37{com}.                 local B = "`B'*"
+{txt} 38{com}.             {c )-}
+{txt} 39{com}.             
+.             if missing(`"`HL'"') {c -(}
+{txt} 40{com}.             local HL = 21
+{txt} 41{com}.             local HR = 21
+{txt} 42{com}.             {c )-}
+{txt} 43{com}. 
+. 
+.             * Save estimation results in dataset
+.             regsave using "${c -(}output{c )-}/PILA_results_pool.dta", `replace'               ///
+>             coefmat(beta) varmat(vari) ci level(95)                                  ///
+>             addlabel(outcome, `outcome', cohort, `cohort', bw, `HL', eff_n, `eff_n', ///
+>             method, "rdrobust", runvar, `runvar')
+{txt} 44{com}. 
+.             qui reg `outcome' i.`elig'##c.`runvar' i.age if                 ///
+>                 poblacion_`cohort' == 1 & inrange(`runvar', -`HL', `HR') &  ///
+>                 inrange(age, `ages'), cluster(personabasicaid)
+{txt} 45{com}. 
+.             cap noi regsave 1.`elig' using "${c -(}output{c )-}/PILA_results_pool.dta",   ///
+>             append ci level(95) addlabel(outcome, `outcome', cohort, `cohort',  ///
+>             bw, `HL', method, "reg", runvar, `runvar')
+{txt} 46{com}. 
+.             local Breg: dis %`pren'.`dec'fc _b[1.`elig']
+{txt} 47{com}.             local Breg: dis strtrim("`Breg'")
+{txt} 48{com}. 
+.             local t = _b[1.`elig'] / _se[1.`elig']
+{txt} 49{com}. 
+.             if abs(`t') >= 1.645 {c -(}
+{txt} 50{com}.                 local Breg = "`Breg'*"
+{txt} 51{com}.             {c )-}
+{txt} 52{com}.             if abs(`t') >= 1.96 {c -(}
+{txt} 53{com}.                 local Breg = "`Breg'*"
+{txt} 54{com}.             {c )-}
+{txt} 55{com}.             if abs(`t') >= 2.576 {c -(}
+{txt} 56{com}.                 local Breg = "`Breg'*"
+{txt} 57{com}.             {c )-}
+{txt} 58{com}. 
+.             local HL:   dis %7.2f `HL'
+{txt} 59{com}. 
+.             rdplot `outcome' `runvar' if inrange(`runvar',-`HL',`HR') &         ///
+>             inrange(age, `ages'), vce(cluster personabasicaid) p(1)             ///
+>             kernel(triangular) h(`HR' `HR') binselect(esmv) covs(age`cohort'*)  ///
+>             graph_options(title(`varlab', size(medium) span)                    ///
+>             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
+>             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
+>             legend(rows(1) position(bottom)) ylabel(, format(%`pren'.`dec'fc))  ///
+>             note(`""Rdrobust {c -(}&beta{c )-}: `B'. Standard RDD {c -(}&beta{c )-}: `Breg'. Effective number of observations: `N'.""'))
+{txt} 60{com}. 
+.             graph export "${c -(}graphs{c )-}/latest/PILA/`outcome'_`cohort'_`runvar'_rdplot_ages.png",  ///
+>                 replace width(1920) height(1080)
+{txt} 61{com}. 
+. 
+.             binscatterhist `outcome' `runvar' if poblacion_`cohort' == 1 &      ///
+>             inrange(`runvar', -`HL', `HR') & inrange(age, `ages'),              ///
+>             cluster(personabasicaid) rd(0) linetype(lfit) absorb(age)           ///
+>             title(`varlab', size(medium) span)                                  ///
+>             subtitle(Cohort: `cohort'; `name' around cutoff: `HL', size(small)) ///
+>             xtitle(Distance to `name' of birth's cutoff) ytitle("")             ///
+>             ylabel(, format(%`pren'.`dec'fc))                                   ///
+>             note(`""Rdrobust: `B'. Standard RDD: `Breg'. Effective number of observations: `N'.""')
+{txt} 62{com}. 
+.             graph export "${c -(}graphs{c )-}/latest/PILA/`outcome'_`cohort'_`runvar'_bscatter_ages.png", ///
+>                 replace width(1920) height(1080)
+{txt} 63{com}. 
+.             local elig eligible_d
+{txt} 64{com}.             local name day
+{txt} 65{com}.             local replace append
+{txt} 66{com}.         {c )-}
+{txt} 67{com}.     {c )-}
+{txt} 68{com}. {c )-}
+{err}Cohort: M50; Outcome: codigo_pension; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332285{col 34}   162099{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    39672{col 34}    43851{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   21.020{col 34}   21.020
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   35.808{col 34}   35.808
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.587{col 34}    0.587
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    22095{col 34}    24967
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00074{col 33} .01016{col 43}-0.0726{col 52}0.942{col 60}-.020661{col 73} .019185
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.3918{col 52}0.695{col 60}-.027759{col 73}  .01851
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 4 2}
+(file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     83523
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    39672{col 37}    43851
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    39672{col 37}    43851
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   21.020{col 37}   21.020
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      684{col 37}      651
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.031{col 37}    0.032
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.031{col 37}    0.032
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        8{col 37}        7
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      684{col 37}      651
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   85.500{col 37}   93.000
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/codigo_pension_M50_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/codigo_pension_M50_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: codigo_pension; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332519{col 34}   161865{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    43806{col 34}    47118{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  163.962{col 34}  163.962
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  303.919{col 34}  303.919
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.539{col 34}    0.539
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    26723{col 34}    30357
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00257{col 33} .00958{col 43}-0.2685{col 52}0.788{col 60}-.021346{col 73} .016203
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.5988{col 52}0.549{col 60}-.027716{col 73} .014743
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     90924
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    43806{col 37}    47118
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    43806{col 37}    47118
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  163.962{col 37}  163.962
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      702{col 37}      698
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.232{col 37}    0.234
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.232{col 37}    0.234
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        7{col 37}        8
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      702{col 37}      698
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  100.286{col 37}   87.250
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/codigo_pension_M50_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/codigo_pension_M50_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pension; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332285{col 34}   162099{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    39672{col 34}    43851{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   21.324{col 34}   21.324
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   33.544{col 34}   33.544
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.636{col 34}    0.636
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    20893{col 34}    23563
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} 2.4e-05{col 33} .00245{col 43}0.0098{col 52}0.992{col 60}-.004778{col 73} .004826
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.1502{col 52}0.881{col 60}-.005299{col 73} .006179
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     83523
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    39672{col 37}    43851
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    39672{col 37}    43851
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   21.324{col 37}   21.324
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      686{col 37}      654
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.031{col 37}    0.032
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.031{col 37}    0.032
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        5{col 37}        5
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      686{col 37}      654
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  137.200{col 37}  130.800
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_M50_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_M50_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pension; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332519{col 34}   161865{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    38745{col 34}    41205{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  144.085{col 34}  144.085
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  228.469{col 34}  228.469
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.631{col 34}    0.631
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    20566{col 34}    22631
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00039{col 33} .00249{col 43}0.1565{col 52}0.876{col 60}-.004484{col 73} .005262
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.3118{col 52}0.755{col 60} -.00486{col 73} .006699
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     79950
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    38745{col 37}    41205
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    38745{col 37}    41205
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  144.085{col 37}  144.085
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      632{col 37}      629
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.228{col 37}    0.229
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.228{col 37}    0.229
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        4{col 37}        6
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      632{col 37}      629
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  158.000{col 37}  104.833
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_M50_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_M50_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332285{col 34}   162099{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    61047{col 34}    68604{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   32.964{col 34}   32.964
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   50.839{col 34}   50.839
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.648{col 34}    0.648
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    30459{col 34}    36078
+
+Outcome: pension_cum. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} -.0017{col 33} .00576{col 43}-0.2952{col 52}0.768{col 60}-.012997{col 73} .009595
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.3834{col 52}0.701{col 60}-.016244{col 73} .010929
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    129651
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    61047{col 37}    68604
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    61047{col 37}    68604
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   32.964{col 37}   32.964
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_cum. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      964{col 37}      938
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.033{col 37}    0.034
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.033{col 37}    0.034
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        6{col 37}        8
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      964{col 37}      938
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  160.667{col 37}  117.250
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_cum_M50_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_cum_M50_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pension_cum; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332519{col 34}   161865{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    62154{col 34}    68370{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  230.017{col 34}  230.017
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  354.531{col 34}  354.531
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.649{col 34}    0.649
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    30686{col 34}    35800
+
+Outcome: pension_cum. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00174{col 33} .00577{col 43}-0.3021{col 52}0.763{col 60}-.013052{col 73} .009565
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.3907{col 52}0.696{col 60}-.016286{col 73} .010872
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    130524
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    62154{col 37}    68370
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    62154{col 37}    68370
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  230.017{col 37}  230.017
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_cum. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      946{col 37}      942
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.243{col 37}    0.244
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.243{col 37}    0.244
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        7{col 37}        8
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      946{col 37}      942
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  135.143{col 37}  117.750
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_cum_M50_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_cum_M50_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: colpensiones; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332285{col 34}   162099{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    48951{col 34}    55968{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   26.554{col 34}   26.554
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   46.471{col 34}   46.471
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.571{col 34}    0.571
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    28274{col 34}    33028
+
+Outcome: colpensiones. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}  .0081{col 33} .00884{col 43}0.9166{col 52}0.359{col 60}-.009225{col 73} .025435
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.4645{col 52}0.642{col 60}-.015252{col 73} .024727
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    104919
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    48951{col 37}    55968
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    48951{col 37}    55968
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   26.554{col 37}   26.554
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: colpensiones. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      817{col 37}      786
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.032{col 37}    0.033
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.032{col 37}    0.033
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        9{col 37}        8
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      817{col 37}      786
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   90.778{col 37}   98.250
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/colpensiones_M50_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/colpensiones_M50_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: colpensiones; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332519{col 34}   161865{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    45054{col 34}    48948{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  168.083{col 34}  168.083
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  300.708{col 34}  300.708
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.559{col 34}    0.559
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    26407{col 34}    30061
+
+Outcome: colpensiones. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00602{col 33} .00932{col 43}0.6463{col 52}0.518{col 60}-.012244{col 73} .024293
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2310{col 52}0.817{col 60}-.018402{col 73}  .02332
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str14} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     94002
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    45054{col 37}    48948
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    45054{col 37}    48948
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  168.083{col 37}  168.083
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: colpensiones. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      722{col 37}      717
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.233{col 37}    0.234
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.233{col 37}    0.234
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        8{col 37}        9
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      722{col 37}      717
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   90.250{col 37}   79.667
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/colpensiones_M50_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/colpensiones_M50_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pila_salario_r_0; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332285{col 34}   162099{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    43368{col 34}    48705{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   23.732{col 34}   23.732
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   44.468{col 34}   44.468
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.534{col 34}    0.534
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    27185{col 34}    31631
+
+Outcome: pila_salario_r_0. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-1.5e+05{col 33} 1.9e+05{col 43}-0.7748{col 52}0.438{col 60} -513398{col 73}  222487
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.8874{col 52}0.375{col 60} -620109{col 73}  233578
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     92073
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    43368{col 37}    48705
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    43368{col 37}    48705
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   23.732{col 37}   23.732
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pila_salario_r_0. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      568{col 37}      708
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.040{col 37}    0.032
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.040{col 37}    0.032
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}       10{col 37}        5
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      568{col 37}      708
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   56.800{col 37}  141.600
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pila_salario_r_0_M50_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pila_salario_r_0_M50_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pila_salario_r_0; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332519{col 34}   161865{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    48666{col 34}    53358{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  181.167{col 34}  181.167
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  314.844{col 34}  314.844
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.575{col 34}    0.575
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    27577{col 34}    31553
+
+Outcome: pila_salario_r_0. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-1.1e+05{col 33} 1.6e+05{col 43}-0.6569{col 52}0.511{col 60} -430203{col 73}  214219
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.7882{col 52}0.431{col 60} -533719{col 73}  227575
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    102024
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    48666{col 37}    53358
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    48666{col 37}    53358
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  181.167{col 37}  181.167
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pila_salario_r_0. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      553{col 37}      781
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.327{col 37}    0.232
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.327{col 37}    0.232
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}       10{col 37}        7
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      553{col 37}      781
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   55.300{col 37}  111.571
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pila_salario_r_0_M50_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pila_salario_r_0_M50_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pension_ibc; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332285{col 34}   162099{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    46917{col 34}    53592{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   25.790{col 34}   25.790
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   42.245{col 34}   42.245
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.610{col 34}    0.610
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    26028{col 34}    30139
+
+Outcome: pension_ibc. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} -.0095{col 33} .00376{col 43}-2.5282{col 52}0.011{col 60} -.01687{col 73}-.002136
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.9098{col 52}0.056{col 60} -.01715{col 73} .000222
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    100509
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    46917{col 37}    53592
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    46917{col 37}    53592
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   25.790{col 37}   25.790
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_ibc. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      790{col 37}      757
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.032{col 37}    0.033
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.032{col 37}    0.033
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        5{col 37}        4
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      790{col 37}      757
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  158.000{col 37}  189.250
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_M50_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_M50_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pension_ibc; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332519{col 34}   161865{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    43806{col 34}    47118{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  163.974{col 34}  163.974
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  276.913{col 34}  276.913
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.592{col 34}    0.592
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    24474{col 34}    27475
+
+Outcome: pension_ibc. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} -.0096{col 33} .00394{col 43}-2.4381{col 52}0.015{col 60}-.017311{col 73}-.001882
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.8227{col 52}0.068{col 60}-.017307{col 73} .000628
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     90924
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    43806{col 37}    47118
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    43806{col 37}    47118
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  163.974{col 37}  163.974
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_ibc. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      702{col 37}      698
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.232{col 37}    0.234
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.232{col 37}    0.234
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        5{col 37}        3
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      702{col 37}      698
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  140.400{col 37}  232.667
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_M50_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_M50_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pension_ibc_cum; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332285{col 34}   162099{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    32418{col 34}    35934{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   17.065{col 34}   17.065
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   29.319{col 34}   29.319
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.582{col 34}    0.582
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    18405{col 34}    20757
+
+Outcome: pension_ibc_cum. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.03262{col 33} .01296{col 43}-2.5159{col 52}0.012{col 60}-.058025{col 73}-.007207
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-2.4364{col 52}0.015{col 60}-.066144{col 73}-.007168
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     68352
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    32418{col 37}    35934
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    32418{col 37}    35934
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   17.065{col 37}   17.065
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_ibc_cum. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      587{col 37}      552
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.029{col 37}    0.031
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.029{col 37}    0.031
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        8{col 37}        5
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      587{col 37}      552
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   73.375{col 37}  110.400
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_cum_M50_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_cum_M50_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: M50; Outcome: pension_ibc_cum; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    494384
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   332519{col 34}   161865{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    35031{col 34}    37017{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  129.018{col 34}  129.018
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  210.578{col 34}  210.578
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.613{col 34}    0.613
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1092{col 34}      518
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    19168{col 34}    20775
+
+Outcome: pension_ibc_cum. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.02931{col 33} .01236{col 43}-2.3718{col 52}0.018{col 60}-.053525{col 73}-.005089
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-2.2650{col 52}0.024{col 60}-.061126{col 73}-.004413
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     72048
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    35031{col 37}    37017
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    35031{col 37}    37017
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  129.018{col 37}  129.018
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_ibc_cum. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      581{col 37}      577
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.222{col 37}    0.224
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.222{col 37}    0.224
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        6{col 37}        4
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      581{col 37}      577
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   96.833{col 37}  144.250
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_cum_M50_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_cum_M50_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: codigo_pension; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322606{col 34}   158169{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    48561{col 34}    56964{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   26.675{col 34}   26.675
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   40.606{col 34}   40.606
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.657{col 34}    0.657
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    24811{col 34}    28649
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .01027{col 33} .00893{col 43}1.1496{col 52}0.250{col 60}-.007237{col 73}  .02777
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}1.0127{col 52}0.311{col 60}-.010203{col 73} .032021
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str14}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str14}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    105525
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    48561{col 37}    56964
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    48561{col 37}    56964
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   26.675{col 37}   26.675
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: codigo_pension. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      821{col 37}      789
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.032{col 37}    0.033
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.032{col 37}    0.033
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        8{col 37}        5
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      821{col 37}      789
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  102.625{col 37}  157.800
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/codigo_pension_F55_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/codigo_pension_F55_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: codigo_pension; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322882{col 34}   157893{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    49878{col 34}    56379{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  187.461{col 34}  187.461
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  283.937{col 34}  283.937
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.660{col 34}    0.660
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1091{col 34}      519
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    24973{col 34}    28166
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00793{col 33} .00888{col 43}0.8925{col 52}0.372{col 60} -.00948{col 73} .025331
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.7873{col 52}0.431{col 60}-.012535{col 73} .029368
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str14}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str14}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    106257
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    49878{col 37}    56379
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    49878{col 37}    56379
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  187.461{col 37}  187.461
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: codigo_pension. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      798{col 37}      794
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.234{col 37}    0.236
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.234{col 37}    0.236
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        7{col 37}        6
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      798{col 37}      794
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  114.000{col 37}  132.333
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/codigo_pension_F55_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/codigo_pension_F55_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pension; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322606{col 34}   158169{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    32169{col 34}    36918{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   17.776{col 34}   17.776
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   28.822{col 34}   28.822
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.617{col 34}    0.617
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    17573{col 34}    20303
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00493{col 33} .00287{col 43}-1.7171{col 52}0.086{col 60}-.010547{col 73} .000697
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.2475{col 52}0.212{col 60}-.010873{col 73} .002415
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     69087
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    32169{col 37}    36918
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    32169{col 37}    36918
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   17.776{col 37}   17.776
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      591{col 37}      557
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.029{col 37}    0.031
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.029{col 37}    0.031
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        4{col 37}        2
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      591{col 37}      557
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  147.750{col 37}  278.500
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_F55_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_F55_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pension; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322882{col 34}   157893{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    32181{col 34}    35019{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  119.440{col 34}  119.440
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  196.162{col 34}  196.162
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.609{col 34}    0.609
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1091{col 34}      519
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    17550{col 34}    19663
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00414{col 33} .00291{col 43}-1.4232{col 52}0.155{col 60}-.009836{col 73} .001561
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.9686{col 52}0.333{col 60}-.009948{col 73} .003368
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str7}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     67200
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    32181{col 37}    35019
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    32181{col 37}    35019
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  119.440{col 37}  119.440
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      548{col 37}      546
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.217{col 37}    0.218
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.217{col 37}    0.218
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        3{col 37}        7
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      548{col 37}      546
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  182.667{col 37}   78.000
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_F55_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_F55_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pension_cum; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322606{col 34}   158169{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    39480{col 34}    45375{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   21.553{col 34}   21.553
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   33.226{col 34}   33.226
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.649{col 34}    0.649
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    20665{col 34}    23619
+
+Outcome: pension_cum. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.01267{col 33} .00749{col 43}-1.6923{col 52}0.091{col 60}-.027352{col 73} .002004
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.2883{col 52}0.198{col 60}-.029173{col 73} .006032
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     84855
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    39480{col 37}    45375
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    39480{col 37}    45375
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   21.553{col 37}   21.553
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_cum. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      689{col 37}      660
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.030{col 37}    0.032
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.030{col 37}    0.032
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        8{col 37}        3
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      689{col 37}      660
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   86.125{col 37}  220.000
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_cum_F55_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_cum_F55_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pension_cum; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322882{col 34}   157893{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    37764{col 34}    41322{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  140.512{col 34}  140.512
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  224.035{col 34}  224.035
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.627{col 34}    0.627
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1091{col 34}      519
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    20057{col 34}    22333
+
+Outcome: pension_cum. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.01014{col 33} .00771{col 43}-1.3155{col 52}0.188{col 60}-.025247{col 73} .004968
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.9024{col 52}0.367{col 60} -.02602{col 73} .009614
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     79086
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    37764{col 37}    41322
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    37764{col 37}    41322
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  140.512{col 37}  140.512
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_cum. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      626{col 37}      622
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.224{col 37}    0.225
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.224{col 37}    0.225
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        9{col 37}        5
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      626{col 37}      622
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   69.556{col 37}  124.400
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_cum_F55_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_cum_F55_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: colpensiones; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322606{col 34}   158169{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    43179{col 34}    49893{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   23.910{col 34}   23.910
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   36.232{col 34}   36.232
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.660{col 34}    0.660
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    22446{col 34}    25648
+
+Outcome: colpensiones. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .01047{col 33} .00952{col 43}1.0991{col 52}0.272{col 60}-.008198{col 73} .029132
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.8722{col 52}0.383{col 60} -.01251{col 73} .032569
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     93072
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    43179{col 37}    49893
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    43179{col 37}    49893
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   23.910{col 37}   23.910
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: colpensiones. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      744{col 37}      712
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.031{col 37}    0.032
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.031{col 37}    0.032
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        9{col 37}        8
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      744{col 37}      712
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   82.667{col 37}   89.000
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/colpensiones_F55_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/colpensiones_F55_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: colpensiones; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322882{col 34}   157893{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    42234{col 34}    46131{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  157.433{col 34}  157.433
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  245.490{col 34}  245.490
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.641{col 34}    0.641
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1091{col 34}      519
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    21782{col 34}    24329
+
+Outcome: colpensiones. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} .00478{col 33} .00979{col 43}0.4889{col 52}0.625{col 60}-.014398{col 73} .023967
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}0.2518{col 52}0.801{col 60}-.019902{col 73} .025768
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str12}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     88365
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    42234{col 37}    46131
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    42234{col 37}    46131
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  157.433{col 37}  157.433
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: colpensiones. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      686{col 37}      682
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.229{col 37}    0.230
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.229{col 37}    0.230
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        9{col 37}        8
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      686{col 37}      682
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   76.222{col 37}   85.250
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/colpensiones_F55_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/colpensiones_F55_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pila_salario_r_0; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322606{col 34}   158169{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    41418{col 34}    47514{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   22.904{col 34}   22.904
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   40.307{col 34}   40.307
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.568{col 34}    0.568
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    24811{col 34}    28649
+
+Outcome: pila_salario_r_0. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res} -30207{col 33}  64258{col 43}-0.4701{col 52}0.638{col 60} -156151{col 73} 95736.5
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.7067{col 52}0.480{col 60} -198064{col 73} 93082.4
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     88932
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    41418{col 37}    47514
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    41418{col 37}    47514
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   22.904{col 37}   22.904
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pila_salario_r_0. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      722{col 37}      687
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.030{col 37}    0.032
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.030{col 37}    0.032
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        6{col 37}        4
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      722{col 37}      687
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  120.333{col 37}  171.750
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pila_salario_r_0_F55_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pila_salario_r_0_F55_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pila_salario_r_0; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322882{col 34}   157893{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    57882{col 34}    64458{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  215.056{col 34}  215.056
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  368.434{col 34}  368.434
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.584{col 34}    0.584
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1091{col 34}      519
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    31917{col 34}    36672
+
+Outcome: pila_salario_r_0. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}  13092{col 33}  54343{col 43}0.2409{col 52}0.810{col 60}-93418.4{col 73}  119603
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-0.0841{col 52}0.933{col 60} -129409{col 73}  118766
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    122340
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    57882{col 37}    64458
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    57882{col 37}    64458
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  215.056{col 37}  215.056
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pila_salario_r_0. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      897{col 37}      892
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.240{col 37}    0.241
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.240{col 37}    0.241
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        5{col 37}        3
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      897{col 37}      892
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  179.400{col 37}  297.333
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pila_salario_r_0_F55_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pila_salario_r_0_F55_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pension_ibc; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322606{col 34}   158169{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    28362{col 34}    32619{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   15.709{col 34}   15.709
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   23.729{col 34}   23.729
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.662{col 34}    0.662
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    14393{col 34}    16631
+
+Outcome: pension_ibc. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.01091{col 33} .00496{col 43}-2.2001{col 52}0.028{col 60}-.020626{col 73}-.001191
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.8282{col 52}0.068{col 60}-.022832{col 73} .000794
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     60981
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    28362{col 37}    32619
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    28362{col 37}    32619
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   15.709{col 37}   15.709
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_ibc. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      539{col 37}      502
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.028{col 37}    0.030
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.028{col 37}    0.030
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        2{col 37}        3
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      539{col 37}      502
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  269.500{col 37}  167.333
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_F55_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_F55_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pension_ibc; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322882{col 34}   157893{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    29241{col 34}    31797{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  108.771{col 34}  108.771
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  164.073{col 34}  164.073
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.663{col 34}    0.663
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1091{col 34}      519
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    14649{col 34}    16200
+
+Outcome: pension_ibc. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.00971{col 33} .00493{col 43}-1.9688{col 52}0.049{col 60}-.019373{col 73}-.000044
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.6032{col 52}0.109{col 60}-.021134{col 73} .002116
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str11}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}     61038
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    29241{col 37}    31797
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    29241{col 37}    31797
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  108.771{col 37}  108.771
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_ibc. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      508{col 37}      503
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.213{col 37}    0.215
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.213{col 37}    0.215
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}        2{col 37}        3
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      508{col 37}      503
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}  254.000{col 37}  167.667
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_F55_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_F55_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pension_ibc_cum; Runvar: std_weeks -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322606{col 34}   158169{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    56595{col 34}    65097{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}   30.173{col 34}   30.173
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}   48.447{col 34}   48.447
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.623{col 34}    0.623
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}      155{col 34}       74
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    29468{col 34}    34238
+
+Outcome: pension_ibc_cum. Running variable: std_weeks.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.02545{col 33} .00971{col 43}-2.6208{col 52}0.009{col 60}-.044489{col 73}-.006418
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.9927{col 52}0.046{col 60} -.04553{col 73}-.000377
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    121692
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    56595{col 37}    65097
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    56595{col 37}    65097
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}   30.173{col 37}   30.173
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_ibc_cum. Running variable: std_weeks.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      919{col 37}      888
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.033{col 37}    0.034
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.033{col 37}    0.034
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}       11{col 37}        5
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      919{col 37}      888
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   83.545{col 37}  177.600
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_cum_F55_std_weeks_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_cum_F55_std_weeks_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+{err}Cohort: F55; Outcome: pension_ibc_cum; Runvar: std_days -> (5) Whole age panel RDD
+{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+Covariate-adjusted Sharp RD estimates using local polynomial regression.
+
+{txt}{ralign 18: Cutoff c = 0}{col 19} {c |} {col 21}Left of {res}c{col 33}{txt}Right of {res}c{col 55}{txt}Number of obs = {res}    480775
+{txt}{hline 19}{c +}{hline 22}{col 55}BW type       = {res}{ralign 10:mserd}
+{txt}{ralign 18:Number of obs}{col 19} {c |} {col 21}{res}   322882{col 34}   157893{col 55}{txt}Kernel        = {res}{ralign 10:Triangular}
+{txt}{ralign 18:Eff. Number of obs}{col 19} {c |} {col 21}{res}    56250{col 34}    62214{col 55}{txt}VCE method    = {res}{ralign 10:Cluster}
+{txt}{ralign 18:Order est. (p)}{col 19} {c |} {col 21}{res}        1{col 34}        1
+{txt}{ralign 18:Order bias (q)}{col 19} {c |} {col 21}{res}        2{col 34}        2
+{txt}{ralign 18:BW est. (h)}{col 19} {c |} {col 21}{res}  208.379{col 34}  208.379
+{txt}{ralign 18:BW bias (b)}{col 19} {c |} {col 21}{res}  337.174{col 34}  337.174
+{txt}{ralign 18:rho (h/b)}{col 19} {c |} {col 21}{res}    0.618{col 34}    0.618
+{txt}{ralign 18:Unique obs}{col 19} {c |} {col 21}{res}     1091{col 34}      519
+{txt}{ralign 18:Number of clusters}{col 19} {c |} {col 21}{res}    29485{col 34}    33703
+
+Outcome: pension_ibc_cum. Running variable: std_days.
+{txt}{hline 19}{c TT}{hline 60}
+{ralign 18:Method}{col 19} {c |} {col 24}Coef.{col 33}Std. Err.{col 46}z{col 52}P>|z|{col 61}[95% Conf. Interval]
+{hline 19}{c +}{hline 60}
+{ralign 18:Conventional}{col 19} {c |} {col 22}{res}-.02398{col 33} .00973{col 43}-2.4634{col 52}0.014{col 60}-.043051{col 73}  -.0049
+{txt}{ralign 18:Robust}{col 19} {c |} {col 22}{res}    -{col 33}    -{col 43}-1.8556{col 52}0.064{col 60}-.043794{col 73} .001198
+{txt}{hline 19}{c BT}{hline 60}
+Covariate-adjusted estimates. Additional covariates included: 2
+Std. Err. adjusted for clusters in personabasicaid
+Estimates adjusted for mass points in the running variable.
+{p 0 7 2}
+(variable
+{bf:var} was {bf:str2}, now {bf:str12} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{p 0 7 2}
+(variable
+{bf:outcome} was {bf:str15}, now {bf:str16} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:method} was {bf:str3}, now {bf:str8} to accommodate using data's values)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:runvar} was {bf:str8}, now {bf:str9} to accommodate using data's values)
+{p_end}
+{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Output/PILA_results_pool.dta{rm}
+saved
+{p_end}
+{err}{err}Multicollinearity issue detected in {cmd:covs}. Redundant covariates were removed.
+{res}{err}Mass points detected in the running variable.
+{res}
+RD Plot with evenly spaced mimicking variance number of bins using polynomial regression.
+
+{txt}{ralign 21: Cutoff c = 0}{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c{col 54}{txt}Number of obs  = {res}    118464
+{txt}{hline 22}{c +}{hline 22}{col 54}Kernel         = {res}{ralign 10:Triangular}
+{txt}{ralign 21:Number of obs}{col 22} {c |} {col 23}{res}    56250{col 37}    62214
+{txt}{ralign 21:Eff. Number of obs}{col 22} {c |} {col 23}{res}    56250{col 37}    62214
+{txt}{ralign 21:Order poly. fit (p)}{col 22} {c |} {col 23}{res}        1{col 37}        1
+{txt}{ralign 21:BW poly. fit (h)}{col 22} {c |} {col 23}{res}  208.379{col 37}  208.379
+{txt}{ralign 21:Number of bins scale}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+
+Outcome: pension_ibc_cum. Running variable: std_days.
+{txt}{hline 22}{c TT}{hline 22}
+{col 22} {c |} {col 23}Left of {res}c{col 36}{txt}Right of {res}c
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:Bins selected}{col 22} {c |} {col 23}{res}      873{col 37}      868
+{txt}{ralign 21:Average bin length}{col 22} {c |} {col 23}{res}    0.238{col 37}    0.240
+{txt}{ralign 21:Median bin length}{col 22} {c |} {col 23}{res}    0.238{col 37}    0.240
+{txt}{hline 22}{c +}{hline 22}
+{ralign 21:IMSE-optimal bins}{col 22} {c |} {col 23}{res}       11{col 37}        6
+{txt}{ralign 21:Mimicking Var. bins}{col 22} {c |} {col 23}{res}      873{col 37}      868
+{txt}{hline 22}{c +}{hline 22}
+{lalign 1:Rel. to IMSE-optimal:}{col 22} {c |} 
+{ralign 21:Implied scale}{col 22} {c |} {col 23}{res}   79.364{col 37}  144.667
+{txt}{ralign 21:WIMSE var. weight}{col 22} {c |} {col 23}{res}    0.000{col 37}    0.000
+{txt}{ralign 21:WIMSE bias weight}{col 22} {c |} {col 23}{res}    1.000{col 37}    1.000
+{txt}{hline 22}{c BT}{hline 22}
+
+Covariate-adjusted estimates. Additional covariates included: 2
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_cum_F55_std_days_rdplot_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+(4,210,355 real changes made)
+{res}{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/latest/PILA/pension_ibc_cum_F55_std_days_bscatter_ages.png{rm}
+saved as
+PNG
+format
+{p_end}
+
+{com}. 
+.         
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs\PILA estimations age.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}29 Jul 2025, 16:07:05
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}
