@@ -78,7 +78,7 @@ quietly{
     
 }
 
-
+/*
 ****************************************************************************
 **#          2. Difference in discontinuities
 ****************************************************************************
@@ -113,10 +113,12 @@ foreach cohort in $first_cohorts {
     
     restore
 }
-
+*/
 ****************************************************************************
 **# 		3. RDD by age
 ****************************************************************************
+
+drop if std_weeks == 0
 local replace replace
 foreach cohort in $first_cohorts {
     
@@ -142,14 +144,22 @@ foreach cohort in $first_cohorts {
                 mat beta = e(tau_cl)            // Store robust beta
                 mat vari = e(se_tau_cl)^2       // Store robust SE
 
+                local h_left = e(h_l)
+                
                 local betarb = e(tau_bc)
                 local serb   = e(se_tau_rb)
 
+                qui sum `outcome' if poblacion_`cohort' == 1 & age == `ages' ///
+                    & inrange(std_weeks, -`h_left', -1)
+                
+                local c_mean = r(mean)
+                
                 * Save estimation results in dataset
                 cap noi regsave using "${output}/RIPS_results.dta", `replace'   ///
                 coefmat(beta) varmat(vari) ci level(95)                         ///
                 addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
-                runvar, std_weeks, model, "rdrobust", coef_rb, `betarb', se_rb, `serb')
+                runvar, std_weeks, model, "rdrobust", coef_rb, `betarb',        ///
+                se_rb, `serb', c_mean, `c_mean')
                 
                 clear results
                 
@@ -184,8 +194,6 @@ foreach cohort in $first_cohorts {
 
 tab age if poblacion_M50 == 1, gen(ageM50)
 tab age if poblacion_F55 == 1, gen(ageF55)
-
-drop if std_weeks == 0
 
 local replace replace
 foreach restriction in 0 1 2 {
