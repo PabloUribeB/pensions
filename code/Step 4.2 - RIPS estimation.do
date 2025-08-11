@@ -149,7 +149,7 @@ foreach cohort in $first_cohorts {
                 local betarb = e(tau_bc)
                 local serb   = e(se_tau_rb)
 
-                qui sum `outcome' if poblacion_`cohort' == 1 & age == `ages' ///
+                qui sum `outcome' if poblacion_`cohort' == 1 & age == `age' ///
                     & inrange(std_weeks, -`h_left', -1)
                 
                 local c_mean = r(mean)
