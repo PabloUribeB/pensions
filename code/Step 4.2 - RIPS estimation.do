@@ -133,61 +133,71 @@ foreach cohort in $first_cohorts {
             
             forval age = `min'/`max'{
                 
-                dis as err "Cohort: `cohort'; Outcome: `outcome'; Age: "    ///
-                "`age'; Runvar: std_weeks -> (3) Age by age RDD"
-                
-                clear results
-                
-                cap noi rdrobust `outcome' std_weeks if poblacion_`cohort' == 1  ///
-                & age == `age', vce(hc3) masspoints(check)
+                local i = 1
+                foreach bw in 0 0 10 21 42 {
+                    
+                    if      `i' == 1    local bw_opts "bwselect(msetwo)"
+                    else if `i' == 2    local bw_opts "bwselect(mserd)"
+                    else                local bw_opts "h(`bw')"
+                    
+                    dis as err "Cohort: `cohort'; Outcome: `outcome'; Age: "    ///
+                    "`age'; Runvar: std_weeks; BW: `bw' -> (3) Age by age RDD"
+                    
+                    clear results
+                    
+                    cap noi rdrobust `outcome' std_weeks if poblacion_`cohort' == 1  ///
+                    & age == `age', masspoints(adjust) `bw_opts'
 
-                mat beta = e(tau_cl)            // Store robust beta
-                mat vari = e(se_tau_cl)^2       // Store robust SE
+                    mat beta = e(tau_cl)            // Store robust beta
+                    mat vari = e(se_tau_cl)^2       // Store robust SE
 
-                local h_left = e(h_l)
-                
-                local betarb = e(tau_bc)
-                local serb   = e(se_tau_rb)
+                    local h_left =  e(h_l)
+                    local h_right = e(h_r)
+                    
+                    local betarb = e(tau_bc)
+                    local serb   = e(se_tau_rb)
 
-                qui sum `outcome' if poblacion_`cohort' == 1 & age == `age' ///
-                    & inrange(std_weeks, -`h_left', -1)
-                
-                local c_mean = r(mean)
-                
-                * Save estimation results in dataset
-                cap noi regsave using "${output}/RIPS_results.dta", `replace'   ///
-                coefmat(beta) varmat(vari) ci level(95)                         ///
-                addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
-                runvar, std_weeks, model, "rdrobust", coef_rb, `betarb',        ///
-                se_rb, `serb', c_mean, `c_mean')
-                
-                clear results
-                
-                /*
-                ** RDHonest estimation
-                cap noi rdhonest `outcome' std_weeks if poblacion_`cohort' == 1 & ///
-                age == `age'
-                
-                cap noi mat beta = e(est)            // Store robust beta
-                cap noi mat vari = e(se)^2           // Store robust SE
-                local li95       = e(TCiL)
-                local ui95       = e(TCiU)
-                local M          = e(M)
-                
-                cap noi regsave using "${output}/RIPS_results.dta", append      ///
-                coefmat(beta) varmat(vari)                                      ///
-                addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
-                runvar, std_weeks, model, "rdhonest",                           ///
-                ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
-                */
-                
-                local replace append
+                    qui sum `outcome' if poblacion_`cohort' == 1 & age == `age' ///
+                        & inrange(std_weeks, -`h_left', -1)
+                    
+                    local c_mean = r(mean)
+                    
+                    * Save estimation results in dataset
+                    cap noi regsave using "${output}/RIPS_results.dta", `replace'   ///
+                    coefmat(beta) varmat(vari) ci level(95) tstat                   ///
+                    addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
+                    runvar, std_weeks, model, "rdrobust", coef_rb, `betarb',        ///
+                    se_rb, `serb', c_mean, `c_mean', h_l, `h_left', h_r, `h_right')
+                    
+                    clear results
+                    
+                    /*
+                    ** RDHonest estimation
+                    cap noi rdhonest `outcome' std_weeks if poblacion_`cohort' == 1 & ///
+                    age == `age'
+                    
+                    cap noi mat beta = e(est)            // Store robust beta
+                    cap noi mat vari = e(se)^2           // Store robust SE
+                    local li95       = e(TCiL)
+                    local ui95       = e(TCiU)
+                    local M          = e(M)
+                    
+                    cap noi regsave using "${output}/RIPS_results.dta", append      ///
+                    coefmat(beta) varmat(vari)                                      ///
+                    addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
+                    runvar, std_weeks, model, "rdhonest",                           ///
+                    ci_lower, `li95', ci_upper, `ui95', m_bound, `M')
+                    */
+                    
+                    local ++i
+                    local replace append
+                }
         }
     }
     restore
 }
 
-
+/*
 ****************************************************************************
 **#         4. Whole age panel regressions (with plots)
 ****************************************************************************
@@ -264,7 +274,7 @@ foreach restriction in 0 1 2 {
     }
 }
 
-
+*/
 
 
 
