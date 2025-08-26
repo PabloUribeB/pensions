@@ -16,6 +16,8 @@
 *************************************************************************/	
 clear all
 
+cap log close
+log	using "${logs}/RIPS creation.smcl", replace
 
 ****************************************************************************
 **#         1. Create RIPS variables
@@ -92,25 +94,34 @@ foreach d in diag_prin diag_r1 diag_r2 diag_r3 {
 
 	gen diag_mental_`i'	= (substr(substr(`d', 1, 3),1,1) == "F")
 
-	gen estres_`i' = ((substr(`d',1,2)=="F3")                       ///
-	| (substr(`d',1,2)=="F4") | (substr(`d',1,4)=="Z563")           ///
-	| (substr(`d',1,4)=="Z637") | (substr(`d',1,4)=="Z733"))
-
 	gen estres_laboral_`i' = ((substr(`d',1,4)=="F480")             ///
 	| (substr(`d',1,4)=="F488") | (substr(`d',1,4)=="Z563"))
 
-	gen covid_`i' = ((substr(`d',1,4)=="U071") | (substr(`d',1,4)=="U072"))
+    *Depression
+	gen depresion_`i' = (inlist(substr(`d',1,3),"F32","F33"))
 	
-	gen covid_related_`i' = (covid_`i' == 1 | (substr(`d',1,4)=="R092") ///
-	| (substr(`d',1,4)=="J960") | (substr(`d',1,4)=="J969") 		    ///
-	| (substr(`d',1,4)=="U109") | (substr(`d',1,4)=="U049"))
+	*Anxiety
+	gen ansiedad_`i'  = (inlist(substr(`d',1,3),"F40","F41"))
 
+	*Stress
+	gen estres_`i'  = ((substr(`d',1,3)=="F43")   | (substr(`d',1,4)=="Z563") | ///
+                       (substr(`d',1,4)=="Z637") | (substr(`d',1,4)=="Z733") )
+    
+    gen diag_mental2_`i' = (depresion_`i' == 1 | ansiedad_`i' == 1 |    ///
+        estres_`i' == 1)
+        
+    gen msk_`i' = (inlist(substr(`d',1,3),"M54","M70","M75","M76","M77","M50","M51") | ///
+                   inlist(substr(`d',1,4), "M255","M791","M796"))
+                   
+    gen hypertension_`i' = (substr(`d',1,2) == "I1")
+    
 	local i = `i' + 1
 
 }
 
 foreach var in sepsis respiratory trauma stroke cardiovascular infarct  ///
-diag_laboral diag_mental estres estres_laboral covid covid_related {
+diag_laboral diag_mental diag_mental2 estres estres_laboral depresion   ///
+ansiedad msk hypertension {
 	
 	egen `var' = rowmax(`var'_1 `var'_2 `var'_3 `var'_4)
 	
@@ -128,11 +139,25 @@ gen enfermedad_laboral 	= (causa_externa==14)
 
 gen acc_enf_laboral	    = (accidente_laboral == 1 | enfermedad_laboral == 1)
 
-gen cons_psico 	        = (substr(cod_consul,5,2)=="08")
+gen     cons_psico  = 1 if (substr(cod_consul, 5, 2) == "08" &          ///
+                                    service == "consultas")
+                                    
+replace cons_psico  = 0 if (substr(cod_consul, 5, 2) != "08" &          ///
+                                    service == "consultas")
 
-gen cons_trab_social    = (substr(cod_consul,5,2)=="09")
+                                    
+gen     cons_trab_social = 1 if (substr(cod_consul, 5, 2) == "09" &     ///
+                                    service == "consultas")
+                                    
+replace cons_trab_social = 0 if (substr(cod_consul, 5, 2) != "09" &     ///
+                                    service == "consultas")
 
-gen cons_psiquiatra     = (substr(cod_consul,5,2)=="84")
+                                    
+gen     cons_psiquiatra = 1 if (substr(cod_consul, 5, 2) == "84" &      ///
+                                    service == "consultas")
+                                    
+replace cons_psiquiatra = 0 if (substr(cod_consul, 5, 2) != "84" &      ///
+                                    service == "consultas")
 
 gen cons_mental         = (cons_psico == 1 | cons_psiquiatra == 1 |     ///
                           cons_trab_social == 1)
@@ -143,7 +168,7 @@ cardiovascular infarct
 
 global work accidente_laboral enfermedad_laboral acc_enf_laboral        ///
 cons_psico cons_trab_social cons_psiquiatra cons_mental diag_laboral    ///
-estres estres_laboral diag_mental
+estres estres_laboral diag_mental diag_mental2 depresion ansiedad msk hypertension
 
 gen contador = 1
 
@@ -182,127 +207,6 @@ foreach var of varlist poblacion* {
 
 drop _fillin
 
-compress
-save "${data}/personabasicaid_age_RIPS.dta", replace	
-
-
-
-********************************************************************************
-**#      Merge with Chronic diseases to get comorbidity index weights      
-********************************************************************************
-use "${chronic}/Crosswalk_chronic_diseases", clear
-
-gen diag_prin = substr(icd10cm, 1, 4)
-keep diag_prin organ_system no_diagnosis diagnosis MWI_weight
-
-gen diag_r1 = diag_prin
-gen diag_r2 = diag_prin
-gen diag_r3 = diag_prin
-
-gduplicates drop diag_prin, force
-
-tempfile temp_chronic_diseases
-save `temp_chronic_diseases', replace
-
-
-use "${data}/Merge_individual_RIPS.dta", clear
-
-drop diag_prin_ingre cod_diag_prin
-
-* Get chronic weights for each of diagnosis variables
-local x = 1
-foreach diag in diag_prin diag_r1 diag_r2 diag_r3 {
-    
-	merge m:1 `diag' using `temp_chronic_diseases',         ///
-    keepusing(`diag' MWI_weight no_diagnosis) keep(1 3) gen(merge_d`x')
-    
-	rename (MWI_weight no_diagnosis) (MWI_weight_`x' no_diagnosis_`x')
-	
-	local x = `x' + 1
-}
-
-gen chronic = merge_d1 == 3 | merge_d2 == 3 | merge_d3 == 3 | merge_d4 == 3
-lab var chronic "Has chronic disease diagnosis (1)"
-
-drop merge_*
-
-
-********************************************************************************
-**#                   Generate multimorbidity index                            *
-********************************************************************************
-/* We are now using all the diagnoses variables to build the index, so in order to
-   not double-count diagnoses we have to establish the first time we see a diagnosis
-   within the window of interest. For that, we put all diagnoses into a single
-   variable */
-   
-gen age = age(fechantomode,date)
-keep if (inrange(age, 59, 71) & poblacion_M50 == 1) |       ///
-		(inrange(age, 54, 66) & poblacion_F55 == 1) |       ///
-		(inrange(age, 55, 67) & poblacion_M54 == 1) |       ///
-		(inrange(age, 50, 62) & poblacion_F59 == 1)
-
-sort personabasicaid age
-
-* Keep only people with chronic diagnosis
-keep if chronic == 1
-
-* Append different diagnosis variables into the same one
-preserve
-
-clear all
-gen aux = .
-tempfile temp_diags
-save `temp_diags', replace
-
-restore
-
-forval i = 1/4{
-	
-   preserve
-   
-	keep personabasicaid age chronic MWI_weight_`i' no_diagnosis_`i'
-	
-	rename (no_diagnosis_`i' MWI_weight_`i') (no_diagnosis MWI_weight)
-
-	append using `temp_diags'
-	save `temp_diags', replace
-	
-	restore
-}
-
-use `temp_diags', clear
-
-* The related diagnoses have too many missing values. We can drop them because 
-* we already know that any of the other diagnoses in that observation were 
-* chronic before the append 
-drop if mi(no_diagnosis)
-
-
-* Multimorbidity Weighted Index
-bys personabasicaid no_diagnosis age: gen n_pre = _n if chronic == 1
-bys personabasicaid age: gegen N_pre = max(n_pre)
-
-bys personabasicaid age: gegen pre_MWI = sum(MWI_weight) if chronic == 1    ///
-    & n_pre == N_pre
-
-rename N_pre nro_chronic
-
-* Paste chronic and MWI variables by personabasicaid
-bys personabasicaid age: ereplace chronic = max(chronic)
-bys personabasicaid age: ereplace pre_MWI = max(pre_MWI)
-
-keep personabasicaid pre_* age chronic nro_chronic
-
-gduplicates drop personabasicaid age, force
-
-tempfile temp_MWI_chronic
-save `temp_MWI_chronic', replace
-
-* Paste the index and chronic variables to master balanced
-use "$data/personabasicaid_age_RIPS.dta", clear
-
-merge 1:1 personabasicaid age using `temp_MWI_chronic', keep(1 3) nogen
-
 gen proce = nro_serviciosprocedimientos > 0
 gen consul = nro_serviciosconsultas > 0 
 gen urg = nro_serviciosurgencias > 0 
@@ -313,41 +217,6 @@ gen service = nro_serviciosprocedimientos > 0 | nro_serviciosconsultas > 0 | ///
 gen consul_proce = nro_serviciosprocedimientos > 0 | nro_serviciosconsultas > 0
 gen urg_hosp = nro_serviciosurgencias > 0 | nro_serviciosHospitalizacion > 0
 
-replace chronic = 0 if chronic == .
-replace nro_chronic = 0 if mi(nro_chronic)
-
-gen cohort = 1 if poblacion_M50 == 1
-replace cohort = 2 if poblacion_F55 == 1
-replace cohort = 3 if poblacion_M54 == 1
-replace cohort = 4 if poblacion_F59 == 1
-
-gen abso_mwi = abs(pre_MWI)
-
-bys cohort: egen median_MWI = median(abso_mwi)
-
-gen ab50_chronic = (abs(pre_MWI) > median_MWI & mi(pre_MWI) == 0)
-gen be50_chronic = (abs(pre_MWI) < median_MWI & mi(pre_MWI) == 0)
-
-local gen gen
-forvalues i=1/4{
-    
-    sum abso_mwi if cohort == `i', d
-	local 75_m50 = r(p75)
-	local 25_m50 = r(p25)
-    
-	`gen' ab75_chronic = 1 if abs(pre_MWI) > `75_m50' & cohort == `i'   ///
-    & mi(pre_MWI) == 0
-    
-	`gen' be25_chronic = 1 if abs(pre_MWI) < `25_m50' & cohort == `i'   ///
-    & mi(pre_MWI) == 0
-    
-	local gen replace
-}
-
-replace ab75_chronic = 0 if mi(ab75_chronic) & mi(pre_MWI) == 0
-replace be25_chronic = 0 if mi(be25_chronic) & mi(pre_MWI) == 0
-
-drop cohort median_MWI abso_mwi
 
 keep if (inrange(age, 59, 71) & poblacion_M50 == 1) |           ///
         (inrange(age, 54, 66) & poblacion_F55 == 1) |           ///
@@ -358,10 +227,10 @@ compress
 
 save "${data}/Estimation_sample_RIPS.dta", replace
 
-erase "${data}/personabasicaid_age_RIPS.dta"
-
-
+* Sanity checks
 mdesc poblacion* age
 
 tab age if poblacion_M50 == 1, m
 tab age if poblacion_F55 == 1, m
+
+log close

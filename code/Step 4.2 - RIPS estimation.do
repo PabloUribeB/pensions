@@ -22,14 +22,17 @@ clear all
 global cohorts M50 F55 M54 F59
 
 global extensive consul proce urg estres        ///
-cardiovascular infarct chronic diag_mental
+cardiovascular infarct diag_mental
 
 global intensive nro_servicios nro_consultas nro_procedimientos         ///
 nro_urgencias
 
 global first_cohorts M50 F55
 
-global outcomes $extensive $intensive hosp cons_psico nro_Hospitalizacion
+*global outcomes $extensive $intensive hosp cons_psico nro_Hospitalizacion
+global outcomes cons_psico cons_trab_social cons_psiquiatra cons_mental ///
+       diag_laboral estres_laboral diag_mental diag_mental2 depresion   ///
+       ansiedad msk hypertension accidente_laboral enfermedad_laboral
 
 cap mkdir "${graphs}/latest/RIPS"
 
@@ -38,7 +41,7 @@ set graphics off
 
 capture log close
 
-log	using "${logs}/RIPS estimations.smcl", replace
+log	using "${logs}/RIPS estimations new.smcl", replace
 
 
 ****************************************************************************
@@ -64,15 +67,21 @@ quietly{
     
     gen eligible_w = (std_weeks > 0)
     
-    labvars cardiovascular chronic cons_psico consul estres hosp infarct    ///
+    labvars cardiovascular cons_psico consul estres hosp infarct            ///
     nro_Hospitalizacion nro_consultas nro_procedimientos nro_servicios      ///
-    nro_urgencias pre_MWI proce service urg diag_mental                     ///
-    "Cardiovascular" "Chronic disease" "Consultation with psychologist"     ///
+    nro_urgencias proce service urg diag_mental diag_mental2 estres_laboral ///
+    depresion ansiedad cons_trab_social cons_psiquiatra cons_mental         ///
+    diag_laboral msk hypertension accidente_laboral enfermedad_laboral      ///
+    "Cardiovascular" "Consultation with psychologist"                       ///
     "Probability of consultation" "Stress" "Probability of hospitalization" ///
     "Infarct" "Number of hospitalizations" "Number of consultations"        ///
     "Number of procedures" "Number of services" "Number of ER visits"       ///
-    "Multi-morbidity index" "Probability of procedures"                     ///
-    "Probability of health service" "Probability of ER visit" "Mental diagnosis"
+    "Probability of procedures" "Probability of health service"             ///
+    "Probability of ER visit" "Mental diagnosis"                            ///
+    "Anxiety, Stress or Depression" "Work Stress" "Depression" "Anxiety"    ///
+    "Social worker consultation" "Psychiatrist consultation"                ///
+    "Consultation with mental health" "Work diagnosis"                      ///
+    "Musculoskeletal disease" "Hypertension" "Work accident" "Work disease"
     
     keep $outcomes poblacion* age std_weeks eligible_w personabasicaid // For efficiency
     
@@ -134,14 +143,14 @@ foreach cohort in $first_cohorts {
             forval age = `min'/`max'{
                 
                 local i = 1
-                foreach bw in 0 0 10 21 42 {
+                foreach bw in 0 0 {
                     
                     if      `i' == 1    local bw_opts "bwselect(msetwo)"
                     else if `i' == 2    local bw_opts "bwselect(mserd)"
                     else                local bw_opts "h(`bw')"
                     
                     dis as err "Cohort: `cohort'; Outcome: `outcome'; Age: "    ///
-                    "`age'; Runvar: std_weeks; BW: `bw' -> (3) Age by age RDD"
+                    "`age'; Runvar: std_weeks; BW: `bw_opts' -> (3) Age by age RDD"
                     
                     clear results
                     
@@ -163,7 +172,7 @@ foreach cohort in $first_cohorts {
                     local c_mean = r(mean)
                     
                     * Save estimation results in dataset
-                    cap noi regsave using "${output}/RIPS_results.dta", `replace'   ///
+                    cap noi regsave using "${output}/RIPS_results_new.dta", `replace'   ///
                     coefmat(beta) varmat(vari) ci level(95) tstat                   ///
                     addlabel(outcome, `outcome', cohort, `cohort', age, `age',      ///
                     runvar, std_weeks, model, "rdrobust", coef_rb, `betarb',        ///
