@@ -1,0 +1,492 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/RIPS creation.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}27 Aug 2025, 08:32:04
+{txt}
+{com}. 
+. ****************************************************************************
+. **#         1. Create RIPS variables
+. ****************************************************************************
+. 
+. use "${c -(}data{c )-}/Merge_individual_RIPS.dta", clear
+{txt}
+{com}. 
+. merge m:1 personabasicaid using "${c -(}data{c )-}/Master_for_RIPS.dta", nogen keep(3)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}      92,204,453{txt}  
+{col 5}{hline 41}
+
+{com}. 
+. drop diag_prin_ingre fecha_ingreso cod_diag_prin fecha_consul
+{txt}
+{com}. 
+. gen age = age(fechantomode,date)
+{txt}(1 missing value generated)
+
+{com}. 
+. keep if (inrange(age, 59, 71) & poblacion_M50 == 1) |                   ///
+>                 (inrange(age, 54, 66) & poblacion_F55 == 1) |                   ///
+>                 (inrange(age, 55, 67) & poblacion_M54 == 1) |                   ///
+>                 (inrange(age, 50, 62) & poblacion_F59 == 1)
+{txt}(7,441,321 observations deleted)
+
+{com}.                 
+. drop date
+{txt}
+{com}. 
+. *** Create variables by looping over diagnosis codes
+. local i = 1
+{txt}
+{com}. foreach d in diag_prin diag_r1 diag_r2 diag_r3 {c -(}
+{txt}  2{com}. 
+. ***** Time-sensitive conditions
+. 
+.         *Sepsis
+.         gen sepsis_`i' = (`d' == "A419" | `d' == "P369" | `d' == "A427" ///
+>         | `d' == "T814" | `d'== "A415" | `d' == "A021" | `d' == "A154"  ///
+>         | `d' == "A482" | `d' == "R451" | `d' == "P378" | `d' == "A418" ///
+>         | `d' == "A548" | `d' == "P361" | `d' == "A418" | `d' == "O85X" ///
+>         | `d' == "A410" | `d' ==  "A403" | substr(`d', 1, 3) == "A40"   ///
+>         | substr(`d', 1, 3) == "A41" )
+{txt}  3{com}. 
+.         *Respiratory
+.         gen respiratory_`i' = (substr(`d', 1, 3) == "T71"               ///
+>         | `d' == "T780" | `d' == "T782" | substr(`d', 1, 3) == "J96"    ///
+>         | `d' == "R092" | substr(`d', 1, 3) == "J80"                    ///
+>         | substr(`d', 1, 3) == "J81" | substr(`d', 1, 3) == "J81X"      ///
+>         | substr(`d', 1, 3) == "J681"| substr(`d', 1, 3) == "W840"          ///
+>         | substr(`d', 1, 3) == "T670")
+{txt}  4{com}. 
+.         *Trauma
+.         gen trauma_`i' = (`d' == "S097" | `d' == "S270" | `d' == "S219" ///
+>         | `d' == "S062" | `d' == "S065" | `d' == "S066" | `d' == "V299" ///
+>         | `d' == "I711" | `d' == "S299" |`d' == "S127" | `d' == "T794"  ///
+>         | `d' == "S063" | `d'== "Y200" | `d' == "S357" | `d' == "X941"  ///
+>         | `d' == "T1791" | `d' == "T1790" | `d' == "T060.0"             ///
+>         | substr(`d', 1, 3) == "T06" | substr(`d', 1, 3) == "S14"       ///
+>         | substr(`d', 1, 3) == "S06" | substr(`d', 1, 3) == "T07")
+{txt}  5{com}. 
+.         *Stroke
+.         gen stroke_`i' = (substr(`d', 1, 3) == "I61"                    ///
+>         | substr(`d', 1, 3) == "I60" | substr(`d', 1, 3) == "I64"       ///
+>         | substr(`d', 1, 3) == "I63" |`d' == "G934" |`d' == "G935"      ///
+>         | `d' == "G936" | `d' == "S062" | `d' == "S065" | `d' == "E104" ///
+>         | `d' == "G412" | `d' == "I638" | `d' == "S066" | `d' == "P294" ///
+>         | `d' == "G464" |`d' == "G407" | `d' == "R568")
+{txt}  6{com}. 
+.         *Infarcts
+.         gen infarct_`i' = (substr(`d', 1, 3) == "I20"                   ///
+>         | substr(`d', 1, 3) == "I21" | substr(`d', 1, 3) == "I22"       ///
+>         | substr(`d', 1, 3) == "I23" | substr(`d', 1, 3) == "I24"       ///
+>         | substr(`d', 1, 3) == "I25")
+{txt}  7{com}. 
+.         *Cardiovascular
+.         gen cardiovascular_`i' = (substr(`d', 1, 3)== "I46"             ///
+>     | substr(`d', 1, 3) == "I50")
+{txt}  8{com}. 
+. 
+.         gen diag_laboral_`i' = ((substr(`d',1,3)=="R53")                ///
+>         | (substr(`d',1,3)=="Y96") | (substr(`d',1,3)=="Z56")           ///
+>         | (substr(`d',1,3)=="Z57") | (substr(`d',1,4)=="Z732"))
+{txt}  9{com}. 
+.         gen diag_mental_`i'     = (substr(substr(`d', 1, 3),1,1) == "F")
+{txt} 10{com}. 
+.         gen estres_laboral_`i' = ((substr(`d',1,4)=="F480")             ///
+>         | (substr(`d',1,4)=="F488") | (substr(`d',1,4)=="Z563"))
+{txt} 11{com}. 
+.     *Depression
+.         gen depresion_`i' = (inlist(substr(`d',1,3),"F32","F33"))
+{txt} 12{com}.         
+.         *Anxiety
+.         gen ansiedad_`i'  = (inlist(substr(`d',1,3),"F40","F41"))
+{txt} 13{com}. 
+.         *Stress
+.         gen estres_`i'  = ((substr(`d',1,3)=="F43")   | (substr(`d',1,4)=="Z563") | ///
+>                        (substr(`d',1,4)=="Z637") | (substr(`d',1,4)=="Z733") )
+{txt} 14{com}.     
+.     gen diag_mental2_`i' = (depresion_`i' == 1 | ansiedad_`i' == 1 |    ///
+>         estres_`i' == 1)
+{txt} 15{com}.         
+.     gen msk_`i' = (inlist(substr(`d',1,3),"M54","M70","M75","M76","M77","M50","M51") | ///
+>                    inlist(substr(`d',1,4), "M255","M791","M796"))
+{txt} 16{com}.                    
+.     gen hypertension_`i' = (substr(`d',1,2) == "I1")
+{txt} 17{com}.     
+.         local i = `i' + 1
+{txt} 18{com}. 
+. {c )-}
+{txt}
+{com}. 
+. foreach var in sepsis respiratory trauma stroke cardiovascular infarct  ///
+> diag_laboral diag_mental diag_mental2 estres estres_laboral depresion   ///
+> ansiedad msk hypertension {c -(}
+{txt}  2{com}.         
+.         egen `var' = rowmax(`var'_1 `var'_2 `var'_3 `var'_4)
+{txt}  3{com}.         
+.         drop `var'_1 `var'_2 `var'_3 `var'_4
+{txt}  4{com}.         
+. {c )-}
+{txt}
+{com}. 
+. gen time_sensitive = (sepsis == 1 | respiratory == 1 | trauma == 1 | stroke == 1)
+{txt}
+{com}. 
+. ***** Work-related afflictions and stress
+. 
+. gen accidente_laboral   = (causa_externa==1)
+{txt}
+{com}. 
+. gen enfermedad_laboral  = (causa_externa==14)
+{txt}
+{com}. 
+. gen acc_enf_laboral         = (accidente_laboral == 1 | enfermedad_laboral == 1)
+{txt}
+{com}. 
+. gen     cons_psico  = 1 if (substr(cod_consul, 5, 2) == "08" &          ///
+>                                     service == "consultas")
+{txt}(84,506,871 missing values generated)
+
+{com}.                                     
+. replace cons_psico  = 0 if (substr(cod_consul, 5, 2) != "08" &          ///
+>                                     service == "consultas")
+{txt}(30,628,826 real changes made)
+
+{com}. 
+.                                     
+. gen     cons_trab_social = 1 if (substr(cod_consul, 5, 2) == "09" &     ///
+>                                     service == "consultas")
+{txt}(84,730,465 missing values generated)
+
+{com}.                                     
+. replace cons_trab_social = 0 if (substr(cod_consul, 5, 2) != "09" &     ///
+>                                     service == "consultas")
+{txt}(30,852,420 real changes made)
+
+{com}. 
+.                                     
+. gen     cons_psiquiatra = 1 if (substr(cod_consul, 5, 2) == "84" &      ///
+>                                     service == "consultas")
+{txt}(84,650,853 missing values generated)
+
+{com}.                                     
+. replace cons_psiquiatra = 0 if (substr(cod_consul, 5, 2) != "84" &      ///
+>                                     service == "consultas")
+{txt}(30,772,808 real changes made)
+
+{com}. 
+. gen cons_mental         = (cons_psico == 1 | cons_psiquiatra == 1 |     ///
+>                           cons_trab_social == 1)
+{txt}
+{com}. 
+. 
+. global t_sensitive time_sensitive sepsis respiratory trauma stroke      ///
+> cardiovascular infarct
+{txt}
+{com}. 
+. global work accidente_laboral enfermedad_laboral acc_enf_laboral        ///
+> cons_psico cons_trab_social cons_psiquiatra cons_mental diag_laboral    ///
+> estres estres_laboral diag_mental diag_mental2 depresion ansiedad msk hypertension
+{txt}
+{com}. 
+. gen contador = 1
+{txt}
+{com}. 
+. compress
+  {txt}variable {bf}{res}age{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}sepsis{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}respiratory{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}trauma{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}stroke{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}cardiovascular{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}infarct{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}diag_laboral{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}diag_mental{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}diag_mental2{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}estres{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}estres_laboral{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}depresion{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}ansiedad{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}msk{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}hypertension{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}time_sensitive{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}accidente_laboral{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}enfermedad_laboral{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}acc_enf_laboral{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}cons_psico{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}cons_trab_social{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}cons_psiquiatra{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}cons_mental{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}contador{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+{txt}  (6,357,234,900 bytes saved)
+
+{com}. 
+. * Count number of health services by age and keep one observation per person 
+. * and age
+. bys personabasicaid age service: gegen nro_servicios = total(contador)
+{txt}performance warning: -by- prefix may be slower than -by()-
+{res}{txt}{res}{txt}
+{com}. 
+. ** Replace all values for each person in a given age with the maximum value 
+. ** (1 if happens at that age)
+. foreach variable in $t_sensitive $work {c -(}
+{txt}  2{com}.     dis as err "Creating variable for `variable'"
+{txt}  3{com}.         bys personabasicaid age: ereplace `variable' = max(`variable')
+{txt}  4{com}. {c )-}
+{err}Creating variable for time_sensitive
+{txt}(2,934,323 real changes made)
+{err}Creating variable for sepsis
+{txt}(636,112 real changes made)
+{err}Creating variable for respiratory
+{txt}(894,995 real changes made)
+{err}Creating variable for trauma
+{txt}(524,359 real changes made)
+{err}Creating variable for stroke
+{txt}(1,301,651 real changes made)
+{err}Creating variable for cardiovascular
+{txt}(1,967,555 real changes made)
+{err}Creating variable for infarct
+{txt}(4,890,664 real changes made)
+{err}Creating variable for accidente_laboral
+{txt}(1,783,932 real changes made)
+{err}Creating variable for enfermedad_laboral
+{txt}(682,860 real changes made)
+{err}Creating variable for acc_enf_laboral
+{txt}(2,428,661 real changes made)
+{err}Creating variable for cons_psico
+{txt}(2,494,843 missing values generated)
+(2494843 missing values generated)
+(53,273,205 real changes made)
+{err}Creating variable for cons_trab_social
+{txt}(2,494,843 missing values generated)
+(2494843 missing values generated)
+(51,763,073 real changes made)
+{err}Creating variable for cons_psiquiatra
+{txt}(2,494,843 missing values generated)
+(2494843 missing values generated)
+(52,154,686 real changes made)
+{err}Creating variable for cons_mental
+{txt}(7,445,553 real changes made)
+{err}Creating variable for diag_laboral
+{txt}(666,632 real changes made)
+{err}Creating variable for estres
+{txt}(837,737 real changes made)
+{err}Creating variable for estres_laboral
+{txt}(38,438 real changes made)
+{err}Creating variable for diag_mental
+{txt}(7,421,042 real changes made)
+{err}Creating variable for diag_mental2
+{txt}(5,406,695 real changes made)
+{err}Creating variable for depresion
+{txt}(1,977,927 real changes made)
+{err}Creating variable for ansiedad
+{txt}(3,745,327 real changes made)
+{err}Creating variable for msk
+{txt}(23,333,757 real changes made)
+{err}Creating variable for hypertension
+{txt}(29,741,750 real changes made)
+
+{com}. 
+. keep personabasicaid age service nro_servicios $t_sensitive $work   ///
+>     poblacion* std_weeks
+{txt}
+{com}. 
+. compress
+  {txt}variable {bf}{res}nro_servicios{sf}{txt} was {bf}{res}double{sf}{txt} now {bf}{res}int{sf}
+{txt}  (508,578,792 bytes saved)
+
+{com}. 
+. gduplicates drop personabasicaid age service, force
+
+{p 0 4}{txt}Duplicates in terms of {res} personabasicaid age service{p_end}
+{txt}{res}
+{txt}(74,193,724 observations deleted)
+
+{com}. 
+. greshape wide nro_servicios, i(personabasicaid age) j(service) string
+{txt}Option -string- ignored with {cmd:greshape wide}
+{res}{txt}{res}{txt}(note: j = Hospitalizacion consultas procedimientos urgencias)
+{res}{txt}{res}{txt}
+Data{col 36}long{col 43}->{col 48}wide
+{hline 77}
+Number of obs.{col 19}{res}           10,569,408{txt}{col 43}->   {res}5,751,620            
+{txt}Number of variables{col 19}{res}                   32{txt}{col 43}->   {res}34                   
+{txt}j (4 values)        {col 33}{res}service{txt}{col 43}->{col 48}(dropped)
+xij variables:
+                          {res}nro_servicios{col 43}{txt}->{res}{col 48}nro_serviciosHospitalizacion nro_serviciosconsultas ... nro_serviciosurgencias
+{txt}{hline 77}
+{res}{txt}
+{com}. 
+. 
+. fillin personabasicaid age
+{txt}
+{com}. 
+. foreach var of varlist nro_serviciosHospitalizacion-cons_mental {c -(}
+{txt}  2{com}.         replace `var' = 0 if mi(`var')
+{txt}  3{com}. {c )-}
+{txt}(15,185,603 real changes made)
+(10,108,850 real changes made)
+(10,998,992 real changes made)
+(14,827,171 real changes made)
+(14,189,876 real changes made)
+(13,525,192 real changes made)
+(13,982,239 real changes made)
+(13,472,658 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(9,670,886 real changes made)
+(10,108,850 real changes made)
+(10,108,850 real changes made)
+(10,108,850 real changes made)
+(9,670,886 real changes made)
+
+{com}. 
+. foreach var of varlist poblacion* {c -(}
+{txt}  2{com}.     bys personabasicaid: ereplace `var' = max(`var')
+{txt}  3{com}. {c )-}
+{txt}(2,257,626 real changes made)
+(3,689,058 real changes made)
+(2,001,853 real changes made)
+(2,816,562 real changes made)
+
+{com}. 
+. drop _fillin
+{txt}
+{com}. 
+. gen proce = nro_serviciosprocedimientos > 0
+{txt}
+{com}. gen consul = nro_serviciosconsultas > 0 
+{txt}
+{com}. gen urg = nro_serviciosurgencias > 0 
+{txt}
+{com}. gen hosp = nro_serviciosHospitalizacion > 0
+{txt}
+{com}. gen service = nro_serviciosprocedimientos > 0 | nro_serviciosconsultas > 0 | ///
+>     nro_serviciosurgencias > 0 | nro_serviciosHospitalizacion > 0
+{txt}
+{com}. 
+. gen consul_proce = nro_serviciosprocedimientos > 0 | nro_serviciosconsultas > 0
+{txt}
+{com}. gen urg_hosp = nro_serviciosurgencias > 0 | nro_serviciosHospitalizacion > 0
+{txt}
+{com}. 
+. 
+. keep if (inrange(age, 59, 71) & poblacion_M50 == 1) |           ///
+>         (inrange(age, 54, 66) & poblacion_F55 == 1) |           ///
+>         (inrange(age, 55, 67) & poblacion_M54 == 1) |           ///
+>         (inrange(age, 50, 62) & poblacion_F59 == 1)
+{txt}(5,970,543 observations deleted)
+
+{com}. 
+. compress
+  {txt}variable {bf}{res}nro_serviciosHospitalizacion{sf}{txt} was {bf}{res}int{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}nro_serviciosurgencias{sf}{txt} was {bf}{res}int{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}proce{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}consul{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}urg{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}hosp{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}service{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}consul_proce{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+  {txt}variable {bf}{res}urg_hosp{sf}{txt} was {bf}{res}float{sf}{txt} now {bf}{res}byte{sf}
+{txt}  (217,395,149 bytes saved)
+
+{com}. 
+. save "${c -(}data{c )-}/Estimation_sample_RIPS.dta", replace
+{txt}{p 0 4 2}
+file {bf}
+C:/Proyectos/Banrep research/Pensions/Data/Estimation_sample_RIPS.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Sanity checks
+. mdesc poblacion* age
+
+{txt}    Variable{col 17}{c |}     Missing          Total     Percent Missing
+{hline 16}{c +}{hline 47}
+   poblacion~50{col 17}{c |} {res}          0      9,451,963           0.00
+   {txt}poblacion~54{col 17}{c |} {res}          0      9,451,963           0.00
+   {txt}poblacion~55{col 17}{c |} {res}          0      9,451,963           0.00
+   {txt}poblacion~59{col 17}{c |} {res}          0      9,451,963           0.00
+            {txt}age{col 17}{c |} {res}          0      9,451,963           0.00
+{txt}{hline 16}{c +}{hline 47}
+
+{com}. 
+. tab age if poblacion_M50 == 1, m
+
+        {txt}age {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+         55 {c |}{res}     43,667        1.95        1.95
+{txt}         56 {c |}{res}     43,667        1.95        3.90
+{txt}         57 {c |}{res}     43,667        1.95        5.86
+{txt}         58 {c |}{res}     43,667        1.95        7.81
+{txt}         59 {c |}{res}    158,648        7.09       14.90
+{txt}         60 {c |}{res}    158,648        7.09       21.99
+{txt}         61 {c |}{res}    158,648        7.09       29.08
+{txt}         62 {c |}{res}    158,648        7.09       36.17
+{txt}         63 {c |}{res}    158,648        7.09       43.27
+{txt}         64 {c |}{res}    158,648        7.09       50.36
+{txt}         65 {c |}{res}    158,648        7.09       57.45
+{txt}         66 {c |}{res}    158,648        7.09       64.54
+{txt}         67 {c |}{res}    158,648        7.09       71.63
+{txt}         68 {c |}{res}    158,648        7.09       78.72
+{txt}         69 {c |}{res}    158,648        7.09       85.82
+{txt}         70 {c |}{res}    158,648        7.09       92.91
+{txt}         71 {c |}{res}    158,648        7.09      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}  2,237,092      100.00
+{txt}
+{com}. tab age if poblacion_F55 == 1, m
+
+        {txt}age {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+         50 {c |}{res}     40,999        1.87        1.87
+{txt}         51 {c |}{res}     40,999        1.87        3.73
+{txt}         52 {c |}{res}     40,999        1.87        5.60
+{txt}         53 {c |}{res}     40,999        1.87        7.46
+{txt}         54 {c |}{res}    156,460        7.12       14.58
+{txt}         55 {c |}{res}    156,460        7.12       21.70
+{txt}         56 {c |}{res}    156,460        7.12       28.82
+{txt}         57 {c |}{res}    156,460        7.12       35.93
+{txt}         58 {c |}{res}    156,460        7.12       43.05
+{txt}         59 {c |}{res}    156,460        7.12       50.17
+{txt}         60 {c |}{res}    156,460        7.12       57.29
+{txt}         61 {c |}{res}    156,460        7.12       64.41
+{txt}         62 {c |}{res}    156,460        7.12       71.53
+{txt}         63 {c |}{res}    156,460        7.12       78.64
+{txt}         64 {c |}{res}    156,460        7.12       85.76
+{txt}         65 {c |}{res}    156,460        7.12       92.88
+{txt}         66 {c |}{res}    156,460        7.12      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}  2,197,976      100.00
+{txt}
+{com}. 
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/RIPS creation.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}27 Aug 2025, 09:21:41
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}
