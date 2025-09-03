@@ -24,7 +24,7 @@ clear all
 
 set scheme white_tableau
 
-global extensive service consul proce urg hosp cardiovascular estres_laboral msk
+global extensive service consul proce urg hosp cardiovascular estreslaboral msk
 
 global all_outcomes wage pension servicios consultas proced urgencias ///
        hospits $extensive
@@ -202,9 +202,9 @@ use if (poblacion_M50 == 1 | poblacion_F55 == 1) using              ///
        "${data}/Estimation_sample_RIPS.dta", clear
 
 rename (nro_serviciosHospitalizacion nro_serviciosurgencias                     ///
-    nro_serviciosprocedimientos nro_serviciosconsultas cons_psico diag_mental)  ///
+    nro_serviciosprocedimientos nro_serviciosconsultas estres_laboral)          ///
     (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas         ///
-    conspsico diagmental)
+    estreslaboral)
     
 egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias         ///
     nro_procedimientos nro_consultas)
