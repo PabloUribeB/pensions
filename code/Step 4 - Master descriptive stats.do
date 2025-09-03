@@ -231,7 +231,8 @@ foreach cohort in M50 F55 {
         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
         local min_`outcome'_`cohort' : di %10.3fc r(min)
-        local max_`outcome'_`cohort' : di %10.3fc r(max)
+        _pctile wage if poblacion_`cohort' == 1, p(99)
+        local max_`outcome'_`cohort' : di %13.0fc r(r1)
         
         local `outcome'_`cohort' = strtrim("`: di r(mean)'")
     
