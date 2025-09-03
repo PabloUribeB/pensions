@@ -24,10 +24,9 @@ clear all
 
 set scheme white_tableau
 
-global extensive service consul proce urg hosp conspsico estres        ///
-cardiovascular infarct chronic diagmental
+global extensive service consul proce urg hosp cardiovascular estres_laboral msk
 
-global all_outcomes wage ibc pension servicios consultas proced urgencias ///
+global all_outcomes wage pension servicios consultas proced urgencias ///
        hospits $extensive
 
 capture log close
@@ -154,6 +153,8 @@ graph export "${graphs}/hist_F59.png", replace
 ** PILA
 use if (poblacion_M50 == 1 | poblacion_F55 == 1) using "${data}/Estimation_sample_PILA.dta", clear
 
+replace pila_salario_r_0 = . if pila_salario_r_0 = 0
+
 collapse (mean) pila_salario_r_0 ibc_pens (max) pension_ibc   ///
          (firstnm) poblacion*, by(personabasicaid)
 
@@ -186,8 +187,14 @@ foreach cohort in M50 F55 {
         texresults3 using "${tables}/numbers.txt", texmacro(`outcome'`coh')  ///
         result(``outcome'_`cohort'') append `rounded'
     }
+    
+    _pctile wage if poblacion_`cohort' == 1, p(99)
+    local max_wage_`cohort' : di %13.0fc r(r1)
     local coh "F"
 }
+
+
+
 
 
 ** RIPS
@@ -259,11 +266,11 @@ gen ibc     = .
 gen pension = .
 
 labvars $all_outcomes                                                            ///
-    "Monthly real wage" "Pension contribution" "Pension proxy"                   ///
+    "Monthly real wage" "Pension proxy"                                          ///
     "Number of services" "Number of consultations" "Number of procedures"        ///
     "Number of ER visits" "Number of hospitalizations" "Any service" "Consulted" ///
-    "Procedures" "Visited ER" "Hospitalized" "Mental health consultation"        ///
-    "Stress" "Cardiovascular" "Infarct" "Chronic disease" "Mental health diagnosis"
+    "Procedures" "Visited ER" "Hospitalized" "Cardiovascular"                    ///
+    "Work-related stress" "Musculoskeletal disease"
 
 * LaTex table
 texdoc init "${tables}/summary_stats.tex", replace force
@@ -286,10 +293,10 @@ foreach var of global all_outcomes {
     local w: variable label `var'
     
     if `i' == 1       local panel "tex \multicolumn{9}{l}{\textit{Panel A: Labor market}} \\"
-    else if `i' == 4  local panel "tex \multicolumn{9}{l}{\textit{Panel B: Health}} \\"
+    else if `i' == 3  local panel "tex \multicolumn{9}{l}{\textit{Panel B: Health}} \\"
     else              local panel
 
-    if `j' == 3       local space "\addlinespace"
+    if `j' == 2       local space "\addlinespace"
     else              local space
     
     
