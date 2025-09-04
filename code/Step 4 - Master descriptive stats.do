@@ -153,7 +153,7 @@ graph export "${graphs}/hist_F59.png", replace
 ** PILA
 use if (poblacion_M50 == 1 | poblacion_F55 == 1) using "${data}/Estimation_sample_PILA.dta", clear
 
-replace pila_salario_r_0 = . if pila_salario_r_0 = 0
+replace pila_salario_r_0 = . if pila_salario_r_0 == 0
 
 collapse (mean) pila_salario_r_0 ibc_pens (max) pension_ibc   ///
          (firstnm) poblacion*, by(personabasicaid)
@@ -231,7 +231,7 @@ foreach cohort in M50 F55 {
         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
         local min_`outcome'_`cohort' : di %10.3fc r(min)
-        _pctile wage if poblacion_`cohort' == 1, p(99)
+        _pctile `outcome' if poblacion_`cohort' == 1, p(99)
         local max_`outcome'_`cohort' : di %13.0fc r(r1)
         
         local `outcome'_`cohort' = strtrim("`: di r(mean)'")

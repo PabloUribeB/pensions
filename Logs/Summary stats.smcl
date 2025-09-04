@@ -1,19 +1,183 @@
 {smcl}
 {com}{sf}{ul off}{txt}{.-}
       name:  {res}<unnamed>
-       {txt}log:  {res}\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Logs/Summary stats.smcl
+       {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/Summary stats.smcl
   {txt}log type:  {res}smcl
- {txt}opened on:  {res}18 Jul 2025, 13:12:41
+ {txt}opened on:  {res} 4 Sep 2025, 15:57:44
 {txt}
 {com}. 
-{txt}end of do-file
+. ****************************************************************************
+. **#         1. Get main N
+. ****************************************************************************
+. 
+. use "${c -(}data{c )-}/Master_sample.dta", clear
+{txt}
+{com}. 
+. keep if poblacion_M50 == 1 | poblacion_F55 == 1
+{txt}(777,825 observations deleted)
 
-{com}. do "C:\Users\cpossosu\AppData\Local\Temp\STD2610_000000.tmp"
+{com}. 
+. count
+  {res}653,957
 {txt}
 {com}. 
+. local total_n = strtrim("`: di %10.0fc r(N)'")
+{txt}
+{com}. 
+. texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(totalN)             ///
+> result(`total_n') append
+{txt}
+{com}. 
+. ****************************************************************************
+. **#         2. Plot histograms
+. ****************************************************************************
+. 
+. use "${c -(}data{c )-}/Master_for_RIPS.dta", clear
+{txt}
+{com}. 
+. count if poblacion_M50 == 1 | poblacion_F55 == 1
+  {res}326,050
+{txt}
+{com}. 
+. local master_n = strtrim("`: di %10.0fc r(N)'")
+{txt}
+{com}. 
+. texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(masterN)            ///
+> result(`master_n') append
+{txt}
+{com}. 
+. count if poblacion_F55 == 1
+  {res}160,738
+{txt}
+{com}. local f55_n = strtrim("`: di %10.0fc r(N)'")
+{txt}
+{com}. 
+. count if poblacion_M50 == 1
+  {res}165,312
+{txt}
+{com}. local m50_n = strtrim("`: di %10.0fc r(N)'")
+{txt}
+{com}. 
+. * Histograms using roughly a bin per week (5 years * 52 weeks = 260)
+. 
+. * M50
+. qui rddensity std_weeks if poblacion_M50 == 1
+{txt}
+{com}. local pvalue = e(pv_q)
+{txt}
+{com}. 
+. texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(pvalMw)            ///
+> result(`pvalue') append round(3)
+{txt}
+{com}. 
+. qui rddensity std_days if poblacion_M50 == 1
+{txt}
+{com}. local pvalue_d = e(pv_q)
+{txt}
+{com}. 
+. texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(pvalMd)            ///
+> result(`pvalue_d') append round(3)
+{txt}
+{com}. 
+. twoway (hist fechantomode if poblacion_M50 == 1, xla(#15, angle(90)     ///
+> format("%td")) xtitle(Date of birth)      ///
+> bin(260) freq ylabel(, format(%10.0fc))),           ///
+> xline(-3441, noextend lcolor(red) lpattern(solid)) legend(off)
+{res}{txt}
+{com}. 
+. graph export "${c -(}graphs{c )-}/hist_M50.png", replace
+{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/hist_M50.png{rm}
+saved as
+PNG
+format
+{p_end}
+
+{com}. 
+. 
+. /* M54
+> qui rddensity std_weeks if poblacion_M54 == 1
+> local pvalue: dis %04.3f e(pv_q)
+> 
+> qui rddensity std_days if poblacion_M54 == 1
+> local pvalue_d: dis %04.3f e(pv_q)
+> 
+> twoway (hist fechantomode if poblacion_M54 == 1, xla(#15, angle(90)     ///
+> format("%td")) xtitle(Date of birth) title(Men born between 52-56)      ///
+> note("Manipulation test p-value weeks: `pvalue'"                        ///
+> "Manipulation test p-value days: `pvalue_d'") bin(260) freq),           ///
+> xline(-1827, noextend lcolor(red) lpattern(solid)) legend(off)
+> 
+> graph export "${c -(}graphs{c )-}/hist_M54.png", replace
+> */
+. 
+. * F55
+. qui rddensity std_weeks if poblacion_F55 == 1
+{txt}
+{com}. local pvalue = e(pv_q)
+{txt}
+{com}. 
+. texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(pvalFw)            ///
+> result(`pvalue') append round(3)
+{txt}
+{com}. 
+. qui rddensity std_days if poblacion_F55 == 1
+{txt}
+{com}. local pvalue_d = e(pv_q)
+{txt}
+{com}. 
+. texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(pvalFd)            ///
+> result(`pvalue_d') append round(3)
+{txt}
+{com}. 
+. twoway (hist fechantomode if poblacion_F55 == 1, xla(#15, angle(90)     ///
+> format("%td")) xtitle(Date of birth)   ///
+> bin(260) freq ylabel(, format(%10.0fc))),           ///
+> xline(-1615, noextend lcolor(red) lpattern(solid)) legend(off)
+{res}{txt}
+{com}. 
+. graph export "${c -(}graphs{c )-}/hist_F55.png", replace
+{txt}{p 0 4 2}
+file {bf}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/hist_F55.png{rm}
+saved as
+PNG
+format
+{p_end}
+
+{com}. 
+. 
+. /* F59
+> qui rddensity std_weeks if poblacion_F59 == 1
+> local pvalue: dis %04.3f e(pv_q)
+> 
+> qui rddensity std_days if poblacion_F59 == 1
+> local pvalue_d: dis %04.3f e(pv_q)
+> 
+> twoway (hist fechantomode if poblacion_F59 == 1, xla(#15, angle(90)     ///
+> format("%td")) xtitle(Date of birth) title(Women born between 57-61)    ///
+> note("Manipulation test p-value weeks: `pvalue'"                        ///
+> "Manipulation test p-value days: `pvalue_d'") bin(260) freq),           ///
+> xline(-1, noextend lcolor(red) lpattern(solid)) legend(off)
+> 
+> graph export "${c -(}graphs{c )-}/hist_F59.png", replace
+> 
+> */
+. 
+. 
+. ****************************************************************************
+. **#         3. Summary stats table
+. ****************************************************************************
+. 
+. 
 . ** PILA
 . use if (poblacion_M50 == 1 | poblacion_F55 == 1) using "${c -(}data{c )-}/Estimation_sample_PILA.dta", clear
 {txt}
+{com}. 
+. replace pila_salario_r_0 = . if pila_salario_r_0 == 0
+{txt}(27,094,533 real changes made, 27,094,533 to missing)
+
 {com}. 
 . collapse (mean) pila_salario_r_0 ibc_pens (max) pension_ibc   ///
 >          (firstnm) poblacion*, by(personabasicaid)
@@ -31,7 +195,7 @@
 .         if "`outcome'" == "pension" {c -(}
 {txt}  4{com}.             local fmt "3"
 {txt}  5{com}.             local add "*100"
-{txt}  6{com}.             local rounded "round(2)"
+{txt}  6{com}.             local rounded "round(1)"
 {txt}  7{com}.         {c )-}
 {txt}  8{com}.         else{c -(}
 {txt}  9{com}.             local fmt "0"
@@ -42,20 +206,23 @@
 .         sum `outcome' if poblacion_`cohort' == 1
 {txt} 14{com}.         local m_`outcome'_`cohort'   : di %13.`fmt'fc r(mean)
 {txt} 15{com}.         local sd_`outcome'_`cohort'  : di %13.`fmt'fc r(sd)
-{txt} 16{com}.         local min_`outcome'_`cohort' : di %13.`fmt'fc r(min)
-{txt} 17{com}.         local max_`outcome'_`cohort' : di %13.`fmt'fc r(max)
+{txt} 16{com}.         local min_`outcome'_`cohort' : di %13.0fc r(min)
+{txt} 17{com}.         local max_`outcome'_`cohort' : di %13.0fc r(max)
 {txt} 18{com}.         
 .         local `outcome'_`cohort': di %10.`fmt'fc r(mean)`add'
 {txt} 19{com}. 
 .         texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(`outcome'`coh')  ///
 >         result(``outcome'_`cohort'') append `rounded'
 {txt} 20{com}.     {c )-}
-{txt} 21{com}.     local coh "F"
-{txt} 22{com}. {c )-}
+{txt} 21{com}.     
+.     _pctile wage if poblacion_`cohort' == 1, p(99)
+{txt} 22{com}.     local max_wage_`cohort' : di %13.0fc r(r1)
+{txt} 23{com}.     local coh "F"
+{txt} 24{com}. {c )-}
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 8}wage {c |}{res}    165,312    971475.7     2542931          0   2.91e+08
+{space 8}wage {c |}{res}    165,298     2091875     3721946    1476.51   3.67e+08
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
@@ -67,7 +234,7 @@
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 8}wage {c |}{res}    160,738     1039433     1943726          0   7.18e+07
+{space 8}wage {c |}{res}    160,733     2042344     2721733    23262.2   1.00e+08
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
@@ -79,14 +246,18 @@
 {txt}
 {com}. 
 . 
+. 
+. 
+. 
 . ** RIPS
 . use if (poblacion_M50 == 1 | poblacion_F55 == 1) using              ///
 >        "${c -(}data{c )-}/Estimation_sample_RIPS.dta", clear
 {txt}
 {com}. 
-. rename (nro_serviciosHospitalizacion nro_serviciosurgencias             ///
->     nro_serviciosprocedimientos nro_serviciosconsultas)                     ///
->     (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas)
+. rename (nro_serviciosHospitalizacion nro_serviciosurgencias                     ///
+>     nro_serviciosprocedimientos nro_serviciosconsultas estres_laboral)          ///
+>     (nro_Hospitalizacion nro_urgencias nro_procedimientos nro_consultas         ///
+>     estreslaboral)
 {res}{txt}
 {com}.     
 . egen nro_servicios = rowtotal(nro_Hospitalizacion nro_urgencias         ///
@@ -108,7 +279,7 @@
 .     foreach outcome in servicios consultas proced urgencias hospits {c -(}
 {txt}  3{com}.         
 .         if inlist("`outcome'", "urgencias", "hospits") {c -(}
-{txt}  4{com}.             local rounded "round(2)"
+{txt}  4{com}.             local rounded "round(1)"
 {txt}  5{com}.         {c )-}
 {txt}  6{com}.         else{c -(}
 {txt}  7{com}.             local rounded "round(0)"
@@ -118,15 +289,16 @@
 {txt} 10{com}.         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
 {txt} 11{com}.         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
 {txt} 12{com}.         local min_`outcome'_`cohort' : di %10.3fc r(min)
-{txt} 13{com}.         local max_`outcome'_`cohort' : di %10.3fc r(max)
-{txt} 14{com}.         
+{txt} 13{com}.         _pctile `outcome' if poblacion_`cohort' == 1, p(99)
+{txt} 14{com}.         local max_`outcome'_`cohort' : di %13.0fc r(r1)
+{txt} 15{com}.         
 .         local `outcome'_`cohort' = strtrim("`: di r(mean)'")
-{txt} 15{com}.     
+{txt} 16{com}.     
 .         texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(`outcome'`coh')  ///
 >         result(``outcome'_`cohort'') append `rounded'
-{txt} 16{com}.     {c )-}
-{txt} 17{com}.     local coh "F"
-{txt} 18{com}. {c )-}
+{txt} 17{com}.     {c )-}
+{txt} 18{com}.     local coh "F"
+{txt} 19{com}. {c )-}
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
@@ -179,13 +351,13 @@
 .         sum `outcome' if poblacion_`cohort' == 1
 {txt}  4{com}.         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
 {txt}  5{com}.         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
-{txt}  6{com}.         local min_`outcome'_`cohort' : di %10.3fc r(min)
-{txt}  7{com}.         local max_`outcome'_`cohort' : di %10.3fc r(max)
+{txt}  6{com}.         local min_`outcome'_`cohort' : di %10.0fc r(min)
+{txt}  7{com}.         local max_`outcome'_`cohort' : di %10.0fc r(max)
 {txt}  8{com}.         
-.         local `outcome'_`cohort' = r(mean)
+.         local `outcome'_`cohort' = r(mean)*100
 {txt}  9{com}. 
 .         texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(`outcome'`coh')  ///
->         result(``outcome'_`cohort'') append round(2)
+>         result(``outcome'_`cohort'') append round(1)
 {txt} 10{com}.     {c )-}
 {txt} 11{com}.     local coh "F"
 {txt} 12{com}. {c )-}
@@ -212,31 +384,17 @@
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 2}cons_psico {c |}{res}    158,648    .1356462    .3424136          0          1
-{txt}"\cons_psicoM" may not be a valid LaTeX macro name
-
-    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
-{space 6}estres {c |}{res}    158,648     .102718    .3035911          0          1
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
 cardiovasc~r {c |}{res}    158,648    .0597927    .2371032          0          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 5}infarct {c |}{res}    158,648    .1471749    .3542813          0          1
+estreslabo~l {c |}{res}    158,648    .0011976     .034586          0          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 5}chronic {c |}{res}    158,648    .8423365    .3644263          0          1
+{space 9}msk {c |}{res}    158,648    .5986524    .4901726          0          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
-{space 1}diag_mental {c |}{res}    158,648    .1662422    .3722991          0          1
-{txt}"\diag_mentalM" may not be a valid LaTeX macro name
-
-    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
 {space 5}service {c |}{res}    156,460           1           0          1          1
 
@@ -258,30 +416,16 @@ cardiovasc~r {c |}{res}    158,648    .0597927    .2371032          0          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 2}cons_psico {c |}{res}    156,460    .1751438    .3800913          0          1
-{txt}"\cons_psicoF" may not be a valid LaTeX macro name
-
-    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
-{space 6}estres {c |}{res}    156,460    .2405855    .4274404          0          1
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
 cardiovasc~r {c |}{res}    156,460    .0246389    .1550225          0          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 5}infarct {c |}{res}    156,460     .074396    .2624151          0          1
+estreslabo~l {c |}{res}    156,460    .0033747    .0579939          0          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 5}chronic {c |}{res}    156,460    .9124888    .2825836          0          1
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
-{space 1}diag_mental {c |}{res}    156,460    .2749073     .446469          0          1
-{txt}"\diag_mentalF" may not be a valid LaTeX macro name
-
+{space 9}msk {c |}{res}    156,460    .7521475    .4317671          0          1
+{txt}
 {com}. 
 . gen wage    = .
 {txt}(315,108 missing values generated)
@@ -294,16 +438,16 @@ cardiovasc~r {c |}{res}    156,460    .0246389    .1550225          0          1
 
 {com}. 
 . labvars $all_outcomes                                                            ///
->     "Monthly real wage" "Pension contribution" "Pension proxy"                   ///
+>     "Monthly real wage" "Pension proxy"                                          ///
 >     "Number of services" "Number of consultations" "Number of procedures"        ///
 >     "Number of ER visits" "Number of hospitalizations" "Any service" "Consulted" ///
->     "Procedures" "Visited ER" "Hospitalized" "Mental health consultation"        ///
->     "Stress" "Cardiovascular" "Infarct" "Chronic disease" "Mental health diagnosis"
+>     "Procedures" "Visited ER" "Hospitalized" "Cardiovascular"                    ///
+>     "Work-related stress" "Musculoskeletal disease"
 {txt}
 {com}. 
 . * LaTex table
 . texdoc init "${c -(}tables{c )-}/summary_stats.tex", replace force
-{res}{txt}(texdoc output file is \\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex)
+{res}{txt}(texdoc output file is Z:/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex)
 {res}{txt}
 {com}. 
 . tex \begin{c -(}tabular{c )-}{c -(}lcccccccc{c )-}
@@ -332,10 +476,10 @@ cardiovasc~r {c |}{res}    156,460    .0246389    .1550225          0          1
 .     local w: variable label `var'
 {txt}  3{com}.     
 .     if `i' == 1       local panel "tex \multicolumn{c -(}9{c )-}{c -(}l{c )-}{c -(}\textit{c -(}Panel A: Labor market{c )-}{c )-} \\"
-{txt}  4{com}.     else if `i' == 4  local panel "tex \multicolumn{c -(}9{c )-}{c -(}l{c )-}{c -(}\textit{c -(}Panel B: Health{c )-}{c )-} \\"
+{txt}  4{com}.     else if `i' == 3  local panel "tex \multicolumn{c -(}9{c )-}{c -(}l{c )-}{c -(}\textit{c -(}Panel B: Health{c )-}{c )-} \\"
 {txt}  5{com}.     else              local panel
 {txt}  6{com}. 
-.     if `j' == 3       local space "\addlinespace"
+.     if `j' == 2       local space "\addlinespace"
 {txt}  7{com}.     else              local space
 {txt}  8{com}.     
 .     
@@ -347,21 +491,26 @@ cardiovasc~r {c |}{res}    156,460    .0246389    .1550225          0          1
 {txt} 12{com}. {c )-}
 {res}{txt}
 {com}. 
+. tex \midrule
+{res}{txt}
+{com}. tex Observations & \multicolumn{c -(}4{c )-}{c -(}c{c )-}{c -(}`m50_n'{c )-} & \multicolumn{c -(}4{c )-}{c -(}c{c )-}{c -(}`f55_n'{c )-} \\
+{res}{txt}
+{com}. 
 . tex \bottomrule
 {res}{txt}
 {com}. tex \end{c -(}tabular{c )-}
 {res}{txt}
 {com}. texdoc close
-{txt}(texdoc output written to {browse `"\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex"':\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex})
+{txt}(texdoc output written to {browse `"Z:/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex"':Z:/Christian Posso/_banrep_research/proyectos/pensions/Tables\summary_stats.tex})
 {res}{txt}
 {com}. 
 . 
 . 
 . log close
       {txt}name:  {res}<unnamed>
-       {txt}log:  {res}\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions/Logs/Summary stats.smcl
+       {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/Summary stats.smcl
   {txt}log type:  {res}smcl
- {txt}closed on:  {res}18 Jul 2025, 13:14:09
+ {txt}closed on:  {res} 4 Sep 2025, 15:58:25
 {txt}{.-}
 {smcl}
 {txt}{sf}{ul off}
