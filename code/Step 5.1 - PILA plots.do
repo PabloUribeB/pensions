@@ -12,7 +12,6 @@
 *************************************************************************
 *************************************************************************/	
 clear all
-version 19
 
 ****************************************************************************
 *       Global directory, parameters and assumptions:
@@ -99,6 +98,9 @@ drop if (cohort == "F55" & inlist(age, 52, 66)) |       ///
         (cohort == "M50" & inlist(age, 57, 71))
 
 
+gen ci_l90 = coef - stderr*1.645
+gen ci_u90 = coef + stderr*1.645
+        
 levelsof outcome, local(outcomes)
 local outcome = 1
 foreach variable in `outcomes'{
@@ -123,16 +125,16 @@ foreach variable in `outcomes'{
                 scalar min = r(min)
                 scalar max = r(max)
                 
-                tw (rspike ci_lower ci_upper age, lcolor(ebblue) lp(solid))         ///
-                (scatter coef age, mcolor(ebblue))                                  ///
+                tw (rcap ci_lower ci_upper age, lcolor(ebblue) lp(solid))           ///
+                (rcap ci_l90 ci_u90 age, lcolor(maroon) lp(solid))                  ///
+                (scatter coef age, mcolor(black))                                   ///
                 if (cohort == "`cohort'" & outcome == "`variable'" &                ///
                 model == "`model'" & runvar == "`runvar'" & !mi(age)),              ///
                 legend(position(bottom) rows(1) order(2 "Point estimate"            ///
                 1 "95% confidence interval")) xline(`=cut', lcolor(gs7))            ///
                 yline(0, lp(solid)) ytitle(`vallab')                                ///
                 xlabel(`=min'(1)`=max') xtitle(Age)                                 ///
-                ylabel(#10, format(%010.`dec'fc) labs(vsmall))                      ///
-                subtitle(Cohort: `cohort', size(medsmall))
+                ylabel(#10, format(%010.`dec'fc) labs(vsmall))
         
                 graph export "${graphs}/latest/PILA/age/`variable'_`cohort'_`runvar'_`model'.png", replace
         

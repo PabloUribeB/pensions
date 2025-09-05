@@ -24,7 +24,7 @@ clear all
 
 set scheme white_tableau
 
-global extensive service consul proce urg hosp cardiovascular estreslaboral msk
+global extensive service consul proce urg hosp cardiovascular
 
 global all_outcomes wage pension servicios consultas proced urgencias ///
        hospits $extensive
@@ -87,7 +87,7 @@ format("%td")) xtitle(Date of birth)      ///
 bin(260) freq ylabel(, format(%10.0fc))),           ///
 xline(-3441, noextend lcolor(red) lpattern(solid)) legend(off)
 
-graph export "${graphs}/hist_M50.png", replace
+graph export "${graphs}/hist_M50.pdf", replace
 
 
 /* M54
@@ -124,7 +124,7 @@ format("%td")) xtitle(Date of birth)   ///
 bin(260) freq ylabel(, format(%10.0fc))),           ///
 xline(-1615, noextend lcolor(red) lpattern(solid)) legend(off)
 
-graph export "${graphs}/hist_F55.png", replace
+graph export "${graphs}/hist_F55.pdf", replace
 
 
 /* F59
@@ -163,7 +163,7 @@ rename (pila_salario_r_0 ibc_pens pension_ibc) (wage ibc pension)
 local coh "M"
 foreach cohort in M50 F55 {
     
-    foreach outcome in wage ibc pension {
+    foreach outcome in wage pension {
         
         if "`outcome'" == "pension" {
             local fmt "3"
@@ -231,11 +231,11 @@ foreach cohort in M50 F55 {
         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
         local min_`outcome'_`cohort' : di %10.3fc r(min)
+        local `outcome'_`cohort': di %10.0fc r(mean)
+        
         _pctile `outcome' if poblacion_`cohort' == 1, p(99)
         local max_`outcome'_`cohort' : di %13.0fc r(r1)
-        
-        local `outcome'_`cohort' = strtrim("`: di r(mean)'")
-    
+            
         texresults3 using "${tables}/numbers.txt", texmacro(`outcome'`coh')  ///
         result(``outcome'_`cohort'') append `rounded'
     }

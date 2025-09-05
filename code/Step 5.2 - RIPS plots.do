@@ -109,8 +109,7 @@ foreach variable in `outcomes'{
             1 "95% confidence interval" 2 "90% confidence interval"))           ///
             xline(`=cut', lcolor(gs7)) yline(0, lp(solid)) ytitle(`vallab')     ///
             xlabel(`=min'(1)`=max') xtitle(Age)                                 ///
-            ylabel(#7, format(%010.3fc) labs(vsmall)) yscale(range(`ymin' `ymax'))                 ///
-            subtitle(Cohort: `cohort', size(medsmall))
+            ylabel(#7, format(%010.3fc) labs(vsmall)) yscale(range(`ymin' `ymax'))
     
             graph export "${graphs}/latest/RIPS/age/`variable'_`cohort'_`bw'.png", replace
     

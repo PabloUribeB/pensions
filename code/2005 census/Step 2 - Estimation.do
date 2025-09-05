@@ -51,7 +51,7 @@ local plot_options = "bylabels(, wrap(15)) "                                  //
 + "xline(0, lwidth(thin)) ciopts(recast(rcap) lcolor(black)) "                ///
 + "ylabel(, labsize(*0.5)) mfcolor(white) "                                   ///
 + "subtitle(, size(small) color(black) bcolor(white) justification(center)) " ///
-+ "grid(between glpattern(dash) glwidth(vvthin) glcolor(black))  msymbol(o) " ///
++ "grid(between glpattern(dash) glwidth(vvthin) glcolor(gs13))  msymbol(o) "  ///
 + "mlcolor(black)  mlabposition(0) coeflabels(,wrap(45))"
 
 ****************************************************************************
@@ -204,7 +204,7 @@ ci((balanceRD_final[,2] balanceRD_final[,3])) `plot_options'                ///
 groups("Was ill in past year"-"Intensive care" = "{bf:Health}"              ///
 "Works"-"Completed at least high school" = "{bf:Personal}", labs(*0.6))
  
-graph export "${graphs}\balanceRD_final.png", replace
+graph export "${graphs}\balanceRD_final.pdf", replace
 
 
 ** Cohort M50
@@ -231,7 +231,7 @@ ci((balanceRD_final_M50[,2] balanceRD_final_M50[,3])) `plot_options'    ///
 groups("Was ill in past year"-"Intensive care" = "{bf:Health}"          ///
 "Works"-"Completed at least high school" = "{bf:Personal}", labs(*0.6))
 
-graph export "${graphs}\balanceRD_final_M50.png", replace
+graph export "${graphs}\balanceRD_final_M50.pdf", replace
 
 
 
@@ -259,6 +259,6 @@ ci((balanceRD_final_F55[,2] balanceRD_final_F55[,3])) `plot_options'    ///
 groups("Was ill in past year"-"Intensive care" = "{bf:Health}"          ///
 "Works"-"Completed at least high school" = "{bf:Personal}", labs(*0.6))
 
-graph export "${graphs}\balanceRD_final_F55.png", replace
+graph export "${graphs}\balanceRD_final_F55.pdf", replace
 
 
