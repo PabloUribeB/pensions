@@ -52,6 +52,8 @@ label val en_outcome labout
 drop if (cohort == "F55" & inlist(age, 52, 66)) |                   ///
         (cohort == "M50" & inlist(age, 57, 71)) | mi(coef) | coef == 0
         
+drop if en_outcome == 2 & ((age > 62 & cohort == "M50") | (age > 57 & cohort == "F55"))
+        
 gen     bw = string(h_l)
 replace bw = "one" if !inlist(h_l, 10, 21, 42) & h_l == h_r
 replace bw = "two" if !inlist(h_l, 10, 21, 42) & h_l != h_r
