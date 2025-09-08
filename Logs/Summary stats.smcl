@@ -3,7 +3,7 @@
       name:  {res}<unnamed>
        {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/Summary stats.smcl
   {txt}log type:  {res}smcl
- {txt}opened on:  {res} 4 Sep 2025, 15:57:44
+ {txt}opened on:  {res} 8 Sep 2025, 08:13:01
 {txt}
 {com}. 
 . ****************************************************************************
@@ -85,12 +85,12 @@
 > xline(-3441, noextend lcolor(red) lpattern(solid)) legend(off)
 {res}{txt}
 {com}. 
-. graph export "${c -(}graphs{c )-}/hist_M50.png", replace
+. graph export "${c -(}graphs{c )-}/hist_M50.pdf", replace
 {txt}{p 0 4 2}
 file {bf}
-Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/hist_M50.png{rm}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/hist_M50.pdf{rm}
 saved as
-PNG
+PDF
 format
 {p_end}
 
@@ -137,12 +137,12 @@ format
 > xline(-1615, noextend lcolor(red) lpattern(solid)) legend(off)
 {res}{txt}
 {com}. 
-. graph export "${c -(}graphs{c )-}/hist_F55.png", replace
+. graph export "${c -(}graphs{c )-}/hist_F55.pdf", replace
 {txt}{p 0 4 2}
 file {bf}
-Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/hist_F55.png{rm}
+Z:/Christian Posso/_banrep_research/proyectos/pensions/Graphs/hist_F55.pdf{rm}
 saved as
-PNG
+PDF
 format
 {p_end}
 
@@ -190,7 +190,7 @@ format
 {txt}
 {com}. foreach cohort in M50 F55 {c -(}
 {txt}  2{com}.     
-.     foreach outcome in wage ibc pension {c -(}
+.     foreach outcome in wage pension {c -(}
 {txt}  3{com}.         
 .         if "`outcome'" == "pension" {c -(}
 {txt}  4{com}.             local fmt "3"
@@ -226,19 +226,11 @@ format
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-{space 9}ibc {c |}{res}    165,304     1100660     1646118          0   4.35e+07
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
 {space 5}pension {c |}{res}    165,312    .8132985    .3896729          0          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
 {space 8}wage {c |}{res}    160,733     2042344     2721733    23262.2   1.00e+08
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
-{space 9}ibc {c |}{res}    160,738     1204826     1534788          0   5.13e+07
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
@@ -289,11 +281,11 @@ format
 {txt} 10{com}.         local m_`outcome'_`cohort'   : di %10.3fc r(mean)
 {txt} 11{com}.         local sd_`outcome'_`cohort'  : di %10.3fc r(sd)
 {txt} 12{com}.         local min_`outcome'_`cohort' : di %10.3fc r(min)
-{txt} 13{com}.         _pctile `outcome' if poblacion_`cohort' == 1, p(99)
-{txt} 14{com}.         local max_`outcome'_`cohort' : di %13.0fc r(r1)
-{txt} 15{com}.         
-.         local `outcome'_`cohort' = strtrim("`: di r(mean)'")
-{txt} 16{com}.     
+{txt} 13{com}.         local `outcome'_`cohort': di %10.0fc r(mean)
+{txt} 14{com}.         
+.         _pctile `outcome' if poblacion_`cohort' == 1, p(99)
+{txt} 15{com}.         local max_`outcome'_`cohort' : di %13.0fc r(r1)
+{txt} 16{com}.             
 .         texresults3 using "${c -(}tables{c )-}/numbers.txt", texmacro(`outcome'`coh')  ///
 >         result(``outcome'_`cohort'') append `rounded'
 {txt} 17{com}.     {c )-}
@@ -388,14 +380,6 @@ cardiovasc~r {c |}{res}    158,648    .0597927    .2371032          0          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
-estreslabo~l {c |}{res}    158,648    .0011976     .034586          0          1
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
-{space 9}msk {c |}{res}    158,648    .5986524    .4901726          0          1
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
 {space 5}service {c |}{res}    156,460           1           0          1          1
 
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
@@ -417,14 +401,6 @@ estreslabo~l {c |}{res}    158,648    .0011976     .034586          0          1
 {txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
 {hline 13}{c +}{hline 57}
 cardiovasc~r {c |}{res}    156,460    .0246389    .1550225          0          1
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
-estreslabo~l {c |}{res}    156,460    .0033747    .0579939          0          1
-
-{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
-{hline 13}{c +}{hline 57}
-{space 9}msk {c |}{res}    156,460    .7521475    .4317671          0          1
 {txt}
 {com}. 
 . gen wage    = .
@@ -441,8 +417,7 @@ estreslabo~l {c |}{res}    156,460    .0033747    .0579939          0          1
 >     "Monthly real wage" "Pension proxy"                                          ///
 >     "Number of services" "Number of consultations" "Number of procedures"        ///
 >     "Number of ER visits" "Number of hospitalizations" "Any service" "Consulted" ///
->     "Procedures" "Visited ER" "Hospitalized" "Cardiovascular"                    ///
->     "Work-related stress" "Musculoskeletal disease"
+>     "Procedures" "Visited ER" "Hospitalized" "Cardiovascular"     
 {txt}
 {com}. 
 . * LaTex table
@@ -510,7 +485,7 @@ estreslabo~l {c |}{res}    156,460    .0033747    .0579939          0          1
       {txt}name:  {res}<unnamed>
        {txt}log:  {res}Z:/Christian Posso/_banrep_research/proyectos/pensions/Logs/Summary stats.smcl
   {txt}log type:  {res}smcl
- {txt}closed on:  {res} 4 Sep 2025, 15:58:25
+ {txt}closed on:  {res} 8 Sep 2025, 08:13:41
 {txt}{.-}
 {smcl}
 {txt}{sf}{ul off}

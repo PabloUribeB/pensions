@@ -270,8 +270,7 @@ labvars $all_outcomes                                                           
     "Monthly real wage" "Pension proxy"                                          ///
     "Number of services" "Number of consultations" "Number of procedures"        ///
     "Number of ER visits" "Number of hospitalizations" "Any service" "Consulted" ///
-    "Procedures" "Visited ER" "Hospitalized" "Cardiovascular"                    ///
-    "Work-related stress" "Musculoskeletal disease"
+    "Procedures" "Visited ER" "Hospitalized" "Cardiovascular"     
 
 * LaTex table
 texdoc init "${tables}/summary_stats.tex", replace force
