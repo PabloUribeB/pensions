@@ -32,7 +32,7 @@ cap mkdir "${graphs}/latest/PILA/time"
 
 use "${output}\RIPS_results.dta", clear
 
-keep if inlist(outcome, "cardiovascular", "nro_servicios", "nro_urgencias", "nro_procedimientos")
+keep if inlist(outcome, "cardiovascular", "nro_servicios", "nro_procedimientos")
 
 append using "${output}/RIPS_results_new.dta", gen(o)
 
@@ -41,8 +41,7 @@ drop o
 
 encode outcome, gen(en_outcome)
 label def labout 1 "Cardiovascular" 2 "Work-related stress"                 ///
-3 "Musculoskeletal illness" 4 "Number of procedures" 5 "Number of services" ///
-6 "Number of ER visits"
+3 "Musculoskeletal illness" 4 "Number of procedures" 5 "Number of services"
 
 label val en_outcome labout
 
@@ -68,15 +67,18 @@ foreach variable in `outcomes'{
     local vallab : label (en_outcome) `outcome'
     scalar cut = 59.5
     
+    if substr("`variable'", 1, 3) == "nro" local rounded = 0
+    else                                   local rounded = 0.01
+    
     foreach cohort in M50 F55{
             
         foreach bw in one two {
             
-            qui sum ci_lower if cohort == "`cohort'" & outcome == "`variable'" & model == "rdrobust"
-            local ymin = round(r(min),0.01)
+            qui sum ci_lower if outcome == "`variable'" & model == "rdrobust" & bw == "`bw'"
+            local ymin = round(r(min), `rounded')
             
-            qui sum ci_upper if cohort == "`cohort'" & outcome == "`variable'" & model == "rdrobust"
-            local ymax = round(r(max),0.01)
+            qui sum ci_upper if outcome == "`variable'" & model == "rdrobust" & bw == "`bw'"
+            local ymax = round(r(max), `rounded')
             
             qui sum age if cohort == "`cohort'" & outcome == "`variable'" & bw == "`bw'"
             scalar min = r(min)
