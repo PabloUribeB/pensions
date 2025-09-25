@@ -278,7 +278,7 @@ texdoc init "${tables}/summary_stats.tex", replace force
 tex \begin{tabular}{lcccccccc}
 tex \toprule
 
-tex & \multicolumn{4}{c}{M50} & \multicolumn{4}{c}{F55} \\
+tex & \multicolumn{4}{c}{Men born in 1950 (M50)} & \multicolumn{4}{c}{Women born in 1955 (F55)} \\
 tex \cmidrule(l){2-5} \cmidrule(l){6-9}
 
 tex & Mean & SD & Min & Max & Mean & SD & Min & Max \\

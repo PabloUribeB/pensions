@@ -104,15 +104,15 @@ foreach variable in `outcomes'{
                 
             }
             
-            tw (rcap ci_lower ci_upper age, lcolor(ebblue) lp(solid))           ///
-            (rcap ci_l90 ci_u90 age, lcolor(maroon) lp(solid))                  ///
+            tw (rspike ci_lower ci_upper age, lcolor(ebblue) lp(solid))         ///
+            (rspike ci_l90 ci_u90 age, lcolor(maroon) lp(solid) lw(medthick))   ///
             (scatter coef age, mcolor(black))                                   ///          
             if (cohort == "`cohort'" & outcome == "`variable'" &                ///
             model == "rdrobust" & !mi(age) & bw == "`bw'"),                     ///
             legend(position(bottom) rows(1) order(3 "Point estimate"            ///
             1 "95% confidence interval" 2 "90% confidence interval"))           ///
             xline(`=cut', lcolor(gs7)) yline(0, lp(solid)) ytitle(`vallab')     ///
-            xlabel(`=min'(1)`=max') xtitle(Age)                                 ///
+            xlabel(`=min'(1)`=max', nogrid) xtitle(Age)                         ///
             ylabel(#7, format(%010.3fc) labs(vsmall)) yscale(range(`ymin' `ymax'))
     
             graph export "${graphs}/latest/RIPS/age/`variable'_`cohort'_`bw'.pdf", replace
@@ -167,15 +167,15 @@ foreach variable in `outcomes'{
                 scalar min = r(min)
                 scalar max = r(max)
                 
-                tw (rcap ci_lower ci_upper age, lcolor(ebblue) lp(solid))           ///
-                (rcap ci_l90 ci_u90 age, lcolor(maroon) lp(solid))                  ///
+                tw (rspike ci_lower ci_upper age, lcolor(ebblue) lp(solid))         ///
+                (rspike ci_l90 ci_u90 age, lcolor(maroon) lp(solid) lw(medthick))   ///
                 (scatter coef age, mcolor(black))                                   ///
                 if (cohort == "`cohort'" & outcome == "`variable'" &                ///
                 model == "`model'" & runvar == "`runvar'" & !mi(age)),              ///
                 legend(position(bottom) rows(1) order(2 "Point estimate"            ///
                 1 "95% confidence interval")) xline(`=cut', lcolor(gs7))            ///
                 yline(0, lp(solid)) ytitle(`vallab')                                ///
-                xlabel(`=min'(1)`=max') xtitle(Age)                                 ///
+                xlabel(`=min'(1)`=max', nogrid) xtitle(Age)                         ///
                 ylabel(#10, format(%010.3fc) labs(vsmall))
         
                 graph export "${graphs}/latest/PILA/age/`variable'_`cohort'_`runvar'_`model'.pdf", replace
