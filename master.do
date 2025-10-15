@@ -26,16 +26,9 @@ if _rc == 111{
 * Globals
 ****************************************************************************
 * Set path for original datasets in BanRep
-if "`c(hostname)'" == "SM201439" global pc "C:"
-else global pc "\\sm093119"
 
-
-global data         "${pc}/Proyectos/Banrep research/Pensions/Data"
-global data_master  "${pc}/Proyectos/PILA master"
 global pila_og      "\\sm134796/D/Originales/PILA/1.Pila mensualizada/PILA mes cotizado"
 global ipc          "\\sm037577/D/Proyectos/Banrep research/c_2018_SSO Servicio Social Obligatorio/Project SSO Training/Data"
-global urgencias    "${pc}\Proyectos\Data"
-global chronic      "${pc}/Proyectos/Banrep research/More_than_a_Healing/Data"
 global RIPS         "\\sm209696/E/RIPS/Stata"
 global RIPS2        "\\wmedesrv/gamma/rips"
 
@@ -49,19 +42,26 @@ if inlist("`c(username)'", "Pablo Uribe", "pu42") {
 }
 
 else if "`c(username)'" == "cpossosu" {
-
-    global root	 "\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos/pensions"
+    
+    global server "\\wmedesrv/GAMMA/Christian Posso/_banrep_research/proyectos"
+    global root	  "${server}/pensions"
 
     local  run = "banrep"
 
 }
 	
 else{
-
-    global root	 "Z:/Christian Posso/_banrep_research/proyectos/pensions"
+    
+    global server "Z:/Christian Posso/_banrep_research/proyectos"
+    global root	 "${server}/pensions"
     local  run = "banrep"
 
 }
+
+global data         "${root}/Data"
+global data_master  "${root}/Data"
+global chronic      "${server}/More_than_a_Healing/Data"
+global urgencias    "${server}/SOMEWHERE/Data" // Queda pendiente que Sofía me avise
 
 cap mkdir "${root}/Logs"
 cap mkdir "${root}/Tables"
